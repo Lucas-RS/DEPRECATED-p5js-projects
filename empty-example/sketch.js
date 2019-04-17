@@ -3,6 +3,7 @@ let attractCenterForce
 let mouseForce
 let resetButton
 let particleCount
+let maxVel
 let startVelMax
 let centerForceRadius
 let minForceInCenter
@@ -15,23 +16,25 @@ let elseMaxForceOutCenter
 let maxLineDist
 
 function setup() {
-  createCanvas(1200, 1200)
+  createCanvas(800, 800)
   resetButton = createButton("Reset")
   resetButton.mousePressed(resetSketch)
   createP("Particle Count:")
   particleCount = createInput(100)
+  createP("Max Velocity:")
+  maxVel = createInput(1)
   createP("Starting Max Speed:")
   startVelMax = createInput(1)
   createElement("h1","Center Attraction Force Settings:")
   createP("Center Force Radius:")
-  centerForceRadius = createInput(100)
+  centerForceRadius = createInput(50)
   createElement("h2","If in radius, apply random force between:")
   createSpan("Min:")
   minForceInCenter = createInput(-0.25)
   createSpan("Max:")
   maxForceInCenter = createInput(1)
   createElement("h2","If not in radius, apply random force between:")
-  createP("If random number is less than 0.005:")
+  createP("If random number is less than 0.0005:")
   createSpan("Min:")
   minForceOutCenter = createInput(-1)
   createSpan("Max:")
@@ -51,7 +54,7 @@ function resetSketch() {
   background(255)
   particles = []
   for (var i = 0; i < particleCount.value(); i++) {
-    particles[i] = new Particle(random(width/2) + width/4, random(height/2) + height/4);
+    particles[i] = new Particle(random(width), random(height));
     particles[i].applyForce(createVector(random(-startVelMax.value(),startVelMax.value()), random(-startVelMax.value(),startVelMax.value())))
   }
 }
@@ -62,7 +65,7 @@ function draw() {
 	  // particles[i].show(1)
     particles[i].update()
     particles[i].wrap()
-    particles[i].capVel(1)
+    particles[i].capVel(maxVel.value())
     // particles[i].mouseAttract()
 
     if(Math.random() < 0.1) {
@@ -75,7 +78,7 @@ function draw() {
           attractCenterForce.setMag(0)
         }
       } else {
-        if(Math.random() < 0.005) {
+        if(Math.random() < 0.0005) {
           attractCenterForce.setMag(random(minForceOutCenter.value(), maxForceOutCenter.value()))
         } else {
           attractCenterForce.setMag(random(elseMinForceOutCenter.value(), elseMaxForceOutCenter.value()))

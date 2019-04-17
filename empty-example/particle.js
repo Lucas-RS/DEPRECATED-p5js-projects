@@ -14,9 +14,9 @@ function Particle(posX = 0, posY = 0) {
         this.acc.add(force);
     }
 
-    this.show = function(size = 5) {
+    this.show = function(sizeX = 5, sizeY = sizeX) {
         fill(this.color)
-        circle(this.pos.x, this.pos.y, size, size)
+        circle(this.pos.x, this.pos.y, sizeX, sizeY)
     }
 
     this.wrap = function() {
