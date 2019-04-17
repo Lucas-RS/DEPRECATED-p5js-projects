@@ -27,11 +27,11 @@ function Particle(origin) {
     }
 
     this.capVel = function(capX, capY) {
-        // if(capY == ""){
-        if(this.vel.mag() > capX) {
-            this.vel.setMag(0)
+        if(capY == ""){
+            if(this.vel.mag() > capX) {
+                this.vel.setMag(capX)
             }
-        // } 
+        } 
         
         // if(this.vel.x > capX ) {
         //     this.vel.x = capX
