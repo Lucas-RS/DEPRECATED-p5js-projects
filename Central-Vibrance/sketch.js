@@ -3,7 +3,8 @@ let attractCenterForce
 let mouseForce
 let resetButton
 let particleCount
-let maxVel
+let maxVelX
+let maxVelY
 let startVelMax
 let centerForceRadius
 let minForceInCenter
@@ -22,7 +23,10 @@ function setup() {
   createP("Particle Count:")
   particleCount = createInput(100)
   createP("Max Velocity:")
-  maxVel = createInput(1)
+  createSpan("X:")
+  maxVelX = createInput(2)
+  createSpan("Y:")
+  maxVelY = createInput()
   createP("Starting Max Speed:")
   startVelMax = createInput(1)
   createElement("h1","Center Attraction Force Settings:")
@@ -53,9 +57,13 @@ function setup() {
 function resetSketch() {
   background(255)
   particles = []
-  for (var i = 0; i < particleCount.value(); i++) {
-    particles[i] = new Particle(random(width), random(height));
-    particles[i].applyForce(createVector(random(-startVelMax.value(),startVelMax.value()), random(-startVelMax.value(),startVelMax.value())))
+  for (var i = 0; i < particleCount.value();) {
+    let origin = createVector(random(width), random(height))
+    if(dist(origin.x, origin.y, width/2, height/2) < width/3) {
+      particles[i] = new Particle(origin);
+      particles[i].applyForce(createVector(random(-startVelMax.value(),startVelMax.value()), random(-startVelMax.value(),startVelMax.value())))
+      i++
+    }
   }
 }
 
@@ -65,7 +73,7 @@ function draw() {
 	  // particles[i].show(1)
     particles[i].update()
     particles[i].wrap()
-    particles[i].capVel(maxVel.value())
+    particles[i].capVel(maxVelX.value(), maxVelY.value())
     // particles[i].mouseAttract()
 
     if(Math.random() < 0.1) {
