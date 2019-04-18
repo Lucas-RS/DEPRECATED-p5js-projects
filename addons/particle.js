@@ -26,14 +26,18 @@ function Particle(origin) {
         if(this.pos.y < 0) this.pos.y = height
     }
 
-    this.capVel = function(capX, capY) {
-        if(capX == capY){
-            if(this.vel.mag() > capX) {
-                this.vel.setMag(capX)
-            }
-        } 
-    }
+    this.capVel = function(cap, restrictX, restrictY) {
+        if(this.vel.mag() > cap) {
+            this.vel.setMag(cap)
+        }
+        if(restrictX){
+            this.vel.x = 0
+        }
+        if(restrictY){
+            this.vel.y = 0
+        }
 
+    }
     this.mouseAttract = function(trackDist = width * 0.1, magMultiplier = 1){
         if(dist(this.pos.x, this.pos.y, mouseX, mouseY) < trackDist) {
             let f = createVector(mouseX, mouseY)

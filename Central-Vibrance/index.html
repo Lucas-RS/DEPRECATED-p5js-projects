@@ -10,14 +10,33 @@
     <script src="../addons/particle.js"></script>
     <script src="sketch.js"></script>
     <style>
-      * {
+      :root {
         font-family: 'century gothic';
       }
-      canvas {
-        display: block;
+
+      body {
+        margin: 0;
+        padding: 4.5vh;
+      }
+
+      #canvas-container {
+        display: inline-block;
+        margin: 0 5vh;
+      }
+
+      #settings-container {
+        background-color: white;
+        overflow-y: scroll;
+        height: 90vh;
+        float: left;
       }
     </style>
   </head>
   <body>
+    <div id="main-container">
+      <div id="canvas-container"></div>
+      <div id="settings-container">
+      </div>
+    </div>
   </body>
 </html>
