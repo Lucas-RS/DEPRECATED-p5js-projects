@@ -27,28 +27,16 @@ function Particle(origin) {
     }
 
     this.capVel = function(capX, capY) {
-        if(capY == ""){
+        if(capX == capY){
             if(this.vel.mag() > capX) {
                 this.vel.setMag(capX)
             }
         } 
-        
-        // if(this.vel.x > capX ) {
-        //     this.vel.x = capX
-        // } else if(this.vel.x < -capX ) {
-        //     this.vel.x = -capX
-        // }
-        // if(this.vel.y > capY ) {
-        //     this.vel.y = capY
-        // } else if(this.vel.y < -capY ) {
-        //     this.vel.y = -capY
-        // }
     }
 
     this.mouseAttract = function(trackDist = width * 0.1, magMultiplier = 1){
-        let f
         if(dist(this.pos.x, this.pos.y, mouseX, mouseY) < trackDist) {
-            f = createVector(mouseX, mouseY)
+            let f = createVector(mouseX, mouseY)
             f.sub(this.pos)
             f.setMag(dist(this.pos.x, this.pos.y, mouseX, mouseY) / trackDist * magMultiplier)
             this.applyForce(f)
