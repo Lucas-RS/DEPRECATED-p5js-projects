@@ -12,7 +12,8 @@ let minForceOutCenter, maxForceOutCenter
 let elseMinForceOutCenter, elseMaxForceOutCenter
 let maxLineDist
 let canvasElem
-let newCanvWidth, newCanvHeight
+let newCanvSize
+let originRadius
 
 function setup() {
   canvasElem = document.getElementById("defaultCanvas0")
@@ -21,10 +22,12 @@ function setup() {
   resetButton = createButton("Reset Canvas").parent("settings-container")
   resetButton.mousePressed(resetSketch).parent("settings-container")
   createElement("br").parent("settings-container")
-  createSpan("Canvas Width: ").parent("settings-container")
-  newCanvWidth = createInput(1024).parent("settings-container")
-  createSpan("Canvas Height: ").parent("settings-container")
-  newCanvHeight = createInput(1024).parent("settings-container")
+  createSpan("Canvas Size: ").parent("settings-container")
+  newCanvSize = createInput(1024).parent("settings-container")
+  createSpan(" x " + newCanvSize.value() + " px").parent("settings-container")
+  createElement("br").parent("settings-container")
+  createSpan("Radius in which particles originate: ").parent("settings-container")
+  originRadius = createInput(384).parent("settings-container")
   createElement("br").parent("settings-container")
   createSpan("(resizing canvas requires the canvas be reset.)").parent("settings-container")
   showParticlePoints = createCheckbox("Show Particles", false).parent("settings-container")
@@ -111,6 +114,7 @@ function draw() {
         }
         stroke(lerpColor(particles[i].color, particles[j].color, 0.5))
         line(particles[i].pos.x, particles[i].pos.y, particles[j].pos.x, particles[j].pos.y)
+        stroke(0,0)
       } else {
         if(Math.random() < 0.1) {
           particles[i].vel.mult(1.00001)
@@ -139,13 +143,13 @@ function updateCanvasSize() {
 }
 
 function resetSketch() {
-  resizeCanvas(newCanvWidth.value(), newCanvHeight.value())
+  resizeCanvas(newCanvSize.value(), newCanvSize.value())
   updateCanvasSize()
   background(255)
   particles = []
   for (var i = 0; i < particleCount.value();) {
     let origin = createVector(random(width), random(height))
-    if(dist(origin.x, origin.y, width/2, height/2) < width/5) {
+    if(dist(origin.x, origin.y, width/2, height/2) < originRadius.value()) {
       particles[i] = new Particle(origin);
       particles[i].applyForce(createVector(random(-startVelMax.value(),startVelMax.value()), random(-startVelMax.value(),startVelMax.value())))
       i++
