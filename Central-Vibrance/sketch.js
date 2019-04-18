@@ -14,6 +14,7 @@ let maxLineDist
 let canvasElem
 let newCanvSize
 let originRadius
+let extraCenterForceChance
 
 function setup() {
   canvasElem = document.getElementById("defaultCanvas0")
@@ -24,46 +25,51 @@ function setup() {
   createElement("br").parent("settings-container")
   createSpan("Canvas Size: ").parent("settings-container")
   newCanvSize = createInput(1024).parent("settings-container")
-  createSpan(" x " + newCanvSize.value() + " px").parent("settings-container")
   createElement("br").parent("settings-container")
   createSpan("Radius in which particles originate: ").parent("settings-container")
-  originRadius = createInput(384).parent("settings-container")
+  originRadius = createInput(256).parent("settings-container")
   createElement("br").parent("settings-container")
   createSpan("(resizing canvas requires the canvas be reset.)").parent("settings-container")
   showParticlePoints = createCheckbox("Show Particles", false).parent("settings-container")
   doWrap = createCheckbox("Wrap Edges", false).parent("settings-container")
   doMouseAttract = createCheckbox("Enable Mouse Attracts Particles", false).parent("settings-container")
   drawTrails = createCheckbox("Draw Trails", true).parent("settings-container")
-  createP("Particle Count: ").parent("settings-container")
+  createSpan("Particle Count: ").parent("settings-container")
   particleCount = createInput(100).parent("settings-container")
-  createP("Cap Velocity: ").parent("settings-container")
-  maxVel = createInput(1).parent("settings-container")
+  createElement("br").parent("settings-container")
+  createSpan("Max Line Dist: ").parent("settings-container")
+  maxLineDist = createInput(50).parent("settings-container")
+  createElement("br").parent("settings-container")
+  createSpan("Cap Velocity: ").parent("settings-container")
+  maxVel = createInput(3).parent("settings-container")
   restrictX = createCheckbox("Disable Movement on X Axis", false).parent("settings-container")
   restrictY = createCheckbox("Disable Movement on Y Axis", false).parent("settings-container")
-  createP("Starting Max Speed: ").parent("settings-container")
+  createSpan("Starting Max Speed: ").parent("settings-container")
   startVelMax = createInput(1).parent("settings-container")
+
   createElement("h1","Center Attraction Force Settings: ").parent("settings-container")
   doAttractCenter = createCheckbox("Attract Particles to Center", true).parent("settings-container")
   createP("Center Force Radius: ").parent("settings-container")
-  centerForceRadius = createInput(50).parent("settings-container")
-  createElement("h2","If in radius, apply random force between: ").parent("settings-container")
-  createSpan("Min: ").parent("settings-container")
-  minForceInCenter = createInput(-3).parent("settings-container")
-  createSpan("Max: ").parent("settings-container")
-  maxForceInCenter = createInput(1).parent("settings-container")
+  centerForceRadius = createInput(100).parent("settings-container")
   createElement("h2","If not in radius, apply random force between: ").parent("settings-container")
-  createP("If random number is less than 0.0005: ").parent("settings-container")
   createSpan("Min: ").parent("settings-container")
-  minForceOutCenter = createInput(-3).parent("settings-container")
+  minForceInCenter = createInput(-2).parent("settings-container")
   createSpan("Max: ").parent("settings-container")
-  maxForceOutCenter = createInput(1).parent("settings-container")
+  maxForceInCenter = createInput(2).parent("settings-container")
+  createElement("h2","If in radius, apply random force between: ").parent("settings-container")
+  createSpan("If random number is less than").parent("settings-container")
+  extraCenterForceChance = createInput(0.005).parent("settings-container")
+  createSpan(": ").parent("settings-container")
+  createElement("br").parent("settings-container")
+  createSpan("Min: ").parent("settings-container")
+  minForceOutCenter = createInput(-5).parent("settings-container")
+  createSpan("Max: ").parent("settings-container")
+  maxForceOutCenter = createInput(5).parent("settings-container")
   createP("Else: ").parent("settings-container")
   createSpan("Min: ").parent("settings-container")
   elseMinForceOutCenter = createInput(-1).parent("settings-container")
   createSpan("Max: ").parent("settings-container")
   elseMaxForceOutCenter = createInput(1).parent("settings-container")
-  createP("Max Line Dist: ").parent("settings-container").parent("settings-container")
-  maxLineDist = createInput(30).parent("settings-container")
 
   resetSketch()
 }
@@ -89,14 +95,14 @@ function draw() {
     if(Math.random() < 0.1 && doAttractCenter.checked()) {
       attractCenterForce = createVector(width/2, height/2)
       attractCenterForce.sub(particles[i].pos)
-      if(dist(particles[i].pos.x, particles[i].pos.y, width/2, height/2) < centerForceRadius.value()) {
+      if(dist(particles[i].pos.x, particles[i].pos.y, width/2, height/2) > centerForceRadius.value()) {
         if(Math.random() < 0.5) {
           attractCenterForce.setMag(random(parseFloat(minForceInCenter.value()), parseFloat(maxForceInCenter.value())))
         } else {
           attractCenterForce.setMag(0)
         }
       } else {
-        if(Math.random() < 0.0005) {
+        if(Math.random() < parseFloat(extraCenterForceChance.value())) {
           attractCenterForce.setMag(random(parseFloat(minForceOutCenter.value()), parseFloat(maxForceOutCenter.value())))
         } else {
           attractCenterForce.setMag(random(parseFloat(elseMinForceOutCenter.value()), parseFloat(elseMaxForceOutCenter.value())))
