@@ -14,7 +14,9 @@ let maxLineDist
 let canvasElem
 let newCanvSize
 let originRadiusMax, originRadiusMin
+let attractCenterForceChance
 let extraCenterForceChance
+let doLineDrawPhyiscs
 
 function setup() {
   canvasElem = document.getElementById("defaultCanvas0")
@@ -41,6 +43,7 @@ function setup() {
   createSpan("Particle Count: ").parent("settings-container")
   particleCount = createInput(100).parent("settings-container")
   createElement("br").parent("settings-container")
+  doLineDrawPhyiscs = createCheckbox("Draw lines and apply line physics", true).parent("settings-container")
   createSpan("Max Line Dist: ").parent("settings-container")
   maxLineDist = createInput(50).parent("settings-container")
   createElement("br").parent("settings-container")
@@ -53,6 +56,9 @@ function setup() {
 
   createElement("h1","Center Attraction Force Settings: ").parent("settings-container")
   doAttractCenter = createCheckbox("Attract Particles to Center", true).parent("settings-container")
+  createSpan("If random number is less than ").parent("settings-container")
+  attractCenterForceChance = createInput(0.1).parent("settings-container")
+  createSpan(", apply center attraction forces.").parent("settings-container")
   createP("Center Force Radius: ").parent("settings-container")
   centerForceRadius = createInput(100).parent("settings-container")
   createElement("h2","If not in radius, apply random force between: ").parent("settings-container")
@@ -87,7 +93,7 @@ function draw() {
     particles[i].update()
     particles[i].capVel(maxVel.value(), restrictX.checked(), restrictY.checked())
     if(showParticlePoints.checked()) {
-      particles[i].show(5)
+      particles[i].show(0.01*newCanvSize.value())
     }
     if(doWrap.checked()) {
       particles[i].wrap()
@@ -96,7 +102,7 @@ function draw() {
       particles[i].mouseAttract()
     }
 
-    if(Math.random() < 0.1 && doAttractCenter.checked()) {
+    if(Math.random() < attractCenterForceChance.value() && doAttractCenter.checked()) {
       attractCenterForce = createVector(width/2, height/2)
       attractCenterForce.sub(particles[i].pos)
       if(dist(particles[i].pos.x, particles[i].pos.y, width/2, height/2) > centerForceRadius.value()) {
@@ -117,17 +123,19 @@ function draw() {
       particles[i].applyForce(createVector(random(-startVelMax.value(),startVelMax.value()), random(-startVelMax.value(),startVelMax.value())))
     }
 
-    for(var j = 0; j < particles.length; j++) {
-      if(dist(particles[i].pos.x, particles[i].pos.y, particles[j].pos.x, particles[j].pos.y) < maxLineDist.value()){
-        if(Math.random() < 0.1) {
-          particles[i].vel.mult(0.97)
-        }
-        stroke(lerpColor(particles[i].color, particles[j].color, 0.5))
-        line(particles[i].pos.x, particles[i].pos.y, particles[j].pos.x, particles[j].pos.y)
-        stroke(0,0)
-      } else {
-        if(Math.random() < 0.1) {
-          particles[i].vel.mult(1.00001)
+    if(doLineDrawPhyiscs.checked()){
+      for(var j = 0; j < particles.length; j++) {
+        if(dist(particles[i].pos.x, particles[i].pos.y, particles[j].pos.x, particles[j].pos.y) < maxLineDist.value()){
+          if(Math.random() < 0.1) {
+            particles[i].vel.mult(0.97)
+          }
+          stroke(lerpColor(particles[i].color, particles[j].color, 0.5))
+          line(particles[i].pos.x, particles[i].pos.y, particles[j].pos.x, particles[j].pos.y)
+          stroke(0,0)
+        } else {
+          if(Math.random() < 0.1) {
+            particles[i].vel.mult(1.00001)
+          }
         }
       }
     }
