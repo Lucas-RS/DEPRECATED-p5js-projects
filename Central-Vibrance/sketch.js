@@ -11,7 +11,6 @@ let minForceInCenter, maxForceInCenter, elseForceInCenter
 let minForceOutCenter, maxForceOutCenter
 let elseMinForceOutCenter, elseMaxForceOutCenter
 let maxLineDist
-let canvasElem
 let newCanvSize
 let originRadiusMax, originRadiusMin
 let attractCenterForceChance
@@ -19,7 +18,6 @@ let extraCenterForceChance
 let doLineDrawPhyiscs
 
 function setup() {
-  canvasElem = document.getElementById("defaultCanvas0")
   canvas = createCanvas(1024, 1024).parent("canvas-container")
 
   resetButton = createButton("Reset Canvas").parent("settings-container").mousePressed(resetSketch)
@@ -151,12 +149,20 @@ function windowResized() {
 }
 
 function updateCanvasSize() {
+  let canvasElem = document.getElementById("defaultCanvas0")
+  let settingsContainerElem = document.getElementById("settings-container")
   if(windowHeight < windowWidth) {
     canvasElem.style.height = "90vh"
     canvasElem.style.width = "90vh"
+    settingsContainerElem.style.height = "calc(90vh - 10px)"
+    settingsContainerElem.style.width = "auto"
+    settingsContainerElem.style.overflowY = "scroll"
   } else {
-    canvasElem.style.height = "90vw"
-    canvasElem.style.width = "90vw"
+    canvasElem.style.height = "calc(100vw - 9vh)"
+    canvasElem.style.width = "calc(100vw - 9vh)"
+    settingsContainerElem.style.height = "100%"
+    settingsContainerElem.style.width = "calc(100vw - 9vh - 10px)"
+    settingsContainerElem.style.overflowY = "initial"
   }
 }
 
