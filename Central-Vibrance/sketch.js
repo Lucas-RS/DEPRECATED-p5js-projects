@@ -13,21 +13,25 @@ let elseMinForceOutCenter, elseMaxForceOutCenter
 let maxLineDist
 let canvasElem
 let newCanvSize
-let originRadius
+let originRadiusMax, originRadiusMin
 let extraCenterForceChance
 
 function setup() {
   canvasElem = document.getElementById("defaultCanvas0")
   canvas = createCanvas(1024, 1024).parent("canvas-container")
 
-  resetButton = createButton("Reset Canvas").parent("settings-container")
-  resetButton.mousePressed(resetSketch).parent("settings-container")
+  resetButton = createButton("Reset Canvas").parent("settings-container").mousePressed(resetSketch)
+  createButton("Save As PNG").parent("settings-container").mousePressed(function() {saveCanvas(canvas, 'central-vibrance', 'png');})
   createElement("br").parent("settings-container")
   createSpan("Canvas Size: ").parent("settings-container")
   newCanvSize = createInput(1024).parent("settings-container")
   createElement("br").parent("settings-container")
   createSpan("Radius in which particles originate: ").parent("settings-container")
-  originRadius = createInput(256).parent("settings-container")
+  createElement("br").parent("settings-container")
+  createSpan("Min: ").parent("settings-container")
+  originRadiusMin = createInput(0).parent("settings-container")
+  createSpan("Max: ").parent("settings-container")
+  originRadiusMax = createInput(256).parent("settings-container")
   createElement("br").parent("settings-container")
   createSpan("(resizing canvas requires the canvas be reset.)").parent("settings-container")
   showParticlePoints = createCheckbox("Show Particles", false).parent("settings-container")
@@ -155,7 +159,7 @@ function resetSketch() {
   particles = []
   for (var i = 0; i < particleCount.value();) {
     let origin = createVector(random(width), random(height))
-    if(dist(origin.x, origin.y, width/2, height/2) < originRadius.value()) {
+    if(dist(origin.x, origin.y, width/2, height/2) < originRadiusMax.value() && dist(origin.x, origin.y, width/2, height/2) > originRadiusMin.value()) {
       particles[i] = new Particle(origin);
       particles[i].applyForce(createVector(random(-startVelMax.value(),startVelMax.value()), random(-startVelMax.value(),startVelMax.value())))
       i++
