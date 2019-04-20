@@ -1,6 +1,7 @@
 let particles
 let attractCenterForce
 let mouseForce
+
 let showParticlePoints, doBounce, doMouseAttract
 let mouseAttractRange
 let particleCount
@@ -19,6 +20,14 @@ let doLineDrawPhyiscs
 let backgroundColor
 let redMin, redMax, greenMin, greenMax, blueMin, blueMax, alphaMin, alphaMax
 let endSim = false
+
+let settings = {
+  'Reset Canvas': resetSketch,
+  'End Simulation': function(){endSim=true},
+  'Save As PNG': function() {saveCanvas(canvas, 'central-vibrance', 'png')},
+  'Canvas Width': 1024,
+  'Canvas Height': 1024,
+}
 
 function setup() {
   canvas = createCanvas(1024, 1024).parent("canvas-container")
@@ -218,6 +227,10 @@ function keyPressed() {
 }
 
 window.onload = function()  {
+  let gui = new dat.GUI();
+  for(k in settings) {
+    gui.add(settings, k)
+  }
   updateCanvasSize()
 }
 
