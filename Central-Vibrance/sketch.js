@@ -1,7 +1,7 @@
 let particles
 let attractCenterForce
 let mouseForce
-let showParticlePoints, doWrap, doMouseAttract
+let showParticlePoints, doBounce, doMouseAttract
 let mouseAttractRange
 let particleCount
 let maxVel, restrictX, restrictY
@@ -22,8 +22,10 @@ function setup() {
   canvas = createCanvas(1024, 1024).parent("canvas-container")
 
   createButton("(r) Reset Canvas").parent("settings-container").mousePressed(resetSketch)
+  // createButton("(e) End Simulation").parent("settings-container").mousePressed(endSim)
   createButton("(s) Save As PNG").parent("settings-container").mousePressed(function() {saveCanvas(canvas, 'central-vibrance', 'png');})
   createElement("br").parent("settings-container")
+
   createSpan("Canvas Size: ").parent("settings-container")
   newCanvSizeX = createInput(1024).parent("settings-container")
   createSpan(" x ").parent("settings-container")
@@ -34,15 +36,15 @@ function setup() {
   createSpan("Min: ").parent("settings-container")
   originRadiusMin = createInput(0).parent("settings-container")
   createSpan("Max: ").parent("settings-container")
-  originRadiusMax = createInput(256).parent("settings-container")
+  originRadiusMax = createInput(128).parent("settings-container")
   createElement("br").parent("settings-container")
   createSpan("(resizing canvas requires the canvas be reset.)").parent("settings-container")
   createElement("br").parent("settings-container")
   createSpan("Background Color:").parent("settings-container")
-  backgroundColor = createInput('#151515', 'color').parent("settings-container")
+  backgroundColor = createInput('#ffffff', 'color').parent("settings-container")
   createSpan("<br>(requires reset or disabling 'draw trails' to update)").parent("settings-container")
   showParticlePoints = createCheckbox("Show Particles", false).parent("settings-container")
-  doWrap = createCheckbox("Wrap Edges", false).parent("settings-container")
+  doBounce = createCheckbox("Bounce Edges (flip velocity at edges)", false).parent("settings-container")
   drawTrails = createCheckbox("Draw Trails", true).parent("settings-container")
   doMouseAttract = createCheckbox("Enable Mouse Attracts Particles", false).parent("settings-container")
   createSpan("Mouse Attraction Range: ").parent("settings-container")
@@ -53,7 +55,7 @@ function setup() {
   createElement("br").parent("settings-container")
   doLineDrawPhyiscs = createCheckbox("Draw lines and apply line physics", true).parent("settings-container")
   createSpan("Max Line Dist: ").parent("settings-container")
-  maxLineDist = createInput(50).parent("settings-container")
+  maxLineDist = createInput(25).parent("settings-container")
   createElement("br").parent("settings-container")
   createSpan("Cap Velocity: ").parent("settings-container")
   maxVel = createInput(3).parent("settings-container")
@@ -103,8 +105,8 @@ function draw() {
     if(showParticlePoints.checked()) {
       particles[i].show(0.01*((newCanvSizeX.value()**2 + newCanvSizeY.value()**2)**0.5))
     }
-    if(doWrap.checked()) {
-      particles[i].wrap()
+    if(doBounce.checked()) {
+      particles[i].bounceCanvasEdge()
     }
     if(doMouseAttract.checked()) {
       particles[i].mouseAttract(mouseAttractRange.value())

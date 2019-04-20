@@ -17,6 +17,7 @@ function Particle(origin) {
 
     this.show = function(sizeX = 5, sizeY = sizeX) {
         fill(this.color)
+        stroke(color(255 - red(this.color), 255 - green(this.color), 255 - blue(this.color)))
         circle(this.pos.x, this.pos.y, sizeX, sizeY)
     }
 
@@ -25,6 +26,13 @@ function Particle(origin) {
         if(this.pos.x < 0) this.pos.x = width
         if(this.pos.y > height) this.pos.y = 0
         if(this.pos.y < 0) this.pos.y = height
+    }
+
+    this.bounceCanvasEdge = function() {
+        if(this.pos.x > width) this.vel.mult(-1)
+        if(this.pos.x < 0) this.vel.mult(-1)
+        if(this.pos.y > height) this.vel.mult(-1)
+        if(this.pos.y < 0) this.vel.mult(-1)
     }
 
     this.capVel = function(cap, restrictX, restrictY) {
