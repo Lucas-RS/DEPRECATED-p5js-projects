@@ -128,8 +128,9 @@ function draw() {
             particles[i].vel.mult(0.97)
           }
           stroke(lerpColor(particles[i].color, particles[j].color, 0.5))
-          line(particles[i].pos.x, particles[i].pos.y, particles[j].pos.x, particles[j].pos.y)
-          stroke(0,0)
+          if(i !== j) {
+            line(particles[i].pos.x, particles[i].pos.y, particles[j].pos.x, particles[j].pos.y)
+          }
         } else {
           if(Math.random() < 0.1) {
             particles[i].vel.mult(1.00001)
@@ -137,6 +138,14 @@ function draw() {
         }
       }
     }
+  }
+}
+
+function keyPressed() {
+  if (key === "r") {
+    resetSketch();
+  } else if (key === "s") {
+    saveCanvas(canvas, 'central-vibrance', 'png');
   }
 }
 
@@ -150,24 +159,27 @@ function windowResized() {
 
 function updateCanvasSize() {
   let canvasElem = document.getElementById("defaultCanvas0")
+  let canvasContainerElem = document.getElementById("canvas-container")
   let settingsContainerElem = document.getElementById("settings-container")
   if(windowHeight < windowWidth) {
-    canvasElem.style.height = "90vh"
-    canvasElem.style.width = "90vh"
+    canvasElem.style.width = "100%"
+    canvasElem.style.height = "auto"
+    canvasContainerElem.style.Height = "100%"
+    canvasContainerElem.style.Width = "calc(100vw - 20px - 10vh - 500px)"
     settingsContainerElem.style.height = "calc(90vh - 10px)"
     settingsContainerElem.style.width = "auto"
     settingsContainerElem.style.overflowY = "scroll"
   } else {
-    canvasElem.style.height = "calc(100vw - 9vh)"
-    canvasElem.style.width = "calc(100vw - 9vh)"
+    canvasContainerElem.style.Width = "calc(100vw - 9vh)"
+    canvasContainerElem.style.Width = "auto"
     settingsContainerElem.style.height = "100%"
-    settingsContainerElem.style.width = "calc(100vw - 9vh - 10px)"
+    settingsContainerElem.style.width = "100%"
     settingsContainerElem.style.overflowY = "initial"
   }
 }
 
 function resetSketch() {
-  resizeCanvas(newCanvSize.value(), newCanvSize.value())
+  resizeCanvas(newCanvSize.value(), newCanvSize.value()/2)
   updateCanvasSize()
   background(255)
   particles = []
