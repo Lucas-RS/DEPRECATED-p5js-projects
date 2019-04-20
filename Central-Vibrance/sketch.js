@@ -1,8 +1,8 @@
 let particles
 let attractCenterForce
 let mouseForce
-let resetButton
 let showParticlePoints, doWrap, doMouseAttract
+let mouseAttractRange
 let particleCount
 let maxVel, restrictX, restrictY
 let startVelMax
@@ -11,20 +11,23 @@ let minForceInCenter, maxForceInCenter, elseForceInCenter
 let minForceOutCenter, maxForceOutCenter
 let elseMinForceOutCenter, elseMaxForceOutCenter
 let maxLineDist
-let newCanvSize
+let newCanvSizeX, newCanvSizeY
 let originRadiusMax, originRadiusMin
 let attractCenterForceChance
 let extraCenterForceChance
 let doLineDrawPhyiscs
+let backgroundColor
 
 function setup() {
   canvas = createCanvas(1024, 1024).parent("canvas-container")
 
-  resetButton = createButton("Reset Canvas").parent("settings-container").mousePressed(resetSketch)
-  createButton("Save As PNG").parent("settings-container").mousePressed(function() {saveCanvas(canvas, 'central-vibrance', 'png');})
+  createButton("(r) Reset Canvas").parent("settings-container").mousePressed(resetSketch)
+  createButton("(s) Save As PNG").parent("settings-container").mousePressed(function() {saveCanvas(canvas, 'central-vibrance', 'png');})
   createElement("br").parent("settings-container")
   createSpan("Canvas Size: ").parent("settings-container")
-  newCanvSize = createInput(1024).parent("settings-container")
+  newCanvSizeX = createInput(1024).parent("settings-container")
+  createSpan(" x ").parent("settings-container")
+  newCanvSizeY = createInput(1024).parent("settings-container")
   createElement("br").parent("settings-container")
   createSpan("Radius in which particles originate: ").parent("settings-container")
   createElement("br").parent("settings-container")
@@ -34,10 +37,17 @@ function setup() {
   originRadiusMax = createInput(256).parent("settings-container")
   createElement("br").parent("settings-container")
   createSpan("(resizing canvas requires the canvas be reset.)").parent("settings-container")
+  createElement("br").parent("settings-container")
+  createSpan("Background Color:").parent("settings-container")
+  backgroundColor = createInput('#151515', 'color').parent("settings-container")
+  createSpan("<br>(requires reset or disabling 'draw trails' to update)").parent("settings-container")
   showParticlePoints = createCheckbox("Show Particles", false).parent("settings-container")
   doWrap = createCheckbox("Wrap Edges", false).parent("settings-container")
-  doMouseAttract = createCheckbox("Enable Mouse Attracts Particles", false).parent("settings-container")
   drawTrails = createCheckbox("Draw Trails", true).parent("settings-container")
+  doMouseAttract = createCheckbox("Enable Mouse Attracts Particles", false).parent("settings-container")
+  createSpan("Mouse Attraction Range: ").parent("settings-container")
+  mouseAttractRange = createInput(width * 0.1).parent("settings-container")
+  createElement("br").parent("settings-container")
   createSpan("Particle Count: ").parent("settings-container")
   particleCount = createInput(100).parent("settings-container")
   createElement("br").parent("settings-container")
@@ -84,20 +94,20 @@ function setup() {
 
 function draw() {
   if(!drawTrails.checked()){
-    background(255)
+    background(backgroundColor.value())
   }
 
   for (var i = 0; i < particles.length; i++) {
     particles[i].update()
     particles[i].capVel(maxVel.value(), restrictX.checked(), restrictY.checked())
     if(showParticlePoints.checked()) {
-      particles[i].show(0.01*newCanvSize.value())
+      particles[i].show(0.01*((newCanvSizeX.value()**2 + newCanvSizeY.value()**2)**0.5))
     }
     if(doWrap.checked()) {
       particles[i].wrap()
     }
     if(doMouseAttract.checked()) {
-      particles[i].mouseAttract()
+      particles[i].mouseAttract(mouseAttractRange.value())
     }
 
     if(Math.random() < attractCenterForceChance.value() && doAttractCenter.checked()) {
@@ -162,26 +172,22 @@ function updateCanvasSize() {
   let canvasContainerElem = document.getElementById("canvas-container")
   let settingsContainerElem = document.getElementById("settings-container")
   if(windowHeight < windowWidth) {
-    canvasElem.style.width = "100%"
-    canvasElem.style.height = "auto"
-    canvasContainerElem.style.Height = "100%"
-    canvasContainerElem.style.Width = "calc(100vw - 20px - 10vh - 500px)"
-    settingsContainerElem.style.height = "calc(90vh - 10px)"
-    settingsContainerElem.style.width = "auto"
+    canvasElem.style.width = "auto";
+    canvasElem.style.height = "auto";
+    canvasContainerElem.style.height = "calc(100vh - 90px)";
+    settingsContainerElem.style.height = "calc(100vh - 100px)";
     settingsContainerElem.style.overflowY = "scroll"
   } else {
-    canvasContainerElem.style.Width = "calc(100vw - 9vh)"
-    canvasContainerElem.style.Width = "auto"
-    settingsContainerElem.style.height = "100%"
-    settingsContainerElem.style.width = "100%"
+    canvasContainerElem.style.height = "calc(100vw - 90px)";
+    settingsContainerElem.style.height = "auto";
     settingsContainerElem.style.overflowY = "initial"
   }
 }
 
 function resetSketch() {
-  resizeCanvas(newCanvSize.value(), newCanvSize.value()/2)
+  resizeCanvas(newCanvSizeX.value(), newCanvSizeY.value())
   updateCanvasSize()
-  background(255)
+  background(backgroundColor.value())
   particles = []
   for (var i = 0; i < particleCount.value();) {
     let origin = createVector(random(width), random(height))

@@ -3,6 +3,7 @@ function Particle(origin) {
     this.vel = createVector(0,0)
     this.acc = createVector(0,0)
     this.color = color(random(0,255),random(0,255),random(0,255),random(0,255))
+    this.mass = random(1, 10)
 
     this.update = function() {
         this.pos.add(this.vel)
@@ -38,11 +39,11 @@ function Particle(origin) {
         }
 
     }
-    this.mouseAttract = function(trackDist = width * 0.1, magMultiplier = 1){
+    this.mouseAttract = function(trackDist = width * 0.1){
         if(dist(this.pos.x, this.pos.y, mouseX, mouseY) < trackDist) {
             let f = createVector(mouseX, mouseY)
             f.sub(this.pos)
-            f.setMag(dist(this.pos.x, this.pos.y, mouseX, mouseY) / trackDist * magMultiplier)
+            f.setMag(dist(this.pos.x, this.pos.y, mouseX, mouseY) / (width * 0.1))
             this.applyForce(f)
         }
     }

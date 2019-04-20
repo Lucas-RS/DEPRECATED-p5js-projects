@@ -16,28 +16,48 @@
 
       body {
         margin: 0;
-        padding: 4.5vh;
-        background-color: #150000;
+        padding: 40px;
+        background-color: #151515;
       }
 
-      #canvas-container {
-        display: inline-block;
+      #main-container {
+        display: flex;
+        flex-flow: row-reverse wrap;
+        justify-content: space-evenly;
+        align-items: center;
+        align-content: center;
       }
 
       #settings-container {
-        background-color: #fff;
+        flex-basis: 30em;
+        flex-grow: 1;
+        background-color: white;
         padding: 5px;
-        float: left;
-        margin-right: 10px;
-        margin-bottom: 4.5vh;
+        margin: 5px;
+        overflow-wrap: normal;
+      }
+
+      #canvas-container {
+        flex-basis: 40em;
+        flex-grow: 5;
+        position: relative;
+        margin: 5px;
+      }
+
+      #defaultCanvas0 {
+        max-width: 100%;
+        max-height: 100%;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
       }
     </style>
   </head>
   <body>
     <div id="main-container">
       <div id="canvas-container"></div>
-      <div id="settings-container">
-      </div>
+      <div id="settings-container"></div>
     </div>
   </body>
 </html>
