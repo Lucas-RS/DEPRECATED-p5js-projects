@@ -1,8 +1,8 @@
-function Particle(origin, color) {
+function Particle(origin, c) {
     this.pos = origin
     this.vel = createVector(0,0)
     this.acc = createVector(0,0)
-    this.color = color
+    this.color = c
 
     this.update = function() {
         this.pos.add(this.vel)
