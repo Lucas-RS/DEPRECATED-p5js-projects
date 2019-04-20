@@ -10,13 +10,20 @@
     <script src="../addons/particle.js"></script>
     <script src="sketch.js"></script>
     <style>
+      @import url('https://fonts.googleapis.com/css?family=Righteous|Space+Mono:400');
       :root {
-        font-family: 'century gothic';
+        font-family: 'Space Mono';
+        font-size: 14pt;
+        line-height: 1.7rem;
+      }
+
+      h3, h4 {
+        font-family: 'Righteous';
       }
 
       body {
         margin: 0;
-        padding: 40px;
+        padding: 10px;
         background-color: #151515;
       }
 
@@ -29,7 +36,7 @@
       }
 
       #settings-container {
-        flex-basis: 30em;
+        flex-basis: 30rem;
         flex-grow: 1;
         background-color: white;
         padding: 5px;
@@ -38,7 +45,7 @@
       }
 
       #canvas-container {
-        flex-basis: 40em;
+        flex-basis: 40rem;
         flex-grow: 5;
         position: relative;
         margin: 5px;

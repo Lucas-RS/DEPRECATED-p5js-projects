@@ -1,9 +1,8 @@
-function Particle(origin) {
+function Particle(origin, color) {
     this.pos = origin
     this.vel = createVector(0,0)
     this.acc = createVector(0,0)
-    this.color = color(random(0,255),random(0,255),random(0,255),random(0,255))
-    this.mass = random(1, 10)
+    this.color = color
 
     this.update = function() {
         this.pos.add(this.vel)
@@ -15,9 +14,13 @@ function Particle(origin) {
         this.acc.add(force)
     }
 
-    this.show = function(sizeX = 5, sizeY = sizeX) {
+    this.show = function(sizeX = 5, sizeY = sizeX, showStroke = true) {
         fill(this.color)
-        stroke(color(255 - red(this.color), 255 - green(this.color), 255 - blue(this.color)))
+        if(showStroke){
+            stroke(color(255 - red(this.color), 255 - green(this.color), 255 - blue(this.color)))
+        } else {
+            noStroke()
+        }
         circle(this.pos.x, this.pos.y, sizeX, sizeY)
     }
 
