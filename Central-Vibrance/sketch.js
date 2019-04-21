@@ -1,4 +1,5 @@
-let particles
+let particles = []
+let gui
 let attractCenterForce
 let mouseForce
 let endSim = false
@@ -21,7 +22,7 @@ let settings = {
   },
   showParticles: false,
   particleCount: 100,
-  _particleCount: [1,10000,1, 'Particle Count (High Numbers Get Laggy)'],
+  _particleCount: [1,1000,1, 'Particle Count (High Numbers Get Laggy)'],
   bounceEdges: false,
   drawTrails: true,
   maxStartingVelocity: 1,
@@ -104,7 +105,7 @@ function draw() {
     particles[i].update()
     particles[i].capVel(settings['maxVelocity'], settings['lockAxis']['xAxis'], settings['lockAxis']['yAxis'])
     if(settings['showParticles']) {
-      particles[i].show(0.01*((settings['canvas']['width']**2 + settings['canvas']['height']**2)**0.5))
+      particles[i].show(0.0075*((settings['canvas']['width']**2 + settings['canvas']['height']**2)**0.5))
     }
     if(settings['bounceEdges']) {
       particles[i].bounceCanvasEdge()
@@ -172,44 +173,13 @@ function windowResized() {
   updateCanvasSize()
 }
 
-function addToGui(parent, object) {
-  for(key in object){
-    if (!key.startsWith('_')) {
-      let v = object[key]
-      let s = object['_' + key] || object['_all'] || []
-
-      if(typeof v === 'object'){
-        if(s.length && s[2] === 'color'){
-          let e = parent.addColor(object, key)
-          if (s.length && s[1]){
-            e.name = s[1]
-          }
-        } else {
-          let folder = parent.addFolder(key)
-          if (s.length && s[1]){
-            folder.name = s[1]
-          }
-          if (s.length && s[0]) {
-            folder.open()
-          }
-          addToGui(folder, v)
-        }
-      } else if (typeof v == 'string' && v.startsWith("#")){
-        parent.addColor(object, key)
-      } else {
-        let e = parent.add(object, key, s[0], s[1], s[2])
-        if (s.length && s[3]) {
-          e.name(s[3])
-        }
-      }
-    }
-  }
-}
-
 window.onload = function()  {
   updateCanvasSize()
-  let gui = new dat.GUI({width: 325});
-  addToGui(gui, settings)
+  gui = new generatedGUI({width: 325});
+  gui.autoAdd(settings)
+  gui.controllers["Attract Particles to Center"].onChange(function(value) {
+    console.log(value)
+  })
 }
 
 function updateCanvasSize() {
