@@ -2,6 +2,7 @@
 //change _configs to keyed objects instead of arrays.
 //add functionality for drop down menus
 //tidy up _configs
+//Make top function buttons sticky
 
 class generatedGUI extends dat.GUI {
 

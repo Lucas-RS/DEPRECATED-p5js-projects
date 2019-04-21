@@ -1,3 +1,5 @@
+//Consider adding sound stuff.
+//Add scale, so larger display resolutions function the sane
 function Particle(origin, c) {
     this.pos = origin
     this.vel = createVector(0,0)

@@ -92,8 +92,14 @@ let settings = {
 }
 
 function setup() {
-  settings['canvas']['width'] = windowWidth
-  settings['canvas']['height'] = windowHeight
+  let ratio = windowWidth / windowHeight
+  if(ratio > 1) {
+    settings['canvas']['width'] = 1920
+    settings['canvas']['height'] = 1920 / ratio
+  } else {
+    settings['canvas']['width'] = 1920 * ratio
+    settings['canvas']['height'] = 1920
+  }
   canvas = createCanvas(settings['canvas']['width'], settings['canvas']['height']).parent("canvas-container")
   resetSketch()
 }
