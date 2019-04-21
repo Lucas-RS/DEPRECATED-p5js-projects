@@ -29,7 +29,7 @@ let settings = {
   _maxStartingVelocity: [0,100,0.01],
   mouseAttractsParticles: false,
   mouseAttractionRange: 100,
-  _mouseAttractionRange: [0,4096,1],
+  _mouseAttractionRange: [0,4096,1,'Mouse Attraction Range', false],
   maxVelocity: 1,
   _maxVelocity: [0,100,0.01],
   lockAxis: {
@@ -42,6 +42,7 @@ let settings = {
     backgroundAlpha: 255,
     _backgroundAlpha: [0,255,1],
     randomParticleColor: {
+      //Add other options here.
       redMin: 0,
       redMax: 255,
       greenMin: 0,
@@ -177,9 +178,8 @@ window.onload = function()  {
   updateCanvasSize()
   gui = new generatedGUI({width: 325});
   gui.autoAdd(settings)
-  gui.controllers["Attract Particles to Center"].onChange(function(value) {
-    console.log(value)
-  })
+  gui.addOnChangeEvent('Attract Particles to Center','centerAttractionForce')
+  gui.addOnChangeEvent('mouseAttractsParticles','mouseAttractionRange')
 }
 
 function updateCanvasSize() {
