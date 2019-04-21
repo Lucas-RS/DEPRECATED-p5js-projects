@@ -213,6 +213,9 @@ window.onload = function()  {
   gui.addToggleDisplayEvent('Attract Particles to Center','centerAttractionForce')
   gui.addToggleDisplayEvent('mouseAttractsParticles','mouseAttractionRange')
   gui.addMenuFolderSwitch('particleColorType', 'colors')
+  if (windowWidth < 700){
+    gui.close()
+  }
 }
 
 function updateCanvasSize() {
