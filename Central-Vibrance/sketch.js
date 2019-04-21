@@ -10,39 +10,40 @@ let settings = {
   'Save As PNG (S)': function(){saveCanvas(canvas, 'central-vibrance', 'png')},
   canvas: {
     width: 1024,
-    _width: [1, 8192, 1],
+    _width: {min:1,max:8192,step:1},
     height: 1024,
-    _height: [1, 8192, 1]
+    _height: {min:1,max:8192,step:1}
   },
-  _canvas: [true, 'Canvas Size'],
+  _canvas: {openFolder:true,name:'Canvas Size'},
   originRadius: {
     min: 0,
     max: 192,
-    _all: [0,8192,1]
+    _all: {min:0,max:8192,step:1}
   },
   showParticles: false,
   particleCount: 100,
-  _particleCount: [1,1000,1, 'Particle Count (High Numbers Get Laggy)'],
+  _particleCount: {min:1,max:400,step:1,name:'Particle Count (High Numbers Get Laggy)'},
   bounceEdges: false,
   drawTrails: true,
   maxStartingVelocity: 1,
-  _maxStartingVelocity: [0,100,0.01],
+  _maxStartingVelocity: {min:0,max:100,step:0.01},
   mouseAttractsParticles: false,
   mouseAttractionRange: 100,
-  _mouseAttractionRange: [0,4096,1,'Mouse Attraction Range', false],
+  _mouseAttractionRange: {min:0,max:4096,step:1,name:'Mouse Attraction Range',hide:true},
   maxVelocity: 1,
-  _maxVelocity: [0,100,0.01],
+  _maxVelocity: {min:0,max:100,step:0.01},
   lockAxis: {
     xAxis: false,
     yAxis: false
   },
   colors: {
     backgroundColor: {r:21,g:21,b:21},
-    _backgroundColor: [false,'Background Color','color'],
+    _backgroundColor: {name:'Background Color',type:'color'},
     backgroundAlpha: 255,
-    _backgroundAlpha: [0,255,1],
-    randomParticleColor: {
-      //Add other options here.
+    _backgroundAlpha: {min:0,max:255,step:1,name:'Background Alpha'},
+    particleColorType: 'randomRGBA',
+    _particleColorType: {type:'dropmenu',name:'Particle Color Type',options:['randomRGBA','randomHSLA','gradient']},
+    randomRGBA: {
       redMin: 0,
       redMax: 255,
       greenMin: 0,
@@ -51,44 +52,69 @@ let settings = {
       blueMax: 255,
       alphaMin: 0,
       alphaMax: 255,
-      _all: [0,255,1]
+      _all: {min:0,max:255,step:1}
     },
-    _randomParticleColor: [true]
+    _randomRGBA: {openFolder:true},
+    randomHSLA: {
+      hueMin: 0,
+      hueMax: 255,
+      saturationMin: 0,
+      saturationMax: 255,
+      lightnessMin: 0,
+      lightnessMax: 255,
+      alphaMin: 0,
+      alphaMax: 255,
+      _all: {min:0,max:255,step:1}
+    },
+    gradient: {
+      firstColor: '#ffffff',
+      secondColor: '#000000',
+      alphaMin: 0,
+      alphaMax: 255,
+      _all: {type:'color',min:0,max:255,step:1}
+    },
+    image:{
+      'Open File': function() {console.log('this code needs writing')},
+      alphaMin: 0,
+      alphaMax: 255,
+      _all: {min:0,max:255,step:1}
+    },
+    _all: {openFolder:true,hide:true}
   },
   lines: {
     connectPoints: true,
     slowWhenConnected: true,
     maxLineDist: 25,
-    _maxLineDist: [1,8192,1]
+    _maxLineDist: {min:1,max:512,step:1}
   },
   'Attract Particles to Center': true,
   centerAttractionForce: {
     chance: 0.1,
-    _chance: [0,1,0.0001,'Chance of Forces'],
+    _chance: {min:0,max:1,step:0.0001,name:'Chance of Forces'},
     radius: 128,
-    _radius: [0,8192,1],
+    _radius: {min:0,max:8192,step:1},
     outside:{
       min: -1,
       max: 1,
-      _all: [-100, 100, 0.01]
+      _all: {min:-100,max:100,step:0.01}
     },
-    _outside: [true, "Force Outside Of Center"],
+    _outside: {openFolder:true,name:"Force Outside Of Center"},
     inside:{
       min: -2,
       max: 2,
-      _all: [-100, 100, 0.01]
+      _all: {min:-100,max:100,step:0.01}
     },
-    _inside: [true, "Force Inside Center"],
+    _inside: {openFolder:true,name:"Force Inside Center"},
     extra: {
       chance: 0.005,
-      _chance: [0, 1, 0.0001],
+      _chance: {min:0,max:1,step:0.0001},
       min: -5,
       max: 5,
-      _all: [-100, 100, 0.01]
+      _all: {min:-100,max:100,step:0.01}
     },
-    _extra: [true, 'Extra Force Inside Center'],
+    _extra: {openFolder:true,name:'Extra Force Inside Center'}
   },
-  _centerAttractionForce: [false, 'Central Attraction Force']
+  _centerAttractionForce: {name:'Central Attraction Force'}
 }
 
 function setup() {
@@ -182,10 +208,11 @@ function windowResized() {
 
 window.onload = function()  {
   updateCanvasSize()
-  gui = new generatedGUI({width: 325});
+  gui = new autoGUI({width: 325});
   gui.autoAdd(settings)
-  gui.addOnChangeEvent('Attract Particles to Center','centerAttractionForce')
-  gui.addOnChangeEvent('mouseAttractsParticles','mouseAttractionRange')
+  gui.addToggleDisplayEvent('Attract Particles to Center','centerAttractionForce')
+  gui.addToggleDisplayEvent('mouseAttractsParticles','mouseAttractionRange')
+  gui.addMenuFolderSwitch('particleColorType', 'colors')
 }
 
 function updateCanvasSize() {
@@ -199,6 +226,23 @@ function updateCanvasSize() {
   }
 }
 
+function generateColor() {
+  let colorType = settings['colors']['particleColorType']
+  let c
+  if (colorType === 'randomRGBA') {
+    colorMode(RGB, 255)
+    c = color(random(settings['colors']['randomRGBA']['redMin'],settings['colors']['randomRGBA']['redMax']),random(settings['colors']['randomRGBA']['greenMin'],settings['colors']['randomRGBA']['greenMax']),random(settings['colors']['randomRGBA']['blueMin'],settings['colors']['randomRGBA']['blueMax']),random(settings['colors']['randomRGBA']['alphaMin'],settings['colors']['randomRGBA']['alphaMax']))
+  } else if (colorType === 'randomHSLA') {
+    colorMode(HSL, 255)
+    c = color(random(settings['colors']['randomHSLA']['hueMin'],settings['colors']['randomHSLA']['hueMax']),random(settings['colors']['randomHSLA']['saturationMin'],settings['colors']['randomHSLA']['saturationMax']),random(settings['colors']['randomHSLA']['lightnessMin'],settings['colors']['randomHSLA']['lightnessMax']),random(settings['colors']['randomHSLA']['alphaMin'],settings['colors']['randomHSLA']['alphaMax']))
+  } else if (colorType === 'gradient') {
+    colorMode(RGB, 255)
+    c = lerpColor(color(settings['colors']['gradient']['firstColor']),color(settings['colors']['gradient']['secondColor']),random())
+    c.setAlpha(random(settings['colors']['gradient']['alphaMin'],settings['colors']['gradient']['alphaMax']))
+  }
+  return c
+}
+
 function resetSketch() {
   endSim = false
   resizeCanvas(settings['canvas']['width'], settings['canvas']['height'])
@@ -208,9 +252,8 @@ function resetSketch() {
   for (var i = 0; i < settings['particleCount'];) {
     let origin = createVector(random(width), random(height))
     if(dist(origin.x, origin.y, width/2, height/2) < settings['originRadius']['max'] && dist(origin.x, origin.y, width/2, height/2) > settings['originRadius']['min']) {
-      let c = color(random(settings['colors']['randomParticleColor']['redMin'],settings['colors']['randomParticleColor']['redMax']),random(settings['colors']['randomParticleColor']['greenMin'],settings['colors']['randomParticleColor']['greenMax']),random(settings['colors']['randomParticleColor']['blueMin'],settings['colors']['randomParticleColor']['blueMax']),random(settings['colors']['randomParticleColor']['alphaMin'],settings['colors']['randomParticleColor']['alphaMax']))
-
-      particles[i] = new Particle(origin, c);
+      
+      particles[i] = new Particle(origin, generateColor());
       particles[i].applyForce(createVector(random(-settings['maxStartingVelocity'],settings['maxStartingVelocity']), random(-settings['maxStartingVelocity'],settings['maxStartingVelocity'])))
       i++
     }
