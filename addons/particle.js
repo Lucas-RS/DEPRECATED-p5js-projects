@@ -17,7 +17,7 @@ function Particle(origin, c) {
     this.show = function(sizeX = 5, sizeY = sizeX, showStroke = true) {
         fill(this.color)
         if(showStroke){
-            stroke(color(255 - red(this.color), 255 - green(this.color), 255 - blue(this.color)))
+            stroke(color(255 - red(this.color), 255 - green(this.color), 255 - blue(this.color)), alpha(this.color))
         } else {
             noStroke()
         }

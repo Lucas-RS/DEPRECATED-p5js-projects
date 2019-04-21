@@ -23,32 +23,13 @@
 
       body {
         margin: 0;
-        padding: 10px;
         background-color: #151515;
       }
 
-      #main-container {
-        display: flex;
-        flex-flow: row-reverse wrap;
-        justify-content: space-evenly;
-        align-items: center;
-        align-content: center;
-      }
-
-      #settings-container {
-        flex-basis: 30rem;
-        flex-grow: 1;
-        background-color: white;
-        padding: 5px;
-        margin: 5px;
-        overflow-wrap: normal;
-      }
-
       #canvas-container {
-        flex-basis: 40rem;
-        flex-grow: 5;
         position: relative;
-        margin: 5px;
+        width: 100vw;
+        height: 100vh;
       }
 
       #defaultCanvas0 {
@@ -62,9 +43,6 @@
     </style>
   </head>
   <body>
-    <div id="main-container">
       <div id="canvas-container"></div>
-      <div id="settings-container"></div>
-    </div>
   </body>
 </html>

@@ -1,208 +1,150 @@
 let particles
 let attractCenterForce
 let mouseForce
-
-let showParticlePoints, doBounce, doMouseAttract
-let mouseAttractRange
-let particleCount
-let maxVel, restrictX, restrictY
-let startVelMax
-let centerForceRadius
-let minForceInCenter, maxForceInCenter, elseForceInCenter
-let minForceOutCenter, maxForceOutCenter
-let elseMinForceOutCenter, elseMaxForceOutCenter
-let maxLineDist
-let newCanvSizeX, newCanvSizeY
-let originRadiusMax, originRadiusMin
-let attractCenterForceChance
-let extraCenterForceChance
-let doLineDrawPhyiscs
-let backgroundColor
-let redMin, redMax, greenMin, greenMax, blueMin, blueMax, alphaMin, alphaMax
 let endSim = false
 
 let settings = {
-  'Reset Canvas': resetSketch,
-  'End Simulation': function(){endSim=true},
-  'Save As PNG': function() {saveCanvas(canvas, 'central-vibrance', 'png')},
-  'Canvas Width': 1024,
-  'Canvas Height': 1024,
+  'Reset Canvas (R)': resetSketch,
+  'End Simulation (E)': function(){endSim=true},
+  'Save As PNG (S)': function(){saveCanvas(canvas, 'central-vibrance', 'png')},
+  canvas: {
+    width: 1024,
+    _width: [1, 8192, 1],
+    height: 1024,
+    _height: [1, 8192, 1]
+  },
+  _canvas: [true, 'Canvas Size'],
+  originRadius: {
+    min: 0,
+    max: 192,
+    _all: [0,8192,1]
+  },
+  showParticles: false,
+  particleCount: 100,
+  _particleCount: [1,10000,1, 'Particle Count (High Numbers Get Laggy)'],
+  bounceEdges: false,
+  drawTrails: true,
+  maxStartingVelocity: 1,
+  _maxStartingVelocity: [0,100,0.01],
+  mouseAttractsParticles: false,
+  mouseAttractionRange: 100,
+  _mouseAttractionRange: [0,4096,1],
+  maxVelocity: 1,
+  _maxVelocity: [0,100,0.01],
+  lockAxis: {
+    xAxis: false,
+    yAxis: false
+  },
+  colors: {
+    backgroundColor: {r:21,g:21,b:21},
+    _backgroundColor: [false,'Background Color','color'],
+    backgroundAlpha: 255,
+    _backgroundAlpha: [0,255,1],
+    randomParticleColor: {
+      redMin: 0,
+      redMax: 255,
+      greenMin: 0,
+      greenMax: 255,
+      blueMin: 0,
+      blueMax: 255,
+      alphaMin: 0,
+      alphaMax: 255,
+      _all: [0,255,1]
+    },
+    _randomParticleColor: [true]
+  },
+  lines: {
+    connectPoints: true,
+    slowWhenConnected: true,
+    maxLineDist: 25,
+    _maxLineDist: [1,8192,1]
+  },
+  'Attract Particles to Center': true,
+  centerAttractionForce: {
+    chance: 0.1,
+    _chance: [0,1,0.0001,'Chance of Forces'],
+    radius: 128,
+    _radius: [0,8192,1],
+    outside:{
+      min: -1,
+      max: 1,
+      _all: [-100, 100, 0.01]
+    },
+    _outside: [true, "Force Outside Of Center"],
+    inside:{
+      min: -2,
+      max: 2,
+      _all: [-100, 100, 0.01]
+    },
+    _inside: [true, "Force Inside Center"],
+    extra: {
+      chance: 0.005,
+      _chance: [0, 1, 0.0001],
+      min: -5,
+      max: 5,
+      _all: [-100, 100, 0.01]
+    },
+    _extra: [true, 'Extra Force Inside Center'],
+  },
+  _centerAttractionForce: [false, 'Central Attraction Force']
 }
 
 function setup() {
-  canvas = createCanvas(1024, 1024).parent("canvas-container")
-
-  //Top buttons
-  createButton("(r) Reset Canvas").parent("settings-container").mousePressed(resetSketch)
-  createButton("(e) End Simulation").parent("settings-container").mousePressed(function() {endSim = true})
-  createButton("(s) Save As PNG").parent("settings-container").mousePressed(function() {saveCanvas(canvas, 'central-vibrance', 'png')})
-
-  //Canvas size
-  createSpan("<br>Canvas Size: ").parent("settings-container")
-  newCanvSizeX = createInput(1024).parent("settings-container")
-  createSpan(" x ").parent("settings-container")
-  newCanvSizeY = createInput(1024).parent("settings-container")
-
-  //Particle origin boundaries
-  createSpan("<br>Origin boundaries: <br>").parent("settings-container")
-  createSpan("Min: ").parent("settings-container")
-  originRadiusMin = createInput('0').parent("settings-container")
-  createSpan(" Max: ").parent("settings-container")
-  originRadiusMax = createInput(128).parent("settings-container")
-
-  createSpan("<br>(resizing canvas requires the canvas be reset.)").parent("settings-container")
-
-  createElement("hr").parent("settings-container")
-
-  //Particle color inputs
-  createElement("h3","COLORS: ").parent("settings-container")
-  
-  createSpan("Background Color:").parent("settings-container")
-  backgroundColor = createInput('#ffffff', 'color').parent("settings-container")
-  createSpan("<br>(requires reset or disabling 'draw trails' to update)<br>").parent("settings-container")
-
-  createSpan("RED Min: ").parent("settings-container")
-  redMin = createInput('0').parent("settings-container")
-  createSpan(" Max: ").parent("settings-container")
-  redMax = createInput(255).parent("settings-container")
-  createSpan("<br>GREEN Min: ").parent("settings-container")
-  greenMin = createInput('0').parent("settings-container")
-  createSpan(" Max: ").parent("settings-container")
-  greenMax = createInput(255).parent("settings-container")
-  createSpan("<br>BLUE Min: ").parent("settings-container")
-  blueMin = createInput('0').parent("settings-container")
-  createSpan(" Max: ").parent("settings-container")
-  blueMax = createInput(255).parent("settings-container")
-  createSpan("<br>OPACITY Min: ").parent("settings-container")
-  alphaMin = createInput('0').parent("settings-container")
-  createSpan(" Max: ").parent("settings-container")
-  alphaMax = createInput(255).parent("settings-container")
-
-  createElement("hr").parent("settings-container")
-  
-  createElement("h3","OTHER: ").parent("settings-container")
-
-  //Boolean Settings
-  showParticlePoints = createCheckbox("Show Particles", false).parent("settings-container")
-  doBounce = createCheckbox("Bounce Edges (flip velocity at edges)", false).parent("settings-container")
-  drawTrails = createCheckbox("Draw Trails", true).parent("settings-container")
-  restrictX = createCheckbox("Disable Movement on X Axis", false).parent("settings-container")
-  restrictY = createCheckbox("Disable Movement on Y Axis", false).parent("settings-container")
-  doMouseAttract = createCheckbox("Enable Mouse Attracts Particles", false).parent("settings-container")
-  doLineDrawPhyiscs = createCheckbox("Draw lines and apply line physics", true).parent("settings-container")
-
-  //Misc
-  createSpan("Max Line Dist: ").parent("settings-container")
-  maxLineDist = createInput(25).parent("settings-container")
-
-  createSpan("<br>Mouse Attraction Range: ").parent("settings-container")
-  mouseAttractRange = createInput(width * 0.1).parent("settings-container")
-
-  createSpan("<br>Particle Count: ").parent("settings-container")
-  particleCount = createInput(100).parent("settings-container")
-  
-  createSpan("<br>Cap Velocity: ").parent("settings-container")
-  maxVel = createInput(3).parent("settings-container")
-
-  createSpan("<br>Starting Max Speed: ").parent("settings-container")
-  startVelMax = createInput(1).parent("settings-container")
-
-  createElement("hr").parent("settings-container")
-
-  //Center Attraction Settings
-  createElement("h3","CENTER ATTRACTION FORCE: ").parent("settings-container")
-
-  doAttractCenter = createCheckbox("Attract Particles to Center", true).parent("settings-container")
-
-  createSpan("If random number is less than ").parent("settings-container")
-  attractCenterForceChance = createInput(0.1).parent("settings-container")
-  createSpan(", apply center attraction forces.").parent("settings-container")
-
-  createSpan("<br>Center Force Radius: ").parent("settings-container")
-  centerForceRadius = createInput(100).parent("settings-container")
-
-  createElement("h4","if not in radius, apply random force between: ").parent("settings-container")
-
-  createSpan("Min: ").parent("settings-container")
-  minForceInCenter = createInput(-2).parent("settings-container")
-  createSpan(" Max: ").parent("settings-container")
-  maxForceInCenter = createInput(2).parent("settings-container")
-
-  createElement("h4","if in radius, apply random force between: ").parent("settings-container")
-
-  createSpan("If random number is less than").parent("settings-container")
-  extraCenterForceChance = createInput(0.005).parent("settings-container")
-  createSpan(":<br>").parent("settings-container")
-  
-  createSpan("Min: ").parent("settings-container")
-  minForceOutCenter = createInput(-5).parent("settings-container")
-  createSpan(" Max: ").parent("settings-container")
-  maxForceOutCenter = createInput(5).parent("settings-container")
-
-  createP("Else: ").parent("settings-container")
-
-  createSpan("Min: ").parent("settings-container")
-  elseMinForceOutCenter = createInput(-1).parent("settings-container")
-  createSpan(" Max: ").parent("settings-container")
-  elseMaxForceOutCenter = createInput(1).parent("settings-container")
-
+  settings['canvas']['width'] = windowWidth
+  settings['canvas']['height'] = windowHeight
+  canvas = createCanvas(settings['canvas']['width'], settings['canvas']['height']).parent("canvas-container")
   resetSketch()
 }
 
 function draw() {
-  if(!drawTrails.checked()){
-    background(backgroundColor.value())
+  if (!settings['drawTrails']) {
+    background(settings['colors']['backgroundColor']['r'],settings['colors']['backgroundColor']['g'],settings['colors']['backgroundColor']['b'],settings['colors']['backgroundAlpha'])
   }
-
   for (var i = 0; i < particles.length; i++) {
     particles[i].update()
-    particles[i].capVel(maxVel.value(), restrictX.checked(), restrictY.checked())
-    if(showParticlePoints.checked()) {
-      particles[i].show(0.01*((newCanvSizeX.value()**2 + newCanvSizeY.value()**2)**0.5))
+    particles[i].capVel(settings['maxVelocity'], settings['lockAxis']['xAxis'], settings['lockAxis']['yAxis'])
+    if(settings['showParticles']) {
+      particles[i].show(0.01*((settings['canvas']['width']**2 + settings['canvas']['height']**2)**0.5))
     }
-    if(doBounce.checked()) {
+    if(settings['bounceEdges']) {
       particles[i].bounceCanvasEdge()
     }
-    if(doMouseAttract.checked()) {
-      particles[i].mouseAttract(mouseAttractRange.value())
+    if(settings['mouseAttractsParticles']) {
+      particles[i].mouseAttract(settings['mouseAttractionRange'])
     }
 
-    if(Math.random() < attractCenterForceChance.value() && doAttractCenter.checked()) {
+    if(Math.random() < settings['centerAttractionForce']['chance'] && settings['Attract Particles to Center']) {
       attractCenterForce = createVector(width/2, height/2)
       attractCenterForce.sub(particles[i].pos)
-      if(dist(particles[i].pos.x, particles[i].pos.y, width/2, height/2) > centerForceRadius.value()) {
+      if(dist(particles[i].pos.x, particles[i].pos.y, width/2, height/2) > settings['centerAttractionForce']['radius']) {
         if(Math.random() < 0.5) {
-          attractCenterForce.setMag(random(parseFloat(minForceInCenter.value()), parseFloat(maxForceInCenter.value())))
+          attractCenterForce.setMag(random(settings['centerAttractionForce']['outside']['min'], settings['centerAttractionForce']['outside']['max']))
         } else {
           attractCenterForce.setMag(0)
         }
       } else {
-        if(Math.random() < parseFloat(extraCenterForceChance.value())) {
-          attractCenterForce.setMag(random(parseFloat(minForceOutCenter.value()), parseFloat(maxForceOutCenter.value())))
+        if(Math.random() < settings['centerAttractionForce']['extra']['chance']) {
+          attractCenterForce.setMag(random(settings['centerAttractionForce']['extra']['min'], settings['centerAttractionForce']['extra']['max']))
         } else {
-          attractCenterForce.setMag(random(parseFloat(elseMinForceOutCenter.value()), parseFloat(elseMaxForceOutCenter.value())))
+          attractCenterForce.setMag(random(settings['centerAttractionForce']['inside']['min'], settings['centerAttractionForce']['inside']['max']))
         }
       }
       particles[i].applyForce(attractCenterForce);
     } else if(Math.random() < 0.002){
-      particles[i].applyForce(createVector(random(-startVelMax.value(),startVelMax.value()), random(-startVelMax.value(),startVelMax.value())))
+      particles[i].applyForce(createVector(random(-settings['maxStartingVelocity'],settings['maxStartingVelocity']), random(-settings['maxStartingVelocity'],settings['maxStartingVelocity'])))
     }
 
-    if(doLineDrawPhyiscs.checked()){
+    if(settings['lines']['connectPoints']){
       for(var j = 0; j < particles.length; j++) {
-        if(dist(particles[i].pos.x, particles[i].pos.y, particles[j].pos.x, particles[j].pos.y) < maxLineDist.value()){
-          if(Math.random() < 0.1) {
+        if(dist(particles[i].pos.x, particles[i].pos.y, particles[j].pos.x, particles[j].pos.y) < settings['lines']['maxLineDist']){
+          if(Math.random() < 0.1 && settings['lines']['slowWhenConnected']) {
             particles[i].vel.mult(0.97)
           }
           stroke(lerpColor(particles[i].color, particles[j].color, 0.5))
           if(i !== j) {
             line(particles[i].pos.x, particles[i].pos.y, particles[j].pos.x, particles[j].pos.y)
           }
-        } else {
-          if(Math.random() < 0.1) {
-            particles[i].vel.mult(1.00001)
-          }
-        }
+        } 
       }
     }
 
@@ -226,48 +168,74 @@ function keyPressed() {
   }
 }
 
-window.onload = function()  {
-  let gui = new dat.GUI();
-  for(k in settings) {
-    gui.add(settings, k)
-  }
-  updateCanvasSize()
-}
-
 function windowResized() {
   updateCanvasSize()
 }
 
+function addToGui(parent, object) {
+  for(key in object){
+    if (!key.startsWith('_')) {
+      let v = object[key]
+      let s = object['_' + key] || object['_all'] || []
+
+      if(typeof v === 'object'){
+        if(s.length && s[2] === 'color'){
+          let e = parent.addColor(object, key)
+          if (s.length && s[1]){
+            e.name = s[1]
+          }
+        } else {
+          let folder = parent.addFolder(key)
+          if (s.length && s[1]){
+            folder.name = s[1]
+          }
+          if (s.length && s[0]) {
+            folder.open()
+          }
+          addToGui(folder, v)
+        }
+      } else if (typeof v == 'string' && v.startsWith("#")){
+        parent.addColor(object, key)
+      } else {
+        let e = parent.add(object, key, s[0], s[1], s[2])
+        if (s.length && s[3]) {
+          e.name(s[3])
+        }
+      }
+    }
+  }
+}
+
+window.onload = function()  {
+  updateCanvasSize()
+  let gui = new dat.GUI({width: 325});
+  addToGui(gui, settings)
+}
+
 function updateCanvasSize() {
   let canvasElem = document.getElementById("defaultCanvas0")
-  let canvasContainerElem = document.getElementById("canvas-container")
-  let settingsContainerElem = document.getElementById("settings-container")
   if(windowHeight < windowWidth) {
     canvasElem.style.width = "auto";
     canvasElem.style.height = "auto";
-    canvasContainerElem.style.height = "calc(100vh - 30px)";
-    settingsContainerElem.style.height = "calc(100vh - 40px)";
-    settingsContainerElem.style.overflowY = "scroll"
   } else {
-    canvasContainerElem.style.height = "calc(100vw - 30px)";
-    settingsContainerElem.style.height = "auto";
-    settingsContainerElem.style.overflowY = "initial"
+    canvasElem.style.width = "auto";
+    canvasElem.style.height = "auto";
   }
 }
 
 function resetSketch() {
   endSim = false
-  resizeCanvas(newCanvSizeX.value(), newCanvSizeY.value())
+  resizeCanvas(settings['canvas']['width'], settings['canvas']['height'])
+  background(settings['colors']['backgroundColor']['r'],settings['colors']['backgroundColor']['g'],settings['colors']['backgroundColor']['b'],settings['colors']['backgroundAlpha'])
   updateCanvasSize()
-  background(backgroundColor.value())
   particles = []
-  for (var i = 0; i < particleCount.value();) {
+  for (var i = 0; i < settings['particleCount'];) {
     let origin = createVector(random(width), random(height))
-    if(dist(origin.x, origin.y, width/2, height/2) < originRadiusMax.value() && dist(origin.x, origin.y, width/2, height/2) > parseFloat(originRadiusMin.value())) {
-      let c = color(random(parseFloat(redMin.value()),redMax.value()),random(parseFloat(greenMin.value()),greenMax.value()),random(parseFloat(blueMin.value()),blueMax.value()),random(parseFloat(alphaMin.value()),alphaMax.value()))
+    if(dist(origin.x, origin.y, width/2, height/2) < settings['originRadius']['max'] && dist(origin.x, origin.y, width/2, height/2) > settings['originRadius']['min']) {
+      let c = color(random(settings['colors']['randomParticleColor']['redMin'],settings['colors']['randomParticleColor']['redMax']),random(settings['colors']['randomParticleColor']['greenMin'],settings['colors']['randomParticleColor']['greenMax']),random(settings['colors']['randomParticleColor']['blueMin'],settings['colors']['randomParticleColor']['blueMax']),random(settings['colors']['randomParticleColor']['alphaMin'],settings['colors']['randomParticleColor']['alphaMax']))
 
       particles[i] = new Particle(origin, c);
-      particles[i].applyForce(createVector(random(-startVelMax.value(),startVelMax.value()), random(-startVelMax.value(),startVelMax.value())))
+      particles[i].applyForce(createVector(random(-settings['maxStartingVelocity'],settings['maxStartingVelocity']), random(-settings['maxStartingVelocity'],settings['maxStartingVelocity'])))
       i++
     }
   }
