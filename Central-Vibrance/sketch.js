@@ -1,117 +1,131 @@
+//Need to stop p5 from listening for key presses when editing input values with keyboard.
+
 let particles = []
 let gui
-let attractCenterForce
-let mouseForce
 let endSim = false
 
 let settings = {
+  "presetSelector": 'Default',
+  _presetSelector: {type:'select',name:'PRESET: ',options:['Default','Connected Points','Monochrome','Smoke']},
+  "presetSave": 1,
   'Reset Canvas (R)': resetSketch,
   'End Simulation (E)': function(){endSim=true},
   'Save As PNG (S)': function(){saveCanvas(canvas, 'central-vibrance', 'png')},
-  canvas: {
-    width: 1024,
+  "canvas": {
+    "width": 1024,
     _width: {min:1,max:8192,step:1},
-    height: 1024,
+    "height": 1024,
     _height: {min:1,max:8192,step:1}
   },
   _canvas: {openFolder:true,name:'Canvas Size'},
-  originRadius: {
-    min: 0,
-    max: 192,
+  "originRadius": {
+    "min": 0,
+    "max": 192,
     _all: {min:0,max:8192,step:1}
   },
   _originRadius: {openFolder:true,name:'Origin Radius'},
-  showParticles: false,
-  particleCount: 100,
-  _particleCount: {min:1,max:400,step:1,name:'Particle Count (High Numbers Get Laggy)'},
-  mouseAttractsParticles: false,
-  mouseAttractionRange: 100,
+  "particleCount": 100,
+  _particleCount: {min:1,max:400,step:1,name:'Particle Count'},
+  "mouseAttractsParticles": false,
+  "mouseAttractionRange": 100,
   _mouseAttractionRange: {min:0,max:4096,step:1,name:'Mouse Attraction Range',hide:true},
-  bounceEdges: false,
-  drawTrails: true,
-  maxStartingVelocity: 1,
+  "bounceEdges": false,
+  "drawTrails": true,
+  "maxStartingVelocity": 1,
   _maxStartingVelocity: {min:0,max:100,step:0.01},
-  maxVelocity: 1,
+  "maxVelocity": 1,
   _maxVelocity: {min:0,max:100,step:0.01},
-  lockAxis: {
-    xAxis: false,
-    yAxis: false
+  "lockAxis": {
+    "xAxis": false,
+    "yAxis": false
   },
-  colors: {
-    backgroundColor: {r:21,g:21,b:21},
+  "colors": {
+    "showParticles": false,
+    _showParticles: {name:"Show Particles"},
+    "particleOutline": {
+      "particleWidth": 25,
+      "particleHeight": 25,
+      "drawOutline": true,
+      "particleOutlineColor": "#ffffff",
+      "particleOutlineAlpha": 255,
+      _particleOutlineAlpha: {min:0,max:255,step:1},
+      _all:{min:0,max:250,step:1}
+    },
+    _particleOutline: {name: "Particle Outline",hide:true},
+    "backgroundColor": {r:21,g:21,b:21},
     _backgroundColor: {name:'Background Color',type:'color'},
-    backgroundAlpha: 255,
+    "backgroundAlpha": 255,
     _backgroundAlpha: {min:0,max:255,step:1,name:'Background Alpha'},
-    particleColorType: 'randomRGBA',
-    _particleColorType: {type:'dropmenu',name:'Particle Color Type',options:['randomRGBA','randomHSLA','gradient']},
-    randomRGBA: {
-      redMin: 0,
-      redMax: 255,
-      greenMin: 0,
-      greenMax: 255,
-      blueMin: 0,
-      blueMax: 255,
-      alphaMin: 0,
-      alphaMax: 255,
+    "particleColorType": 'randomRGBA',
+    _particleColorType: {type:'select',name:'Particle Color Type',options:['randomRGBA','randomHSLA','gradient']},
+    "randomRGBA": {
+      "redMin": 0,
+      "redMax": 255,
+      "greenMin": 0,
+      "greenMax": 255,
+      "blueMin": 0,
+      "blueMax": 255,
+      "alphaMin": 0,
+      "alphaMax": 255,
       _all: {min:0,max:255,step:1}
     },
     _randomRGBA: {openFolder:true},
-    randomHSLA: {
-      hueMin: 0,
-      hueMax: 255,
-      saturationMin: 0,
-      saturationMax: 255,
-      lightnessMin: 0,
-      lightnessMax: 255,
-      alphaMin: 0,
-      alphaMax: 255,
+    "randomHSLA": {
+      "hueMin": 0,
+      "hueMax": 255,
+      "saturationMin": 0,
+      "saturationMax": 255,
+      "lightnessMin": 0,
+      "lightnessMax": 255,
+      "alphaMin": 0,
+      "alphaMax": 255,
       _all: {min:0,max:255,step:1}
     },
-    gradient: {
-      firstColor: '#ffffff',
-      secondColor: '#000000',
-      alphaMin: 0,
-      alphaMax: 255,
+    "gradient": {
+      "firstColor": '#ffffff',
+      "secondColor": '#000000',
+      "alphaMin": 0,
+      "alphaMax": 255,
       _all: {type:'color',min:0,max:255,step:1}
     },
-    image:{
-      'Open File': function() {console.log('this code needs writing')},
-      alphaMin: 0,
-      alphaMax: 255,
+    "image":{
+      "Open File": function() {console.log('this code needs writing')},
+      "alphaMin": 0,
+      "alphaMax": 255,
       _all: {min:0,max:255,step:1}
     },
     _all: {openFolder:true,hide:true}
   },
   _colors: {openFolder:true,name:'Colors'},
-  lines: {
-    connectPoints: true,
-    slowWhenConnected: true,
-    maxLineDist: 25,
+  "lines": {
+    "connectPoints": true,
+    "slowWhenConnected": true,
+    "maxLineDist": 25,
     _maxLineDist: {min:1,max:512,step:1}
   },
   'Attract Particles to Center': true,
-  centerAttractionForce: {
-    chance: 0.1,
+  "centerAttractionForce": {
+    "chance": 0.1,
     _chance: {min:0,max:1,step:0.0001,name:'Chance of Forces'},
-    radius: 128,
+    "radius": 128,
     _radius: {min:0,max:8192,step:1},
-    outside:{
-      min: -1,
-      max: 1,
+    "outside":{
+      "min": -1,
+      "max": 1,
       _all: {min:-100,max:100,step:0.01}
     },
     _outside: {openFolder:true,name:"Force Outside Of Center"},
-    inside:{
-      min: -2,
-      max: 2,
+    "inside":{
+      "min": -2,
+      "max": 2,
       _all: {min:-100,max:100,step:0.01}
     },
     _inside: {openFolder:true,name:"Force Inside Center"},
-    extra: {
-      chance: 0.005,
+    "extra": {
+      "chance": 0.005,
       _chance: {min:0,max:1,step:0.0001},
-      min: -5,
-      max: 5,
+      "min": -5,
+      "max": 5,
       _all: {min:-100,max:100,step:0.01}
     },
     _extra: {openFolder:true,name:'Extra Force Inside Center'}
@@ -140,8 +154,8 @@ function draw() {
   for (var i = 0; i < particles.length; i++) {
     particles[i].update()
     particles[i].capVel(settings['maxVelocity'], settings['lockAxis']['xAxis'], settings['lockAxis']['yAxis'])
-    if(settings['showParticles']) {
-      particles[i].show(0.0075*((settings['canvas']['width']**2 + settings['canvas']['height']**2)**0.5))
+    if(settings['colors']['showParticles']) {
+      particles[i].show(settings['colors']['particleOutline']['particleWidth'],settings['colors']['particleOutline']['particleHeight'], settings['colors']['particleOutline']['drawOutline'], settings['colors']['particleOutline']['particleOutlineColor'], settings['colors']['particleOutline']['particleOutlineAlpha'])
     }
     if(settings['bounceEdges']) {
       particles[i].bounceCanvasEdge()
@@ -151,7 +165,7 @@ function draw() {
     }
 
     if(Math.random() < settings['centerAttractionForce']['chance'] && settings['Attract Particles to Center']) {
-      attractCenterForce = createVector(width/2, height/2)
+      let attractCenterForce = createVector(width/2, height/2)
       attractCenterForce.sub(particles[i].pos)
       if(dist(particles[i].pos.x, particles[i].pos.y, width/2, height/2) > settings['centerAttractionForce']['radius']) {
         if(Math.random() < 0.5) {
@@ -211,15 +225,19 @@ function windowResized() {
 
 window.onload = function()  {
   updateCanvasSize()
-  gui = new autoGUI({width: 325});
-  gui.enablePresetBox()
-  gui.autoAdd(settings)
-  gui.addToggleDisplayEvent('Attract Particles to Center','centerAttractionForce')
-  gui.addToggleDisplayEvent('mouseAttractsParticles','mouseAttractionRange')
-  gui.addMenuFolderSwitch('particleColorType', 'colors')
-  gui.sticky('Reset Canvas (R)')
-  gui.sticky('End Simulation (E)')
-  gui.sticky('Save As PNG (S)')
+  gui = new autoGUI({width: 350}, './presets.json');
+  gui.autoAdd(settings, 'settings')
+  gui.presetChanged = function() {
+    console.log("hi")
+    resetSketch()
+  }
+  gui.sticky('settings.Reset Canvas (R)')
+  gui.sticky('settings.End Simulation (E)')
+  gui.sticky('settings.Save As PNG (S)')
+  gui.addToggleDisplayEvent('settings.Attract Particles to Center','settings.centerAttractionForce')
+  gui.addToggleDisplayEvent('settings.mouseAttractsParticles','settings.mouseAttractionRange')
+  gui.addToggleDisplayEvent('settings.colors.showParticles','settings.colors.particleOutline')
+  gui.addMenuFolderSwitch('settings.colors.particleColorType', 'settings.colors')
   if (windowWidth < 700){
     gui.close()
   }
@@ -227,13 +245,8 @@ window.onload = function()  {
 
 function updateCanvasSize() {
   let canvasElem = document.getElementById("defaultCanvas0")
-  if(windowHeight < windowWidth) {
-    canvasElem.style.width = "auto";
-    canvasElem.style.height = "auto";
-  } else {
-    canvasElem.style.width = "auto";
-    canvasElem.style.height = "auto";
-  }
+  canvasElem.style.width = "auto"
+  canvasElem.style.height = "auto"
 }
 
 function generateColor() {

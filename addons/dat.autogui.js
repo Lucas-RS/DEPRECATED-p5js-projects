@@ -4,17 +4,27 @@
 
 class autoGUI extends dat.GUI {
 
-  constructor(guiParams) {
+  constructor(guiParams, jsonPresetFilePath) {
     super(guiParams)
     this.controllers = {}
+    this.defaults = {}
     this.stickiedListItems = 0
+
+    fetch(jsonPresetFilePath)
+      .then(function(response) {
+        return response.json();
+      })
+      .then(function(jsonPresets) {
+        window.presets = jsonPresets
+      });
   }
 
-  autoAdd(object, parent = this) {
+  autoAdd(object, parentKey, parent = this) {
     for(let key in object){
       let controller
       if (!key.startsWith('_')) {
         let value = object[key]
+        let keyPath = parentKey + "." + key
         let s = object['_' + key] || object['_all'] || {}
         
         if(typeof value === 'object'){
@@ -25,10 +35,10 @@ class autoGUI extends dat.GUI {
             if (s.hasOwnProperty('openFolder') && s['openFolder']) {
               controller.open()
             }
-            this.autoAdd(value, controller)
+            this.autoAdd(value, keyPath, controller)
           }
         } else if (typeof value == 'string'){
-          if(s.hasOwnProperty('type') && s['type'] == 'dropmenu'){
+          if(s.hasOwnProperty('type') && s['type'] == 'select'){
             controller = parent.add(object, key, s['options'])
           } else if (value.startsWith("#")) {
             controller = parent.addColor(object, key)
@@ -53,40 +63,32 @@ class autoGUI extends dat.GUI {
           }
         }
 
-        this.controllers[key] = controller
+        this.controllers[keyPath] = controller
       }
     }
-  }
-  
-  enablePresetBox() {
-    this.stickiedListItems += 1
-    this.presetBox = document.createElement("div")
-    let presetBoxLi = document.createElement("li")
-    gui.__ul.appendChild(presetBoxLi)
-    presetBoxLi.appendChild(this.presetBox)
-    presetBoxLi.style.backgroundColor = '#1a1a1a'
-    presetBoxLi.style.position = "sticky"
-    presetBoxLi.style.top = "0"
-    presetBoxLi.style.zIndex = 1
-    this.presetBox.innerHTML = 
-    `<select style="font: 11px 'Lucida Grande'">
-      <option value="">presets</option>
-      <option value="dog">Dog</option>
-      <option value="cat">Cat</option>
-      <option value="hamster">Hamster</option>
-      <option value="parrot">Parrot</option>
-      <option value="spider">Spider</option>
-      <option value="goldfish">Goldfish</option>
-    </select>
-    <button style="font: 11px 'Lucida Grande', sans-serif">Save Preset</button>
-    <button style="font: 11px 'Lucida Grande', sans-serif">Download Preset</button>`
-  }
-
-  updateControllers() {
-    for(let i in this.controllers){
-      this.controllers[i].updateDisplay()
+    if (this.controllers.hasOwnProperty(parentKey + '.presetSelector')) {
+      let that = this
+      this.controllers[parentKey + '.presetSelector'].onChange(function(value) {
+        for(let i in that.controllers){
+          let controller = that.controllers[i]
+          if(i !== parentKey + '.presetSelector' && controller.hasOwnProperty('__li')) {
+            if(value === 'Default') {
+              controller.setValue(controller["initialValue"])
+            } else {
+              if(presets[value].hasOwnProperty(i)){
+                controller.setValue(presets[value][i])
+              } else {
+                controller.setValue(controller["initialValue"])
+              }
+            }
+          }
+        }
+        that.presetChanged()
+      })
     }
   }
+
+  presetChanged(){}
 
   addToggleDisplayEvent(bool, recipient) {
     let that = this
@@ -107,10 +109,11 @@ class autoGUI extends dat.GUI {
     })
   }
 
-  addMenuFolderSwitch(menu, parentFolder) {
+  addMenuFolderSwitch(select, parentFolder) {
     let that = this
-    this.controllers[menu].onChange(function(value) {
+    this.controllers[select].onChange(function(value) {
       for (let folder in that.controllers[parentFolder]['__folders']) {
+        //need to make this check which folders to hide
         that.controllers[parentFolder]['__folders'][folder].hide()
       }
       that.controllers[parentFolder]['__folders'][value].show()
@@ -118,10 +121,10 @@ class autoGUI extends dat.GUI {
   }
 
   sticky(controller, bgColor = '#1a1a1a') {
-    gui.controllers[controller].__li.style.backgroundColor = bgColor
-    gui.controllers[controller].__li.style.position = "sticky"
-    gui.controllers[controller].__li.style.top = this.stickiedListItems * 28 + "px"
-    gui.controllers[controller].__li.style.zIndex = 1
+    this.controllers[controller].__li.style.backgroundColor = bgColor
+    this.controllers[controller].__li.style.position = "sticky"
+    this.controllers[controller].__li.style.top = this.stickiedListItems * 28 + "px"
+    this.controllers[controller].__li.style.zIndex = 1
     this.stickiedListItems += 1
   }
 }

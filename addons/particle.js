@@ -1,4 +1,3 @@
-//Consider adding sound stuff.
 //Add scale, so larger display resolutions function the sane
 class Particle {
 
@@ -19,14 +18,15 @@ class Particle {
         this.acc.add(force)
     }
 
-    show(sizeX = 5, sizeY = sizeX, showStroke = true) {
+    show(sizeX = 10, sizeY = sizeX, showStroke = false, strokeColor = color(0), strokeAlpha = 255) {
         fill(this.color)
         if(showStroke){
-            stroke(color(255 - red(this.color), 255 - green(this.color), 255 - blue(this.color)), alpha(this.color))
+            colorMode(RGB,255)
+            stroke(red(strokeColor),green(strokeColor),blue(strokeColor),strokeAlpha)
         } else {
             noStroke()
         }
-        circle(this.pos.x, this.pos.y, sizeX, sizeY)
+        ellipse(this.pos.x, this.pos.y, sizeX, sizeY)
     }
 
     wrap() {
