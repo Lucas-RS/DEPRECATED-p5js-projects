@@ -24,6 +24,7 @@
     "settings.bounceEdges":true,
     "settings.maxStartingVelocity":2,
     "settings.maxVelocity":2.3000000000000003,
+    "settings.mouseAttractsParticles": true,
     "settings.colors.showParticles":true,
     "settings.colors.particleOutline.particleWidth":2,
     "settings.colors.particleOutline.particleHeight":2,
