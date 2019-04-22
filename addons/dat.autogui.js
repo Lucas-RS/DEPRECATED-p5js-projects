@@ -1,12 +1,13 @@
 //Todo:
 //add functionality for drop down menus
-//Make top function buttons sticky
+//Create sticky box which can hold folders and controllers at the top.
 
 class autoGUI extends dat.GUI {
 
   constructor(guiParams) {
     super(guiParams)
     this.controllers = {}
+    this.stickiedListItems = 0
   }
 
   autoAdd(object, parent = this) {
@@ -57,6 +58,30 @@ class autoGUI extends dat.GUI {
     }
   }
   
+  enablePresetBox() {
+    this.stickiedListItems += 1
+    this.presetBox = document.createElement("div")
+    let presetBoxLi = document.createElement("li")
+    gui.__ul.appendChild(presetBoxLi)
+    presetBoxLi.appendChild(this.presetBox)
+    presetBoxLi.style.backgroundColor = '#1a1a1a'
+    presetBoxLi.style.position = "sticky"
+    presetBoxLi.style.top = "0"
+    presetBoxLi.style.zIndex = 1
+    this.presetBox.innerHTML = 
+    `<select style="font: 11px 'Lucida Grande'">
+      <option value="">presets</option>
+      <option value="dog">Dog</option>
+      <option value="cat">Cat</option>
+      <option value="hamster">Hamster</option>
+      <option value="parrot">Parrot</option>
+      <option value="spider">Spider</option>
+      <option value="goldfish">Goldfish</option>
+    </select>
+    <button style="font: 11px 'Lucida Grande', sans-serif">Save Preset</button>
+    <button style="font: 11px 'Lucida Grande', sans-serif">Download Preset</button>`
+  }
+
   updateControllers() {
     for(let i in this.controllers){
       this.controllers[i].updateDisplay()
@@ -66,15 +91,15 @@ class autoGUI extends dat.GUI {
   addToggleDisplayEvent(bool, recipient) {
     let that = this
     this.controllers[bool].onChange(function(value) {
-      if('__li' in that.controllers[recipient]){
-        if(value) {
-          that.controllers[recipient].__li.style.display = '';
+      if(value) {
+        if('__li' in that.controllers[recipient]){
+          that.controllers[recipient].__li.style.display = ''
         } else {
-          that.controllers[recipient].__li.style.display = 'none';
+          that.controllers[recipient].show()
         }
       } else {
-        if(value) {
-          that.controllers[recipient].show()
+        if('__li' in that.controllers[recipient]){
+          that.controllers[recipient].__li.style.display = 'none'
         } else {
           that.controllers[recipient].hide()
         }
@@ -90,6 +115,14 @@ class autoGUI extends dat.GUI {
       }
       that.controllers[parentFolder]['__folders'][value].show()
     })
+  }
+
+  sticky(controller, bgColor = '#1a1a1a') {
+    gui.controllers[controller].__li.style.backgroundColor = bgColor
+    gui.controllers[controller].__li.style.position = "sticky"
+    gui.controllers[controller].__li.style.top = this.stickiedListItems * 28 + "px"
+    gui.controllers[controller].__li.style.zIndex = 1
+    this.stickiedListItems += 1
   }
 }
 

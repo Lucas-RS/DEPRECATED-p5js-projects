@@ -20,16 +20,17 @@ let settings = {
     max: 192,
     _all: {min:0,max:8192,step:1}
   },
+  _originRadius: {openFolder:true,name:'Origin Radius'},
   showParticles: false,
   particleCount: 100,
   _particleCount: {min:1,max:400,step:1,name:'Particle Count (High Numbers Get Laggy)'},
+  mouseAttractsParticles: false,
+  mouseAttractionRange: 100,
+  _mouseAttractionRange: {min:0,max:4096,step:1,name:'Mouse Attraction Range',hide:true},
   bounceEdges: false,
   drawTrails: true,
   maxStartingVelocity: 1,
   _maxStartingVelocity: {min:0,max:100,step:0.01},
-  mouseAttractsParticles: false,
-  mouseAttractionRange: 100,
-  _mouseAttractionRange: {min:0,max:4096,step:1,name:'Mouse Attraction Range',hide:true},
   maxVelocity: 1,
   _maxVelocity: {min:0,max:100,step:0.01},
   lockAxis: {
@@ -81,6 +82,7 @@ let settings = {
     },
     _all: {openFolder:true,hide:true}
   },
+  _colors: {openFolder:true,name:'Colors'},
   lines: {
     connectPoints: true,
     slowWhenConnected: true,
@@ -132,6 +134,7 @@ function setup() {
 
 function draw() {
   if (!settings['drawTrails']) {
+    colorMode(RGB, 255)
     background(settings['colors']['backgroundColor']['r'],settings['colors']['backgroundColor']['g'],settings['colors']['backgroundColor']['b'],settings['colors']['backgroundAlpha'])
   }
   for (var i = 0; i < particles.length; i++) {
@@ -209,10 +212,14 @@ function windowResized() {
 window.onload = function()  {
   updateCanvasSize()
   gui = new autoGUI({width: 325});
+  gui.enablePresetBox()
   gui.autoAdd(settings)
   gui.addToggleDisplayEvent('Attract Particles to Center','centerAttractionForce')
   gui.addToggleDisplayEvent('mouseAttractsParticles','mouseAttractionRange')
   gui.addMenuFolderSwitch('particleColorType', 'colors')
+  gui.sticky('Reset Canvas (R)')
+  gui.sticky('End Simulation (E)')
+  gui.sticky('Save As PNG (S)')
   if (windowWidth < 700){
     gui.close()
   }
@@ -249,13 +256,13 @@ function generateColor() {
 function resetSketch() {
   endSim = false
   resizeCanvas(settings['canvas']['width'], settings['canvas']['height'])
+  colorMode(RGB, 255)
   background(settings['colors']['backgroundColor']['r'],settings['colors']['backgroundColor']['g'],settings['colors']['backgroundColor']['b'],settings['colors']['backgroundAlpha'])
   updateCanvasSize()
   particles = []
   for (var i = 0; i < settings['particleCount'];) {
     let origin = createVector(random(width), random(height))
     if(dist(origin.x, origin.y, width/2, height/2) < settings['originRadius']['max'] && dist(origin.x, origin.y, width/2, height/2) > settings['originRadius']['min']) {
-      
       particles[i] = new Particle(origin, generateColor());
       particles[i].applyForce(createVector(random(-settings['maxStartingVelocity'],settings['maxStartingVelocity']), random(-settings['maxStartingVelocity'],settings['maxStartingVelocity'])))
       i++
