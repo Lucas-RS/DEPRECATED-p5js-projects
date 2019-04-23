@@ -1,5 +1,4 @@
 //Need to stop p5 from listening for key presses when editing input values with keyboard.
-
 let particles = []
 let gui
 let endSim = false
@@ -220,30 +219,6 @@ function windowResized() {
   updateCanvasSize()
 }
 
-window.onload = function()  {
-  updateCanvasSize()
-  gui = new autoGUI({width: 350})
-  fetch('./presets.json')
-    .then(r => r.json())
-    .then(presets => {
-      gui.enablePresets(presets)
-      gui.autoAdd(settings, 'settings')
-      gui.sticky('settings.Reset Canvas (R)')
-      gui.sticky('settings.End Simulation (E)')
-      gui.sticky('settings.Save As PNG (S)')
-      gui.addToggleDisplayEvent('settings.Attract Particles to Center','settings.centerAttractionForce')
-      gui.addToggleDisplayEvent('settings.mouseAttractsParticles','settings.mouseAttractionRange')
-      gui.addToggleDisplayEvent('settings.colors.showParticles','settings.colors.particleOutline')
-      gui.addMenuFolderSwitch('settings.colors.particleColorType', 'settings.colors')
-    })
-  gui.presetChanged = function() {
-    resetSketch()
-  }
-  if (windowWidth < 700){
-    gui.close()
-  }
-}
-
 function updateCanvasSize() {
   let canvasElem = document.getElementById("defaultCanvas0")
   if(windowWidth > windowHeight && width < height) {
@@ -286,5 +261,101 @@ function resetSketch() {
       particles[i].applyForce(createVector(random(-settings['maxStartingVelocity'],settings['maxStartingVelocity']), random(-settings['maxStartingVelocity'],settings['maxStartingVelocity'])))
       i++
     }
+  }
+}
+
+window.onload = function()  {
+  updateCanvasSize()
+  gui = new autoGUI({width: 350})
+  gui.enablePresets(presets)
+  gui.autoAdd(settings, 'settings')
+  gui.sticky('settings.Reset Canvas (R)')
+  gui.sticky('settings.End Simulation (E)')
+  gui.sticky('settings.Save As PNG (S)')
+  gui.addToggleDisplayEvent('settings.Attract Particles to Center','settings.centerAttractionForce')
+  gui.addToggleDisplayEvent('settings.mouseAttractsParticles','settings.mouseAttractionRange')
+  gui.addToggleDisplayEvent('settings.colors.showParticles','settings.colors.particleOutline')
+  gui.addMenuFolderSwitch('settings.colors.particleColorType', 'settings.colors')
+  gui.presetChanged = function() {
+    resetSketch()
+    localStorage.setItem('centralVibrance.presets', JSON.stringify(presets)) 
+  }
+  if (windowWidth < 700){
+    gui.close()
+  }
+}
+
+const presets = JSON.parse(localStorage.getItem('centralVibrance.presets')) || {
+  "Connected Points":{
+    "settings.Attract Particles to Center": false,
+    "settings.bounceEdges": true,
+    "settings.colors.backgroundColor": {"r":255,"g":255,"b":255},
+    "settings.colors.gradient.alphaMax": 0,
+    "settings.colors.particleColorType": "randomHSLA",
+    "settings.colors.particleOutline.particleOutlineAlpha": 160,
+    "settings.colors.particleOutline.particleOutlineColor": "#ff487e",
+    "settings.colors.randomHSLA.lightnessMin": 80,
+    "settings.colors.randomHSLA.saturationMin": 160,
+    "settings.colors.showParticles": true,
+    "settings.drawTrails": false,
+    "settings.lines.maxLineDist": 50,
+    "settings.lines.slowWhenConnected": false,
+    "settings.maxStartingVelocity": 3,
+    "settings.maxVelocity": 3,
+    "settings.mouseAttractionRange": 70,
+    "settings.mouseAttractsParticles": true,
+    "settings.originRadius.max": 400
+  },
+  "Smoke":{
+    "settings.originRadius.max":300,
+    "settings.bounceEdges":true,
+    "settings.maxStartingVelocity":2,
+    "settings.maxVelocity":2.3000000000000003,
+    "settings.mouseAttractsParticles": true,
+    "settings.colors.showParticles":true,
+    "settings.colors.particleOutline.particleWidth":2,
+    "settings.colors.particleOutline.particleHeight":2,
+    "settings.colors.particleOutline.drawOutline":false,
+    "settings.colors.particleOutline.particleOutlineColor":"#000000",
+    "settings.colors.backgroundColor":{"r":129,"g":132.5,"b":137.5},
+    "settings.colors.particleColorType":"gradient",
+    "settings.colors.gradient.alphaMin":5,
+    "settings.colors.gradient.alphaMax":45,
+    "settings.lines.slowWhenConnected":false,
+    "settings.centerAttractionForce.radius":250,
+    "settings.centerAttractionForce.outside.max":10,
+    "settings.centerAttractionForce.inside.min":0,
+    "settings.centerAttractionForce.inside.max":5,
+    "settings.centerAttractionForce.extra.chance":0.6,
+    "settings.centerAttractionForce.extra.max":0
+  },
+  "Monochrome":{
+    "settings.originRadius.max":400,
+    "settings.bounceEdges":true,
+    "settings.maxStartingVelocity":2,
+    "settings.maxVelocity":3,
+    "settings.colors.showParticles":true,
+    "settings.colors.particleOutline.particleWidth":2,
+    "settings.colors.particleOutline.particleHeight":2,
+    "settings.colors.particleOutline.drawOutline":false,
+    "settings.colors.particleOutline.particleOutlineColor":"#000000",
+    "settings.colors.backgroundColor":{"r":53,"g":87,"b":167.5},
+    "settings.colors.particleColorType":"gradient",
+    "settings.colors.gradient.alphaMin":5,
+    "settings.colors.gradient.alphaMax":45,
+    "settings.lines.slowWhenConnected":false,
+    "settings.centerAttractionForce.radius":1,
+    "settings.centerAttractionForce.outside.max":5,
+    "settings.centerAttractionForce.inside.min":-1,
+    "settings.centerAttractionForce.inside.max":1,
+    "settings.centerAttractionForce.extra.chance":0.1,
+    "settings.centerAttractionForce.extra.max":1,
+    "settings.particleCount":200,
+    "settings.lockAxis.yAxis":true,
+    "settings.colors.gradient.firstColor":"#bbf3ff",
+    "settings.colors.gradient.secondColor":"#98b6ff",
+    "settings.lines.maxLineDist":20,
+    "settings.centerAttractionForce.outside.min":-4,
+    "settings.centerAttractionForce.extra.min":-1
   }
 }

@@ -108,6 +108,7 @@ class autoGUI extends dat.GUI {
         newHTML += "<option value='" + currentPresets[p] + "'>" + currentPresets[p] + "</option>"
       }
       this.controllers.presetSelector.__select.innerHTML = newHTML
+      this.presetChanged()
     } else {
       alert("You have not changed any settings, what is the use in an empty preset?")
     }
