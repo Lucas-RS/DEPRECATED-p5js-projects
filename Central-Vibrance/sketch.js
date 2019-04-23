@@ -5,9 +5,6 @@ let gui
 let endSim = false
 
 let settings = {
-  "presetSelector": 'Default',
-  _presetSelector: {type:'select',name:'PRESET: ',options:['Default','Connected Points','Monochrome','Smoke']},
-  "presetSave": 1,
   'Reset Canvas (R)': resetSketch,
   'End Simulation (E)': function(){endSim=true},
   'Save As PNG (S)': function(){saveCanvas(canvas, 'central-vibrance', 'png')},
@@ -225,19 +222,23 @@ function windowResized() {
 
 window.onload = function()  {
   updateCanvasSize()
-  gui = new autoGUI({width: 350}, './presets.json');
-  gui.autoAdd(settings, 'settings')
+  gui = new autoGUI({width: 350})
+  fetch('./presets.json')
+    .then(r => r.json())
+    .then(presets => {
+      gui.enablePresets(presets)
+      gui.autoAdd(settings, 'settings')
+      gui.sticky('settings.Reset Canvas (R)')
+      gui.sticky('settings.End Simulation (E)')
+      gui.sticky('settings.Save As PNG (S)')
+      gui.addToggleDisplayEvent('settings.Attract Particles to Center','settings.centerAttractionForce')
+      gui.addToggleDisplayEvent('settings.mouseAttractsParticles','settings.mouseAttractionRange')
+      gui.addToggleDisplayEvent('settings.colors.showParticles','settings.colors.particleOutline')
+      gui.addMenuFolderSwitch('settings.colors.particleColorType', 'settings.colors')
+    })
   gui.presetChanged = function() {
-    console.log("hi")
     resetSketch()
   }
-  gui.sticky('settings.Reset Canvas (R)')
-  gui.sticky('settings.End Simulation (E)')
-  gui.sticky('settings.Save As PNG (S)')
-  gui.addToggleDisplayEvent('settings.Attract Particles to Center','settings.centerAttractionForce')
-  gui.addToggleDisplayEvent('settings.mouseAttractsParticles','settings.mouseAttractionRange')
-  gui.addToggleDisplayEvent('settings.colors.showParticles','settings.colors.particleOutline')
-  gui.addMenuFolderSwitch('settings.colors.particleColorType', 'settings.colors')
   if (windowWidth < 700){
     gui.close()
   }
@@ -245,8 +246,13 @@ window.onload = function()  {
 
 function updateCanvasSize() {
   let canvasElem = document.getElementById("defaultCanvas0")
-  canvasElem.style.width = "auto"
-  canvasElem.style.height = "auto"
+  if(windowWidth > windowHeight && width < height) {
+    canvasElem.style.width = "auto"
+    canvasElem.style.height = "100%"
+  } else {
+    canvasElem.style.height = "auto"
+    canvasElem.style.width = "100%"
+  }
 }
 
 function generateColor() {

@@ -1,22 +1,15 @@
-//Todo:
-//add functionality for drop down menus
-//Create sticky box which can hold folders and controllers at the top.
-
 class autoGUI extends dat.GUI {
 
-  constructor(guiParams, jsonPresetFilePath) {
+  constructor(guiParams) {
     super(guiParams)
     this.controllers = {}
     this.defaults = {}
     this.stickiedListItems = 0
-
-    fetch(jsonPresetFilePath)
-      .then(function(response) {
-        return response.json();
-      })
-      .then(function(jsonPresets) {
-        window.presets = jsonPresets
-      });
+    this.presetControllers = {
+      "presetSelector": 'Default',
+      "presetSave": () => {this.savePreset()}
+    }
+    this.presets = {}
   }
 
   autoAdd(object, parentKey, parent = this) {
@@ -66,29 +59,59 @@ class autoGUI extends dat.GUI {
         this.controllers[keyPath] = controller
       }
     }
-    if (this.controllers.hasOwnProperty(parentKey + '.presetSelector')) {
-      let that = this
-      this.controllers[parentKey + '.presetSelector'].onChange(function(value) {
-        for(let i in that.controllers){
-          let controller = that.controllers[i]
-          if(i !== parentKey + '.presetSelector' && controller.hasOwnProperty('__li')) {
-            if(value === 'Default') {
-              controller.setValue(controller["initialValue"])
+  }
+
+  enablePresets(presets) {
+    this.presets = presets
+
+    this.controllers['presetSelector'] = this.add(this.presetControllers, 'presetSelector', ['Default', ...Object.getOwnPropertyNames(this.presets)]).name("PRESET:")
+    this.controllers['presetSave'] = this.add(this.presetControllers, 'presetSave').name("Save New Preset")
+    this.controllers['presetSelector'].__li.style.cssText = "background-color: #188254; border: 3px solid #1ed36f; border-bottom: 0;"
+    this.controllers['presetSave'].__li.style.cssText = "background-color: #188254; height: 32px; border: 3px solid #1ed36f; border-top: 0;"
+    this.controllers['presetSave'].__li.children['0'].children['0'].style.cssText = "background-color: #1ed36f; border-radius: 14px; text-align: center; text-shadow: none;"
+    
+    this.controllers['presetSelector'].onChange((value) => {
+      for(let i in this.controllers){
+        let controller = this.controllers[i]
+        if(i !== 'presetSelector' && controller.hasOwnProperty('__li')) {
+          if(value === 'Default') {
+            controller.setValue(controller["initialValue"])
+          } else {
+            if(this.presets[value].hasOwnProperty(i)){
+              controller.setValue(this.presets[value][i])
             } else {
-              if(presets[value].hasOwnProperty(i)){
-                controller.setValue(presets[value][i])
-              } else {
-                controller.setValue(controller["initialValue"])
-              }
+              controller.setValue(controller["initialValue"])
             }
           }
         }
-        that.presetChanged()
-      })
-    }
+      }
+      this.presetChanged()
+    })
   }
 
   presetChanged(){}
+
+  savePreset() {
+    let newPreset = {}
+    for(let i in this.controllers){
+      let controller = this.controllers[i]
+      if(i !== 'presetSave' && controller.hasOwnProperty('__li') && controller.getValue() !== controller['initialValue']){
+        newPreset[i] = controller.getValue()
+      }
+    }
+    if(Object.keys(newPreset).length > 0) {
+      let newHTML
+      let presetName = prompt('Enter a name for your preset: ', 'custom')
+      this.presets[presetName] = newPreset
+      let currentPresets = ['Default', ...Object.getOwnPropertyNames(this.presets)]
+      for(let p = 0; p < currentPresets.length; p++){
+        newHTML += "<option value='" + currentPresets[p] + "'>" + currentPresets[p] + "</option>"
+      }
+      this.controllers.presetSelector.__select.innerHTML = newHTML
+    } else {
+      alert("You have not changed any settings, what is the use in an empty preset?")
+    }
+  }
 
   addToggleDisplayEvent(bool, recipient) {
     let that = this
