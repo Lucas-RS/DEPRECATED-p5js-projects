@@ -74,9 +74,10 @@ class autoGUI extends dat.GUI {
 
     this.controllers['presetSelector'] = this.add(this.presetControllers, 'presetSelector', ['Default', ...Object.getOwnPropertyNames(this.presets)]).name("PRESET:")
     this.controllers['presetSave'] = this.add(this.presetControllers, 'presetSave').name("Save New Preset")
-    this.controllers['presetSelector'].__li.style.cssText = "background-color: #188254; border: 3px solid #1ed36f; border-bottom: 0;"
-    this.controllers['presetSave'].__li.style.cssText = "background-color: #188254; height: 32px; border: 3px solid #1ed36f; border-top: 0;"
-    this.controllers['presetSave'].__li.children['0'].children['0'].style.cssText = "background-color: #1ed36f; border-radius: 14px; text-align: center; text-shadow: none;"
+    this.controllers['presetSelector'].__li.style.cssText = "border: 0"
+    this.controllers['presetSelector'].__select.style.cssText = "margin-top: 3px;"
+    this.controllers['presetSave'].__li.style.cssText = "background-color: #2fa1d6; border: 0; padding: 0;"
+    this.controllers['presetSave'].__li.children['0'].children['0'].style.cssText = "background-color: #2fa1d6; width: 100%; text-align: center; text-shadow: none;"
     
     this.controllers['presetSelector'].onChange((value) => {
       for(let i in this.controllers){
