@@ -61,8 +61,16 @@ class autoGUI extends dat.GUI {
     }
   }
 
-  enablePresets(presets) {
-    this.presets = presets
+  enablePresets(defaultPresets, userPresetsStorageName) {
+    this.defaultPresets = defaultPresets
+    this.userPresetsStorageName = userPresetsStorageName
+    this.userPresets = JSON.parse(localStorage.getItem(this.userPresetsStorageName)) || {}
+    for(let p in this.defaultPresets) {
+      this.presets[p] = this.defaultPresets[p]
+    }
+    for(let p in this.userPresets) {
+      this.presets[p] = this.userPresets[p]
+    }
 
     this.controllers['presetSelector'] = this.add(this.presetControllers, 'presetSelector', ['Default', ...Object.getOwnPropertyNames(this.presets)]).name("PRESET:")
     this.controllers['presetSave'] = this.add(this.presetControllers, 'presetSave').name("Save New Preset")
@@ -85,30 +93,42 @@ class autoGUI extends dat.GUI {
           }
         }
       }
-      this.presetChanged()
+      this.presetsChanged()
     })
   }
 
-  presetChanged(){}
+  presetsChanged(){}
 
   savePreset() {
     let newPreset = {}
     for(let i in this.controllers){
       let controller = this.controllers[i]
-      if(i !== 'presetSave' && controller.hasOwnProperty('__li') && controller.getValue() !== controller['initialValue']){
+      if(i !== 'presetSelector' && controller.hasOwnProperty('__li') && controller.getValue() !== controller['initialValue']){
         newPreset[i] = controller.getValue()
       }
     }
     if(Object.keys(newPreset).length > 0) {
-      let newHTML
       let presetName = prompt('Enter a name for your preset: ', 'custom')
-      this.presets[presetName] = newPreset
-      let currentPresets = ['Default', ...Object.getOwnPropertyNames(this.presets)]
-      for(let p = 0; p < currentPresets.length; p++){
-        newHTML += "<option value='" + currentPresets[p] + "'>" + currentPresets[p] + "</option>"
+      while (true) {
+        if (presetName === null) {
+          break
+        } else if (presetName in this.defaultPresets) {
+          presetName = prompt("Cannot overwrite a default preset.\nChoose a different name: ")
+        } else if (presetName in this.userPresets && !confirm("This will overwrite your previously saved preset which already has this name.\nDo you wish to continue?")) {
+          presetName = prompt("Please enter a different name: ")
+        } else {
+          this.presets[presetName] = newPreset
+          this.userPresets[presetName] = newPreset
+          let currentPresets = ['Default', ...Object.getOwnPropertyNames(this.presets)]
+          let newHTML      
+          for(let p = 0; p < currentPresets.length; p++){
+            newHTML += "<option value='" + currentPresets[p] + "'>" + currentPresets[p] + "</option>"
+          }
+          this.controllers.presetSelector.__select.innerHTML = newHTML
+          localStorage.setItem(this.userPresetsStorageName, JSON.stringify(this.userPresets))
+          break
+        }
       }
-      this.controllers.presetSelector.__select.innerHTML = newHTML
-      this.presetChanged()
     } else {
       alert("You have not changed any settings, what is the use in an empty preset?")
     }

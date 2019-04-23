@@ -264,10 +264,10 @@ function resetSketch() {
   }
 }
 
-window.onload = function()  {
+window.onload = () => {
   updateCanvasSize()
   gui = new autoGUI({width: 350})
-  gui.enablePresets(presets)
+  gui.enablePresets(defaultPresets, 'centralVibrance.userPresets')
   gui.autoAdd(settings, 'settings')
   gui.sticky('settings.Reset Canvas (R)')
   gui.sticky('settings.End Simulation (E)')
@@ -276,16 +276,15 @@ window.onload = function()  {
   gui.addToggleDisplayEvent('settings.mouseAttractsParticles','settings.mouseAttractionRange')
   gui.addToggleDisplayEvent('settings.colors.showParticles','settings.colors.particleOutline')
   gui.addMenuFolderSwitch('settings.colors.particleColorType', 'settings.colors')
-  gui.presetChanged = function() {
+  gui.presetsChanged = () => {
     resetSketch()
-    localStorage.setItem('centralVibrance.presets', JSON.stringify(presets)) 
   }
   if (windowWidth < 700){
     gui.close()
   }
 }
 
-const presets = JSON.parse(localStorage.getItem('centralVibrance.presets')) || {
+const defaultPresets = {
   "Connected Points":{
     "settings.Attract Particles to Center": false,
     "settings.bounceEdges": true,
