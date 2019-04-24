@@ -74,7 +74,7 @@ class QuadTree {
         }
     }
 
-    query(range, found) {
+    query(range, found = []) {
         if (!this.boundary.intersects(range)) {
             return found
         } else {
@@ -91,22 +91,6 @@ class QuadTree {
                 this.bottomright.query(range, found)
             }
         }
-    }
-
-    show() {
-        stroke(255)
-        strokeWeight(3)
-        noFill()
-        rectMode(CENTER)
-        rect(this.boundary.x, this.boundary.y, this.boundary.w * 2, this.boundary.h * 2)
-        if (this.divided) {
-            this.topleft.show()
-            this.topright.show()
-            this.bottomleft.show()
-            this.bottomright.show()
-        }
-        for(let p of this.points) {
-            point(p.x, p.y)
-        }
+        return found
     }
 }
