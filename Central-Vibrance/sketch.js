@@ -3,6 +3,7 @@ let particles = []
 let qtree
 let gui
 let endSim = false
+let pageIsLoaded = false
 
 let settings = {
     'Reset Canvas (R)': resetSketch,
@@ -97,7 +98,11 @@ let settings = {
     _colors: {openFolder:true,name:'Colors'},
     "lines": {
         "connectPoints": true,
-        "slowWhenConnected": true,
+        "changeSpeedConnected": true,
+        changeSpeedChance: 0.1,
+        _changeSpeedChance: {min:0,max:1,step:0.01},
+        "changeSpeedBy": 0.97,
+        _changeSpeedBy: {min:-4,max:4,step:0.01},
         "maxLineDist": 25,
         _maxLineDist: {min:1,max:512,step:1}
     },
@@ -188,12 +193,12 @@ function draw() {
         if(settings['lines']['connectPoints']){
             let points = qtree.query(new Circle(particles[i].pos.x, particles[i].pos.y, settings.lines.maxLineDist))
             for (let point of points) {
-                if(Math.random() < 0.1 && settings['lines']['slowWhenConnected']) {
-                    point.vel.mult(0.97)
-                }
                 if(particles[i] != point) {
                     stroke(lerpColor(particles[i].color, point.color, 0.5))
                     line(particles[i].pos.x, particles[i].pos.y, point.pos.x, point.pos.y)
+                    if(Math.random() < settings.lines.changeSpeedChance && settings.lines.changeSpeedConnected) {
+                        point.vel.mult(settings.lines.changeSpeedBy)
+                    }
                 }
             }
         }
@@ -209,7 +214,6 @@ function draw() {
 }
 
 function keyPressed() {
-    console.log(key)
     if (key === "r") {
         resetSketch()
     } else if (key === "s") {
@@ -253,12 +257,13 @@ function generateColor() {
 
 function resetSketch() {
     endSim = false
+
     resizeCanvas(settings['canvas']['width'], settings['canvas']['height'])
     colorMode(RGB, 255)
     background(settings['colors']['backgroundColor']['r'],settings['colors']['backgroundColor']['g'],settings['colors']['backgroundColor']['b'],settings['colors']['backgroundAlpha'])
     updateCanvasSize()
     particles = []
-    qtree = new QuadTree(new Rectangle(width/2,height/2,width/2,height/2), 5)
+    qtree = new QuadTree(new Rectangle(width/2,height/2,width/2,height/2), 1)
     for (var i = 0; i < settings['particleCount'];) {
         let origin = createVector(random(width), random(height))
         if(settings.originRadius.ignoreRadius || (dist(origin.x, origin.y, width/2, height/2) < settings['originRadius']['max'] && dist(origin.x, origin.y, width/2, height/2)) > settings['originRadius']['min']) {
@@ -268,11 +273,29 @@ function resetSketch() {
             i++
         }
     }
+
+    if (pageIsLoaded) {
+        if(width > height) {
+            gui.controllers["settings.originRadius.min"].__max = settings.canvas.width
+            gui.controllers["settings.originRadius.max"].__max = settings.canvas.width
+            gui.controllers["settings.maxStartingVelocity"].__max = settings.canvas.width * 0.04
+            gui.controllers["settings.maxVelocity"].__max = settings.canvas.width * 0.04
+            gui.controllers["settings.lines.maxLineDist"].__max = settings.canvas.width * 0.25
+        } else {
+            gui.controllers["settings.originRadius.min"].__max = settings.canvas.height
+            gui.controllers["settings.originRadius.max"].__max = settings.canvas.height
+            gui.controllers["settings.maxStartingVelocity"].__max = settings.canvas.height * 0.04
+            gui.controllers["settings.maxVelocity"].__max = settings.canvas.height * 0.04
+            gui.controllers["settings.lines.maxLineDist"].__max = settings.canvas.height * 0.25
+        }
+        
+        gui.updateAllDisplays()
+    }
 }
 
 window.onload = () => {
     updateCanvasSize()
-    gui = new autoGUI({width: 350})
+    gui = new AutoGUI({width: 350})
     gui.enablePresets(defaultPresets, 'centralVibrance.userPresets')
     gui.autoAdd(settings, 'settings')
     gui.sticky('settings.Reset Canvas (R)')
@@ -286,8 +309,10 @@ window.onload = () => {
         resetSketch()
     }
     if (windowWidth < 700){
+        gui.width = windowWidth - 30
         gui.close()
     }
+    pageIsLoaded = true
 }
 
 const defaultPresets = {
@@ -309,13 +334,14 @@ const defaultPresets = {
         "settings.maxVelocity": 3,
         "settings.mouseAttractionRange": 70,
         "settings.mouseAttractsParticles": true,
+        "settings.originRadius.ignoreRadius": true,
         "settings.originRadius.max": 400
     },
     "Smoke":{
         "settings.originRadius.max":300,
         "settings.bounceEdges":true,
         "settings.maxStartingVelocity":2,
-        "settings.maxVelocity":2.3000000000000003,
+        "settings.maxVelocity":2.3,
         "settings.mouseAttractsParticles": true,
         "settings.colors.showParticles":true,
         "settings.colors.particleOutline.particleWidth":2,

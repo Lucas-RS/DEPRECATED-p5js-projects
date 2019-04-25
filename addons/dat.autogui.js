@@ -1,4 +1,4 @@
-class autoGUI extends dat.GUI {
+class AutoGUI extends dat.GUI {
 
   constructor(guiParams) {
     super(guiParams)
@@ -132,6 +132,12 @@ class autoGUI extends dat.GUI {
       }
     } else {
       alert("You have not changed any settings, what is the use in an empty preset?")
+    }
+  }
+
+  updateAllDisplays() {
+    for(let i in this.controllers) {
+      this.controllers[i].updateDisplay()
     }
   }
 
