@@ -222,22 +222,6 @@ function keyPressed() {
         endSim = true
     }
 }
-
-function windowResized() {
-    updateCanvasSize()
-}
-
-function updateCanvasSize() {
-    let canvasElem = document.getElementById("defaultCanvas0")
-    if(windowWidth > windowHeight && width < height) {
-        canvasElem.style.width = "auto"
-        canvasElem.style.height = "100%"
-    } else {
-        canvasElem.style.height = "auto"
-        canvasElem.style.width = "100%"
-    }
-}
-
 function generateColor() {
     let colorType = settings['colors']['particleColorType']
     let c
@@ -259,9 +243,14 @@ function resetSketch() {
     endSim = false
 
     resizeCanvas(settings['canvas']['width'], settings['canvas']['height'])
+
+    let canvasElem = document.getElementById("defaultCanvas0")
+    canvasElem.style.width = ""
+    canvasElem.style.height = ""
+
     colorMode(RGB, 255)
     background(settings['colors']['backgroundColor']['r'],settings['colors']['backgroundColor']['g'],settings['colors']['backgroundColor']['b'],settings['colors']['backgroundAlpha'])
-    updateCanvasSize()
+    
     particles = []
     qtree = new QuadTree(new Rectangle(width/2,height/2,width/2,height/2), 1)
     for (var i = 0; i < settings['particleCount'];) {
@@ -294,7 +283,6 @@ function resetSketch() {
 }
 
 window.onload = () => {
-    updateCanvasSize()
     gui = new AutoGUI({width: 350})
     gui.enablePresets(defaultPresets, 'centralVibrance.userPresets')
     gui.autoAdd(settings, 'settings')
