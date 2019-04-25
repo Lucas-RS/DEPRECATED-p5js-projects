@@ -144,10 +144,7 @@ function setup() {
 }
 
 function draw() {
-  qtree =  new QuadTree(new Rectangle(width/2,height/2,width/2,height/2), 5)
-  for (let i = 0; i < particles.length; i++) {
-    qtree.insert(new Point(particles[i].pos.x, particles[i].pos.y, particles[i]))
-  }
+  
 
   if (!settings['drawTrails']) {
     colorMode(RGB, 255)
@@ -191,11 +188,11 @@ function draw() {
       let points = qtree.query(new Circle(particles[i].pos.x, particles[i].pos.y, settings.lines.maxLineDist))
       for (let point of points) {
         if(Math.random() < 0.1 && settings['lines']['slowWhenConnected']) {
-          point.data.vel.mult(0.97)
+          point.vel.mult(0.97)
         }
-        if(particles[i] != point.data) {
-          stroke(lerpColor(particles[i].color, point.data.color, 0.5))
-          line(particles[i].pos.x, particles[i].pos.y, point.data.pos.x, point.data.pos.y)
+        if(particles[i] != point) {
+          stroke(lerpColor(particles[i].color, point.color, 0.5))
+          line(particles[i].pos.x, particles[i].pos.y, point.pos.x, point.pos.y)
         }
       }
     }
@@ -211,10 +208,11 @@ function draw() {
 }
 
 function keyPressed() {
+  console.log(key)
   if (key === "r") {
-    resetSketch();
+    resetSketch()
   } else if (key === "s") {
-    saveCanvas(canvas, 'central-vibrance', 'png');
+    saveCanvas(canvas, 'central-vibrance', 'png')
   } else if (key === "e") {
     endSim = true
   }
@@ -259,11 +257,13 @@ function resetSketch() {
   background(settings['colors']['backgroundColor']['r'],settings['colors']['backgroundColor']['g'],settings['colors']['backgroundColor']['b'],settings['colors']['backgroundAlpha'])
   updateCanvasSize()
   particles = []
+  qtree =  new QuadTree(new Rectangle(width/2,height/2,width/2,height/2), 5)
   for (var i = 0; i < settings['particleCount'];) {
     let origin = createVector(random(width), random(height))
     if(dist(origin.x, origin.y, width/2, height/2) < settings['originRadius']['max'] && dist(origin.x, origin.y, width/2, height/2) > settings['originRadius']['min']) {
       particles[i] = new Particle(origin, generateColor());
       particles[i].applyForce(createVector(random(-settings['maxStartingVelocity'],settings['maxStartingVelocity']), random(-settings['maxStartingVelocity'],settings['maxStartingVelocity'])))
+      qtree.insert(particles[i])
       i++
     }
   }
