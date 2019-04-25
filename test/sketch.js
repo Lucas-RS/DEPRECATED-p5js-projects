@@ -5,7 +5,7 @@ function setup() {
     let boundary = new Rectangle(200,200,200,200)
     qt = new QuadTree(boundary, 4)
 
-    for(let i = 0; i < 10000; i++) {
+    for(let i = 0; i < 100; i++) {
         let p = new Point(random(width),random(height))
         qt.insert(p)
     }
@@ -19,13 +19,13 @@ function draw () {
         qt.insert(new Point(mouseX, mouseY))
     }
     
-    window.range = new Rectangle(mouseX, mouseY, 50, 50)
+    window.yeet = new Circle(mouseX, mouseY, 50, 50)
     fill(255,0,0)
-    circle(range.x, range.y, range.w*2, range.h*2)
+    ellipse(yeet.x, yeet.y, yeet.r*2)
 
-    window.points = qt.query(range)
+    window.points = qt.query(yeet)
     for (let p of points) {
         fill(0)
-        circle(p.x,p.y,5)
+        ellipse(p.x,p.y,5)
     }
 }

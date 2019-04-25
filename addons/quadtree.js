@@ -1,7 +1,8 @@
 class Point {
-    constructor(x,y) {
+    constructor(x,y,data) {
         this.x = x
         this.y = y
+        this.data = data
     }
 }
 
@@ -27,6 +28,41 @@ class Rectangle {
             range.y + range.h < this.y - this.h)
     }
 }
+
+class Circle {
+    constructor(x, y, r) {
+      this.x = x;
+      this.y = y;
+      this.r = r;
+      this.rSquared = this.r * this.r;
+    }
+  
+    contains(point) {
+      let d = Math.pow((point.x - this.x), 2) + Math.pow((point.y - this.y), 2);
+      return d <= this.rSquared;
+    }
+  
+    intersects(range) {
+  
+      let xDist = Math.abs(range.x - this.x);
+      let yDist = Math.abs(range.y - this.y);
+  
+      let r = this.r;
+  
+      let w = range.w;
+      let h = range.h;
+  
+      let edges = (xDist - w) ** 2 + (yDist - h) ** 2;
+  
+      if (xDist > (r + w) || yDist > (r + h))
+        return false;
+  
+      if (xDist <= w || yDist <= h)
+        return true;
+  
+      return edges <= this.rSquared;
+    }
+  }
 
 class QuadTree {
     constructor(boundary, capacity = 1) {

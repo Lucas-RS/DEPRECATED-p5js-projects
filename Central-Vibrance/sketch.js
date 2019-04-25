@@ -1,5 +1,6 @@
 //Need to stop p5 from listening for key presses when editing input values with keyboard.
 let particles = []
+let qtree
 let gui
 let endSim = false
 
@@ -143,6 +144,11 @@ function setup() {
 }
 
 function draw() {
+  qtree =  new QuadTree(new Rectangle(width/2,height/2,width/2,height/2), 5)
+  for (let i = 0; i < particles.length; i++) {
+    qtree.insert(new Point(particles[i].pos.x, particles[i].pos.y, particles[i]))
+  }
+
   if (!settings['drawTrails']) {
     colorMode(RGB, 255)
     background(settings['colors']['backgroundColor']['r'],settings['colors']['backgroundColor']['g'],settings['colors']['backgroundColor']['b'],settings['colors']['backgroundAlpha'])
@@ -182,16 +188,15 @@ function draw() {
     }
 
     if(settings['lines']['connectPoints']){
-      for(var j = 0; j < particles.length; j++) {
-        if(dist(particles[i].pos.x, particles[i].pos.y, particles[j].pos.x, particles[j].pos.y) < settings['lines']['maxLineDist']){
-          if(Math.random() < 0.1 && settings['lines']['slowWhenConnected']) {
-            particles[i].vel.mult(0.97)
-          }
-          stroke(lerpColor(particles[i].color, particles[j].color, 0.5))
-          if(i !== j) {
-            line(particles[i].pos.x, particles[i].pos.y, particles[j].pos.x, particles[j].pos.y)
-          }
-        } 
+      let points = qtree.query(new Circle(particles[i].pos.x, particles[i].pos.y, settings.lines.maxLineDist))
+      for (let point of points) {
+        if(Math.random() < 0.1 && settings['lines']['slowWhenConnected']) {
+          point.data.vel.mult(0.97)
+        }
+        if(particles[i] != point.data) {
+          stroke(lerpColor(particles[i].color, point.data.color, 0.5))
+          line(particles[i].pos.x, particles[i].pos.y, point.data.pos.x, point.data.pos.y)
+        }
       }
     }
 
