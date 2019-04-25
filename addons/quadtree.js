@@ -129,4 +129,13 @@ class QuadTree {
         }
         return found
     }
+
+    clear() {
+        delete this.topleft
+        delete this.topright
+        delete this.bottomleft
+        delete this.bottomright
+        this.points = []
+        this.divided = false
+    }
 }
