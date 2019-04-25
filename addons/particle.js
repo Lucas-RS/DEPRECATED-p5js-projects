@@ -3,6 +3,8 @@ class Particle {
 
     constructor(origin, c){
         this.pos = origin
+        this.x = this.pos.x
+        this.y = this.pos.y
         this.vel = createVector(0,0)
         this.acc = createVector(0,0)
         this.color = c
@@ -10,6 +12,8 @@ class Particle {
 
     update() {
         this.pos.add(this.vel)
+        this.x = this.pos.x
+        this.y = this.pos.y
         this.vel.add(this.acc)
         this.acc.mult(0)
     }
