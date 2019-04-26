@@ -150,21 +150,31 @@ function setup() {
 }
 
 function draw() {
-    
+    qtree.clear()
+    for (let particle of particles) {
+        qtree.insert(particle)
+        particle.checked = false
+    }
 
     if (!settings['drawTrails']) {
         colorMode(RGB, 255)
         background(settings['colors']['backgroundColor']['r'],settings['colors']['backgroundColor']['g'],settings['colors']['backgroundColor']['b'],settings['colors']['backgroundAlpha'])
     }
+
+    // qtree.p5show()
+
     for (var i = 0; i < particles.length; i++) {
         particles[i].update()
         particles[i].capVel(settings['maxVelocity'], settings['lockAxis']['xAxis'], settings['lockAxis']['yAxis'])
+
         if(settings['colors']['showParticles']) {
             particles[i].show(settings['colors']['particleOutline']['particleWidth'],settings['colors']['particleOutline']['particleHeight'], settings['colors']['particleOutline']['drawOutline'], settings['colors']['particleOutline']['particleOutlineColor'], settings['colors']['particleOutline']['particleOutlineAlpha'])
         }
+
         if(settings['bounceEdges']) {
             particles[i].bounceCanvasEdge()
         }
+
         if(settings['mouseAttractsParticles']) {
             particles[i].mouseAttract(settings['mouseAttractionRange'])
         }
@@ -199,6 +209,8 @@ function draw() {
                     if(Math.random() < settings.lines.changeSpeedChance && settings.lines.changeSpeedConnected) {
                         point.vel.mult(settings.lines.changeSpeedBy)
                     }
+                } else {
+                    point.checked = true
                 }
             }
         }
@@ -222,6 +234,7 @@ function keyPressed() {
         endSim = true
     }
 }
+
 function generateColor() {
     let colorType = settings['colors']['particleColorType']
     let c
@@ -258,7 +271,6 @@ function resetSketch() {
         if(settings.originRadius.ignoreRadius || (dist(origin.x, origin.y, width/2, height/2) < settings['originRadius']['max'] && dist(origin.x, origin.y, width/2, height/2)) > settings['originRadius']['min']) {
             particles[i] = new Particle(origin, generateColor());
             particles[i].applyForce(createVector(random(-settings['maxStartingVelocity'],settings['maxStartingVelocity']), random(-settings['maxStartingVelocity'],settings['maxStartingVelocity'])))
-            qtree.insert(particles[i])
             i++
         }
     }

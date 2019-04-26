@@ -115,7 +115,7 @@ class QuadTree {
             return found
         } else {
             for (let p of this.points) {
-                if (range.contains(p)) {
+                if (!p.checked && range.contains(p)) {
                     found.push(p)
                 }
             }
@@ -137,5 +137,18 @@ class QuadTree {
         delete this.bottomright
         this.points = []
         this.divided = false
+    }
+
+    p5show() {
+        noFill()
+        stroke(255)
+        rectMode(CENTER)
+        rect(this.boundary.x, this.boundary.y, this.boundary.w * 2, this.boundary.h * 2)
+        if(this.divided) {
+            this.topleft.p5show()
+            this.topright.p5show()
+            this.bottomleft.p5show()
+            this.bottomright.p5show()
+        }
     }
 }
