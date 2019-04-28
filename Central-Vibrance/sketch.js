@@ -469,5 +469,8 @@ const defaultPresets = {
         "settings.colors.randomHSLA.lightnessMax":189,
         "settings.colors.randomHSLA.alphaMax":35,
         "settings.colors.gradient.secondColor":"#ff9232"
-      }
+    },
+    "Fusion":{
+        "settings.originRadius.max":350,"settings.particleCount":400,"settings.mouseAttractionRange":240,"settings.drawTrails":false,"settings.maxStartingVelocity":2.2,"settings.maxVelocity":12,"settings.colors.showParticles":true,"settings.colors.particleOutline.particleWidth":13,"settings.colors.particleOutline.particleHeight":13,"settings.colors.particleOutline.drawOutline":false,"settings.colors.backgroundColor":{"r":33,"g":33,"b":33},"settings.colors.backgroundAlpha":71,"settings.colors.particleColorType":"gradient","settings.colors.randomHSLA.hueMin":41,"settings.colors.randomHSLA.saturationMin":110,"settings.colors.randomHSLA.lightnessMin":117,"settings.colors.randomHSLA.lightnessMax":170,"settings.colors.randomHSLA.alphaMin":119,"settings.colors.gradient.firstColor":"#ffe9a2","settings.colors.gradient.secondColor":"#1e436e","settings.colors.gradient.alphaMin":127,"settings.lines.connectPoints":false,"settings.lines.changeSpeedConnected":false,"settings.lines.maxLineDist":6,"settings.centerAttractionForce.chance":0.66,"settings.centerAttractionForce.radius":0,"settings.centerAttractionForce.outside.max":4,"settings.centerAttractionForce.inside.min":-7,"settings.centerAttractionForce.extra.chance":0.55
+    }
 }
