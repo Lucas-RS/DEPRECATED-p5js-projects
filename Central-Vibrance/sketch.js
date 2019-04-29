@@ -51,7 +51,7 @@ let settings = {
             _all:{min:0,max:250,step:1}
         },
         _particleOutline: {name: "Particle Outline",hide:true},
-        "backgroundColor": {r:21,g:21,b:21},
+        "backgroundColor": {r:255,g:255,b:255},
         _backgroundColor: {name:'Background Color',type:'color'},
         "backgroundAlpha": 255,
         _backgroundAlpha: {min:0,max:255,step:1,name:'Background Alpha'},
