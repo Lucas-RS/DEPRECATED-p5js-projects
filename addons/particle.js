@@ -1,7 +1,7 @@
 //Add scale, so larger display resolutions function the sane
 class Particle {
 
-    constructor(origin, c){
+    constructor(origin, c = color(0)){
         this.pos = origin
         this.x = this.pos.x
         this.y = this.pos.y
