@@ -7,15 +7,19 @@ let settings = {
     padding: 5,
     _padding: {min:0,max:100,step:1},
     drawTrails: false,
-    dimensions: {
+    minDimensions: {
         minWidth: 10,
         minHeight: 10,
-        _all: {min:0,max:100,step:1}
+        _all: {min:0,max:1000,step:1}
     },
     expandAmount: {
         min: 0,
         max: 5,
-        _all: {min:0,max:100,step:1}
+        _all: {min:0,max:1000,step:1},
+        wMultiplier: 1,
+        _wMultiplier: {min:0,max:100,step:1},
+        hMultiplier: 1,
+        _hMultiplier: {min:0,max:100,step:1}
     },
     shake: false,
     shakingConstraints: {
@@ -40,9 +44,9 @@ class autoRect {
         this.canExpand = true
     }
 
-    expand( min, max ) {
-        this.w += Math.random() * Math.abs(max - min) + min
-        this.h += Math.random() * Math.abs(max - min) + min
+    expand( min, max, wMult, hMult ) {
+        this.w += ( Math.random() * Math.abs( max - min ) + min ) * wMult
+        this.h += ( Math.random() * Math.abs( max - min ) + min ) * hMult
     }
 
     intersects( other, padding ) {
@@ -65,8 +69,8 @@ function draw() {
     noStroke()
 
     for ( let i in rectangles ) {
-        if ( ( ( rectangles[i].w <= settings.dimensions.minWidth || 
-            rectangles[i].h <= settings.dimensions.minHeight ) && 
+        if ( ( ( rectangles[i].w <= settings.minDimensions.minWidth || 
+            rectangles[i].h <= settings.minDimensions.minHeight ) && 
             !rectangles[i].canExpand ) || 
             rectangles[i].x > width || 
             rectangles[i].x + rectangles[i].w < 0 || 
@@ -96,7 +100,7 @@ function draw() {
 
         if ( rectangle.canExpand ) {
             if ( !doesIntersect ) {
-                rectangle.expand( settings.expandAmount.min, settings.expandAmount.max )
+                rectangle.expand( settings.expandAmount.min, settings.expandAmount.max, settings.expandAmount.wMultiplier, settings.expandAmount.hMultiplier )
             } else {
                 rectangle.canExpand = false
             }
