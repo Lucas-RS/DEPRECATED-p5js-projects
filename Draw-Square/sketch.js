@@ -6,6 +6,7 @@ let settings = {
     _newRectChance: {min:0,max:1,step:0.01},
     padding: 5,
     _padding: {min:0,max:100,step:1},
+    drawTrails: false,
     dimensions: {
         minWidth: 10,
         minHeight: 10,
@@ -13,16 +14,18 @@ let settings = {
     },
     expandAmount: {
         min: 0,
-        max: 10,
+        max: 5,
         _all: {min:0,max:100,step:1}
     },
-    randomMovement: {
+    shake: false,
+    shakingConstraints: {
         xMin: -1,
         xMax: 1,
         yMin: -1,
         yMax: 1,
         _all: {min:-50,max:50,step:1}
     },
+    _shakingConstraints: {hide: true, openFolder: true},
     _all: {openFolder: true}
 }
 
@@ -56,13 +59,15 @@ function setup() {
 }
 
 function draw() {
-    background(255)
+    if ( !settings.drawTrails ) {
+        background(255)
+    }
     noStroke()
 
     for ( let i in rectangles ) {
-        if ( ( rectangles[i].w <= settings.dimensions.minWidth || 
+        if ( ( ( rectangles[i].w <= settings.dimensions.minWidth || 
             rectangles[i].h <= settings.dimensions.minHeight ) && 
-            !rectangles[i].canExpand || 
+            !rectangles[i].canExpand ) || 
             rectangles[i].x > width || 
             rectangles[i].x + rectangles[i].w < 0 || 
             rectangles[i].y > height || 
@@ -88,6 +93,7 @@ function draw() {
                 }
             }
         }
+
         if ( rectangle.canExpand ) {
             if ( !doesIntersect ) {
                 rectangle.expand( settings.expandAmount.min, settings.expandAmount.max )
@@ -95,10 +101,12 @@ function draw() {
                 rectangle.canExpand = false
             }
         }
-
-        rectangle.x += random( settings.randomMovement.xMin, settings.randomMovement.xMax )
-        rectangle.y += random( settings.randomMovement.yMin, settings.randomMovement.yMax )
-
+        
+        if ( settings.shake ) {
+            rectangle.x += random( settings.shakingConstraints.xMin, settings.shakingConstraints.xMax )
+            rectangle.y += random( settings.shakingConstraints.yMin, settings.shakingConstraints.yMax )    
+        }
+        
         fill(rectangle.color)
         rect(rectangle.x, rectangle.y, rectangle.w, rectangle.h)
     }
@@ -113,4 +121,6 @@ const resetSketch = () => {
 window.onload = function () {
     gui = new AutoGUI()
     gui.autoAdd(settings, 'settings')
+    gui.sticky('settings.reset')
+    gui.addToggleDisplayEvent('settings.shake','settings.shakingConstraints')
 }
