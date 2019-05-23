@@ -4,6 +4,7 @@ let qtree
 let gui
 let endSim = false
 let pageIsLoaded = false
+let sampledImg
 
 let settings = {
     'Reset Canvas (R)': resetSketch,
@@ -24,7 +25,7 @@ let settings = {
     },
     _originRadius: {openFolder:true,name:'Origin Radius'},
     "particleCount": 100,
-    _particleCount: {min:1,max:400,step:1,name:'Particle Count'},
+    _particleCount: {min:1,max:1000,step:1,name:'Particle Count'},
     "mouseAttractsParticles": false,
     "mouseAttractionRange": 100,
     _mouseAttractionRange: {min:0,max:4096,step:1,name:'Mouse Attraction Range',hide:true},
@@ -56,7 +57,7 @@ let settings = {
         "backgroundAlpha": 255,
         _backgroundAlpha: {min:0,max:255,step:1,name:'Background Alpha'},
         "particleColorType": 'randomRGBA',
-        _particleColorType: {type:'select',name:'Particle Color Type',options:['randomRGBA','randomHSLA','gradient']},
+        _particleColorType: {type:'select',name:'Particle Color Type',options:['randomRGBA','randomHSLA','gradient','image']},
         "randomRGBA": {
             "redMin": 0,
             "redMax": 255,
@@ -88,7 +89,7 @@ let settings = {
             _all: {type:'color',min:0,max:255,step:1}
         },
         "image":{
-            "Open File": function() {console.log('this code needs writing')},
+            "Open File": importImage,
             "alphaMin": 0,
             "alphaMax": 255,
             _all: {min:0,max:255,step:1}
@@ -161,11 +162,15 @@ function draw() {
         background(settings['colors']['backgroundColor']['r'],settings['colors']['backgroundColor']['g'],settings['colors']['backgroundColor']['b'],settings['colors']['backgroundAlpha'])
     }
 
-    // qtree.p5show()
-
-    for (var i = 0; i < particles.length; i++) {
+    for (let i = 0; i < particles.length; i++) {
         particles[i].update()
         particles[i].capVel(settings['maxVelocity'], settings['lockAxis']['xAxis'], settings['lockAxis']['yAxis'])
+
+        if ( sampledImg !== undefined && settings['colors']['particleColorType'] === "image" ) {
+            let c = sampledImg.get(particles[i].pos.x, particles[i].pos.y)
+            c[3] = alpha(particles[i].color)
+            particles[i].color.levels = c
+        }
 
         if(settings['colors']['showParticles']) {
             particles[i].show(settings['colors']['particleOutline']['particleWidth'],settings['colors']['particleOutline']['particleHeight'], settings['colors']['particleOutline']['drawOutline'], settings['colors']['particleOutline']['particleOutlineColor'], settings['colors']['particleOutline']['particleOutlineAlpha'])
@@ -235,6 +240,23 @@ function keyPressed() {
     }
 }
 
+//this will import the image used as a base to pull color from.
+function importImage() {
+    let imgInput=createFileInput(handleFile)
+    imgInput.elt.style.display='none'
+    imgInput.elt.click()
+}
+
+function handleFile(file) {
+    sampledImg = loadImage(file.data)
+    //real good solution to the image load time here.
+    setTimeout(function(){
+        settings['canvas']['height'] = sampledImg.height
+        settings['canvas']['width'] = sampledImg.width
+        resetSketch()
+    }, 500)
+}
+
 function generateColor() {
     let colorType = settings['colors']['particleColorType']
     let c
@@ -248,6 +270,9 @@ function generateColor() {
         colorMode(RGB, 255)
         c = lerpColor(color(settings['colors']['gradient']['firstColor']),color(settings['colors']['gradient']['secondColor']),random())
         c.setAlpha(random(settings['colors']['gradient']['alphaMin'],settings['colors']['gradient']['alphaMax']))
+    } else {
+        colorMode(RGB, 255)
+        c = color(0,0,0,random(settings.colors.image.alphaMin,settings.colors.image.alphaMax))
     }
     return c
 }
@@ -273,6 +298,11 @@ function resetSketch() {
             particles[i].applyForce(createVector(random(-settings['maxStartingVelocity'],settings['maxStartingVelocity']), random(-settings['maxStartingVelocity'],settings['maxStartingVelocity'])))
             i++
         }
+    }
+
+    if ( sampledImg === undefined && settings['colors']['particleColorType'] === "image" ) {
+        alert('Please select an image.')
+        importImage()
     }
 
     if (pageIsLoaded) {
@@ -475,7 +505,9 @@ const defaultPresets = {
     },
     "Phase": {
         "settings.originRadius.ignoreRadius":true,"settings.originRadius.max":267,"settings.particleCount":400,"settings.mouseAttractsParticles":true,"settings.mouseAttractionRange":400,"settings.bounceEdges":true,"settings.drawTrails":false,"settings.maxStartingVelocity":2,"settings.maxVelocity":5,"settings.colors.particleOutline.particleWidth":10,"settings.colors.particleOutline.particleHeight":10,"settings.colors.particleOutline.drawOutline":false,"settings.colors.particleOutline.particleOutlineColor":"#000000","settings.colors.backgroundColor":{"r":255,"g":255,"b":255},"settings.colors.backgroundAlpha":30,"settings.colors.gradient.firstColor":"#2899ff","settings.colors.gradient.secondColor":"#fffe22","settings.colors.gradient.alphaMin":37,"settings.colors.gradient.alphaMax":236,"settings.lines.changeSpeedChance":1,"settings.lines.changeSpeedBy":-0.5,"settings.Attract Particles to Center":false,"settings.centerAttractionForce.radius":210,"settings.centerAttractionForce.outside.min":0,"settings.centerAttractionForce.outside.max":0,"settings.centerAttractionForce.extra.chance":0.1,"settings.centerAttractionForce.extra.min":-10,"settings.centerAttractionForce.extra.max":0
+    },
+    "Draw From Image":{
+        "settings.canvas.width":1080,"settings.canvas.height":1080,"settings.originRadius.ignoreRadius":true,"settings.particleCount":200,"settings.bounceEdges":true,"settings.maxStartingVelocity":5,"settings.maxVelocity":3.5,"settings.colors.backgroundColor":{"r":255,"g":255,"b":255},"settings.colors.particleColorType":"image","settings.lines.changeSpeedConnected":false,"settings.lines.changeSpeedChance":0,"settings.lines.maxLineDist":75,"settings.Attract Particles to Center":false,"settings.centerAttractionForce.chance":0.5328,"settings.centerAttractionForce.radius":1472
     }
-
 }
 
