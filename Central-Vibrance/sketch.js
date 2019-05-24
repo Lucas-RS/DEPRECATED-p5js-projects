@@ -31,27 +31,62 @@ let settings = {
     _mouseAttractionRange: {min:0,max:4096,step:1,name:'Mouse Attraction Range',hide:true},
     "bounceEdges": false,
     "drawTrails": true,
-    "maxStartingVelocity": 1,
-    _maxStartingVelocity: {min:0,max:100,step:0.01},
-    "maxVelocity": 1,
-    _maxVelocity: {min:0,max:100,step:0.01},
-    "lockAxis": {
-        "xAxis": false,
-        "yAxis": false
+    "velocitySettings": {
+        "maxVelocity": 1,
+        _maxVelocity: {min:0,max:100,step:0.01},
+        "startingVelocity": {
+            minX:-1,
+            maxX:1,
+            minY:-1,
+            maxY:1,
+            _all: {min:-100,max:100,step:0.01}
+        },
+        "changeForceChance": 0.002,
+        _changeForceChance: {min:0,max:1,step:0.0001},
+        "changeMagnitudeChance": 1,
+        _changeMagnitudeChance: {min:0,max:1,step:0.0001},
+        "magnitudeBoundaries": {
+            "min": 1,
+            "max": 2,
+            _all: {min:-10,max:10,step:0.01}
+        },
+        "changeDirectionChance": 1,
+        _changeDirectionChance: {min:0,max:1,step:0.0001},
+        "rotationBoundaries": {
+            "min": -360,
+            "max": 360,
+            _all: {min:-360,max:360,step:0.01}
+        },
+        _rotationBoundaries: {name:"Rotation Boundaries (in degrees)"},
+        "lockAxis": {
+            "xAxis": false,
+            "yAxis": false
+        },
+        "randomForce": {
+            randomForceChance: 0.001,
+            _randomForceChance: {min:0,max:1,step:0.0001},
+            minX: -1,
+            maxX: 1,
+            minY: -1,
+            maxY: 1,
+            _all: {min:-10,max:10,step:0.01}
+        }
     },
     "colors": {
         "showParticles": false,
         _showParticles: {name:"Show Particles"},
-        "particleOutline": {
+        "particleSettings": {
             "particleWidth": 25,
             "particleHeight": 25,
             "drawOutline": true,
+            "strokeWeight": 1,
+            _strokeWeight: {min:0.1,max:50,step:0.1},
             "particleOutlineColor": "#ffffff",
             "particleOutlineAlpha": 255,
             _particleOutlineAlpha: {min:0,max:255,step:1},
-            _all:{min:0,max:250,step:1}
+            _all:{min:1,max:250,step:1}
         },
-        _particleOutline: {name: "Particle Outline",hide:true},
+        _particleSettings: {name: "Particle Settings",hide:true},
         "backgroundColor": {r:255,g:255,b:255},
         _backgroundColor: {name:'Background Color',type:'color'},
         "backgroundAlpha": 255,
@@ -92,12 +127,16 @@ let settings = {
             "Open File": importImage,
             "alphaMin": 0,
             "alphaMax": 255,
+            "updateColorChance": 1,
+            _updateColorChance: {min:0,max:1,step:0.01},
             _all: {min:0,max:255,step:1}
         },
         _all: {openFolder:true,hide:true}
     },
     _colors: {openFolder:true,name:'Colors'},
     "lines": {
+        "strokeWeight": 1,
+        _strokeWeight: {min:0.1,max:50,step:0.1},
         "connectPoints": true,
         "changeSpeedConnected": true,
         changeSpeedChance: 0.1,
@@ -138,6 +177,7 @@ let settings = {
 }
 
 function setup() {
+    angleMode(DEGREES)
     let ratio = windowWidth / windowHeight
     if(ratio > 1) {
         settings['canvas']['width'] = 1920
@@ -163,17 +203,15 @@ function draw() {
     }
 
     for (let i = 0; i < particles.length; i++) {
-        particles[i].update()
-        particles[i].capVel(settings['maxVelocity'], settings['lockAxis']['xAxis'], settings['lockAxis']['yAxis'])
-
-        if ( sampledImg !== undefined && settings['colors']['particleColorType'] === "image" ) {
+        if ( sampledImg !== undefined && settings['colors']['particleColorType'] === "image" && Math.random() <= settings['colors']['image']['updateColorChance']) {
             let c = sampledImg.get(particles[i].pos.x, particles[i].pos.y)
             c[3] = alpha(particles[i].color)
             particles[i].color.levels = c
         }
 
         if(settings['colors']['showParticles']) {
-            particles[i].show(settings['colors']['particleOutline']['particleWidth'],settings['colors']['particleOutline']['particleHeight'], settings['colors']['particleOutline']['drawOutline'], settings['colors']['particleOutline']['particleOutlineColor'], settings['colors']['particleOutline']['particleOutlineAlpha'])
+            strokeWeight(settings.colors.particleSettings.strokeWeight)
+            particles[i].show(settings['colors']['particleSettings']['particleWidth'],settings['colors']['particleSettings']['particleHeight'], settings['colors']['particleSettings']['drawOutline'], settings['colors']['particleSettings']['particleOutlineColor'], settings['colors']['particleSettings']['particleOutlineAlpha'])
         }
 
         if(settings['bounceEdges']) {
@@ -184,7 +222,7 @@ function draw() {
             particles[i].mouseAttract(settings['mouseAttractionRange'])
         }
 
-        if(Math.random() < settings['centerAttractionForce']['chance'] && settings['Attract Particles to Center']) {
+        if(Math.random() <= settings['centerAttractionForce']['chance'] && settings['Attract Particles to Center']) {
             let attractCenterForce = createVector(width/2, height/2)
             attractCenterForce.sub(particles[i].pos)
             if(dist(particles[i].pos.x, particles[i].pos.y, width/2, height/2) > settings['centerAttractionForce']['radius']) {
@@ -201,8 +239,17 @@ function draw() {
                 }
             }
             particles[i].applyForce(attractCenterForce);
-        } else if(Math.random() < 0.002){
-            particles[i].applyForce(createVector(random(-settings['maxStartingVelocity'],settings['maxStartingVelocity']), random(-settings['maxStartingVelocity'],settings['maxStartingVelocity'])))
+        } else if ( Math.random() < settings['velocitySettings']['changeForceChance'] ) {
+            if(Math.random() < settings['velocitySettings']['changeDirectionChance']){
+                particles[i].vel.rotate(random(settings['velocitySettings']['rotationBoundaries']['min'],settings['velocitySettings']['rotationBoundaries']['max']))
+            }
+            if ( Math.random() < settings['velocitySettings']['changeMagnitudeChance'] ) {
+                particles[i].vel.setMag(particles[i].vel.mag() * random(settings['velocitySettings']['magnitudeBoundaries']['min'],settings['velocitySettings']['magnitudeBoundaries']['max'])) 
+            }
+        }
+
+        if ( Math.random() < settings.velocitySettings.randomForce.randomForceChance ) {
+            particles[i].applyForce(createVector(random(settings.velocitySettings.randomForce.minX,settings.velocitySettings.randomForce.maxX), random(settings.velocitySettings.randomForce.minY,settings.velocitySettings.randomForce.maxY)))
         }
 
         if(settings['lines']['connectPoints']){
@@ -210,6 +257,7 @@ function draw() {
             for (let point of points) {
                 if(particles[i] != point) {
                     stroke(lerpColor(particles[i].color, point.color, 0.5))
+                    strokeWeight(settings.lines.strokeWeight)
                     line(particles[i].pos.x, particles[i].pos.y, point.pos.x, point.pos.y)
                     if(Math.random() < settings.lines.changeSpeedChance && settings.lines.changeSpeedConnected) {
                         point.vel.mult(settings.lines.changeSpeedBy)
@@ -227,6 +275,10 @@ function draw() {
                 particles.splice(i,1)
             }
         }
+
+        particles[i].capVel(settings['velocitySettings']['maxVelocity'], settings['velocitySettings']['lockAxis']['xAxis'], settings['velocitySettings']['lockAxis']['yAxis'])
+
+        particles[i].update()
     }
 }
 
@@ -279,6 +331,7 @@ function generateColor() {
 
 function resetSketch() {
     endSim = false
+    particles = []
 
     resizeCanvas(settings['canvas']['width'], settings['canvas']['height'])
 
@@ -289,13 +342,17 @@ function resetSketch() {
     colorMode(RGB, 255)
     background(settings['colors']['backgroundColor']['r'],settings['colors']['backgroundColor']['g'],settings['colors']['backgroundColor']['b'],settings['colors']['backgroundAlpha'])
     
-    particles = []
     qtree = new QuadTree(new Rectangle(width/2,height/2,width/2,height/2), 1)
     for (var i = 0; i < settings['particleCount'];) {
         let origin = createVector(random(width), random(height))
         if(settings.originRadius.ignoreRadius || (dist(origin.x, origin.y, width/2, height/2) < settings['originRadius']['max'] && dist(origin.x, origin.y, width/2, height/2)) > settings['originRadius']['min']) {
             particles[i] = new Particle(origin, generateColor());
-            particles[i].applyForce(createVector(random(-settings['maxStartingVelocity'],settings['maxStartingVelocity']), random(-settings['maxStartingVelocity'],settings['maxStartingVelocity'])))
+            particles[i].applyForce(
+                createVector(
+                    random(settings['velocitySettings']['startingVelocity']['minX'],settings['velocitySettings']['startingVelocity']['maxX']),
+                    random(settings['velocitySettings']['startingVelocity']['minY'],settings['velocitySettings']['startingVelocity']['maxY'])
+                )
+            )
             i++
         }
     }
@@ -309,14 +366,12 @@ function resetSketch() {
         if(width > height) {
             gui.controllers["settings.originRadius.min"].__max = settings.canvas.width
             gui.controllers["settings.originRadius.max"].__max = settings.canvas.width
-            gui.controllers["settings.maxStartingVelocity"].__max = settings.canvas.width * 0.04
-            gui.controllers["settings.maxVelocity"].__max = settings.canvas.width * 0.04
+            gui.controllers["settings.velocitySettings.maxVelocity"].__max = settings.canvas.width * 0.04
             gui.controllers["settings.lines.maxLineDist"].__max = settings.canvas.width * 0.25
         } else {
             gui.controllers["settings.originRadius.min"].__max = settings.canvas.height
             gui.controllers["settings.originRadius.max"].__max = settings.canvas.height
-            gui.controllers["settings.maxStartingVelocity"].__max = settings.canvas.height * 0.04
-            gui.controllers["settings.maxVelocity"].__max = settings.canvas.height * 0.04
+            gui.controllers["settings.velocitySettings.maxVelocity"].__max = settings.canvas.height * 0.04
             gui.controllers["settings.lines.maxLineDist"].__max = settings.canvas.height * 0.25
         }
         
@@ -333,7 +388,7 @@ window.onload = () => {
     gui.sticky('settings.Save As PNG (S)')
     gui.addToggleDisplayEvent('settings.Attract Particles to Center','settings.centerAttractionForce')
     gui.addToggleDisplayEvent('settings.mouseAttractsParticles','settings.mouseAttractionRange')
-    gui.addToggleDisplayEvent('settings.colors.showParticles','settings.colors.particleOutline')
+    gui.addToggleDisplayEvent('settings.colors.showParticles','settings.colors.particleSettings')
     gui.addMenuFolderSwitch('settings.colors.particleColorType', 'settings.colors')
     gui.presetsChanged = () => {
         resetSketch()
@@ -352,16 +407,19 @@ const defaultPresets = {
         "settings.colors.backgroundColor": {"r":255,"g":255,"b":255},
         "settings.colors.gradient.alphaMax": 0,
         "settings.colors.particleColorType": "randomHSLA",
-        "settings.colors.particleOutline.particleOutlineAlpha": 160,
-        "settings.colors.particleOutline.particleOutlineColor": "#ff487e",
+        "settings.colors.particleSettings.particleOutlineAlpha": 160,
+        "settings.colors.particleSettings.particleOutlineColor": "#ff487e",
         "settings.colors.randomHSLA.lightnessMin": 80,
         "settings.colors.randomHSLA.saturationMin": 160,
         "settings.colors.showParticles": true,
         "settings.drawTrails": false,
         "settings.lines.maxLineDist": 50,
         "settings.lines.slowWhenConnected": false,
-        "settings.maxStartingVelocity": 3,
-        "settings.maxVelocity": 3,
+        "settings.velocitySettings.startingVelocity.minX": -3,
+        "settings.velocitySettings.startingVelocity.minY": -3,
+        "settings.velocitySettings.startingVelocity.maxX": 3,
+        "settings.velocitySettings.startingVelocity.maxY": 3,
+        "settings.velocitySettings.maxVelocity": 3,
         "settings.mouseAttractionRange": 70,
         "settings.mouseAttractsParticles": true,
         "settings.originRadius.ignoreRadius": true,
@@ -370,14 +428,17 @@ const defaultPresets = {
     "Smoke":{
         "settings.originRadius.max":300,
         "settings.bounceEdges":true,
-        "settings.maxStartingVelocity":2,
-        "settings.maxVelocity":2.3,
+        "settings.velocitySettings.startingVelocity.minX": -2,
+        "settings.velocitySettings.startingVelocity.minY": -2,
+        "settings.velocitySettings.startingVelocity.maxX": 2,
+        "settings.velocitySettings.startingVelocity.maxY": 2,
+        "settings.velocitySettings.maxVelocity":2.3,
         "settings.mouseAttractsParticles": true,
         "settings.colors.showParticles":true,
-        "settings.colors.particleOutline.particleWidth":2,
-        "settings.colors.particleOutline.particleHeight":2,
-        "settings.colors.particleOutline.drawOutline":false,
-        "settings.colors.particleOutline.particleOutlineColor":"#000000",
+        "settings.colors.particleSettings.particleWidth":2,
+        "settings.colors.particleSettings.particleHeight":2,
+        "settings.colors.particleSettings.drawOutline":false,
+        "settings.colors.particleSettings.particleOutlineColor":"#000000",
         "settings.colors.backgroundColor":{"r":129,"g":132.5,"b":137.5},
         "settings.colors.particleColorType":"gradient",
         "settings.colors.gradient.alphaMin":5,
@@ -393,13 +454,16 @@ const defaultPresets = {
     "Monochrome":{
         "settings.originRadius.max":400,
         "settings.bounceEdges":true,
-        "settings.maxStartingVelocity":2,
-        "settings.maxVelocity":3,
+        "settings.velocitySettings.startingVelocity.minX": -2,
+        "settings.velocitySettings.startingVelocity.minY": -2,
+        "settings.velocitySettings.startingVelocity.maxX": 2,
+        "settings.velocitySettings.startingVelocity.maxY": 2,
+        "settings.velocitySettings.maxVelocity":3,
         "settings.colors.showParticles":true,
-        "settings.colors.particleOutline.particleWidth":2,
-        "settings.colors.particleOutline.particleHeight":2,
-        "settings.colors.particleOutline.drawOutline":false,
-        "settings.colors.particleOutline.particleOutlineColor":"#000000",
+        "settings.colors.particleSettings.particleWidth":2,
+        "settings.colors.particleSettings.particleHeight":2,
+        "settings.colors.particleSettings.drawOutline":false,
+        "settings.colors.particleSettings.particleOutlineColor":"#000000",
         "settings.colors.backgroundColor":{"r":53,"g":87,"b":167.5},
         "settings.colors.particleColorType":"gradient",
         "settings.colors.gradient.alphaMin":5,
@@ -412,7 +476,7 @@ const defaultPresets = {
         "settings.centerAttractionForce.extra.chance":0.1,
         "settings.centerAttractionForce.extra.max":1,
         "settings.particleCount":200,
-        "settings.lockAxis.yAxis":true,
+        "settings.velocitySettings.lockAxis.yAxis":true,
         "settings.colors.gradient.firstColor":"#bbf3ff",
         "settings.colors.gradient.secondColor":"#98b6ff",
         "settings.lines.maxLineDist":20,
@@ -427,13 +491,16 @@ const defaultPresets = {
         "settings.mouseAttractionRange":150,
         "settings.bounceEdges":true,
         "settings.drawTrails":false,
-        "settings.maxStartingVelocity":2,
-        "settings.maxVelocity":10,
+        "settings.velocitySettings.startingVelocity.minX": -2,
+        "settings.velocitySettings.startingVelocity.minY": -2,
+        "settings.velocitySettings.startingVelocity.maxX": 2,
+        "settings.velocitySettings.startingVelocity.maxY": 2,
+        "settings.velocitySettings.maxVelocity":10,
         "settings.colors.showParticles":true,
-        "settings.colors.particleOutline.particleWidth":10,
-        "settings.colors.particleOutline.particleHeight":10,
-        "settings.colors.particleOutline.drawOutline":false,
-        "settings.colors.particleOutline.particleOutlineColor":"#000000",
+        "settings.colors.particleSettings.particleWidth":10,
+        "settings.colors.particleSettings.particleHeight":10,
+        "settings.colors.particleSettings.drawOutline":false,
+        "settings.colors.particleSettings.particleOutlineColor":"#000000",
         "settings.colors.backgroundColor":{
           "r":255,
           "g":255,
@@ -454,20 +521,23 @@ const defaultPresets = {
         "settings.centerAttractionForce.extra.min":-10,
         "settings.centerAttractionForce.extra.max":0
     },
-    Neon: {
+    "Neon": {
         "settings.originRadius.max":480,
         "settings.particleCount":400,
         "settings.mouseAttractsParticles":true,
         "settings.mouseAttractionRange":150,
         "settings.bounceEdges":true,
         "settings.drawTrails":true,
-        "settings.maxStartingVelocity":2,
-        "settings.maxVelocity":4,
+        "settings.velocitySettings.startingVelocity.minX": -2,
+        "settings.velocitySettings.startingVelocity.minY": -2,
+        "settings.velocitySettings.startingVelocity.maxX": 2,
+        "settings.velocitySettings.startingVelocity.maxY": 2,
+        "settings.velocitySettings.maxVelocity":4,
         "settings.colors.showParticles":true,
-        "settings.colors.particleOutline.particleWidth":1,
-        "settings.colors.particleOutline.particleHeight":1,
-        "settings.colors.particleOutline.drawOutline":false,
-        "settings.colors.particleOutline.particleOutlineColor":"#000000",
+        "settings.colors.particleSettings.particleWidth":1,
+        "settings.colors.particleSettings.particleHeight":1,
+        "settings.colors.particleSettings.drawOutline":false,
+        "settings.colors.particleSettings.particleOutlineColor":"#000000",
         "settings.colors.backgroundColor":{
           "r":45,
           "g":14,
@@ -492,8 +562,8 @@ const defaultPresets = {
         "settings.canvas.width":1000,
         "settings.canvas.height":2100,
         "settings.originRadius.min":263,
-        "settings.lockAxis.xAxis":true,
-        "settings.colors.particleOutline.particleOutlineAlpha":20,
+        "settings.velocitySettings.lockAxis.xAxis":true,
+        "settings.colors.particleSettings.particleOutlineAlpha":20,
         "settings.colors.randomHSLA.hueMin":244,
         "settings.colors.randomHSLA.hueMax":63,
         "settings.colors.randomHSLA.lightnessMax":189,
@@ -501,13 +571,64 @@ const defaultPresets = {
         "settings.colors.gradient.secondColor":"#ff9232"
     },
     "Fusion":{
-        "settings.originRadius.max":350,"settings.particleCount":400,"settings.mouseAttractionRange":240,"settings.drawTrails":false,"settings.maxStartingVelocity":2.2,"settings.maxVelocity":12,"settings.colors.showParticles":true,"settings.colors.particleOutline.particleWidth":13,"settings.colors.particleOutline.particleHeight":13,"settings.colors.particleOutline.drawOutline":false,"settings.colors.backgroundColor":{"r":33,"g":33,"b":33},"settings.colors.backgroundAlpha":71,"settings.colors.particleColorType":"gradient","settings.colors.randomHSLA.hueMin":41,"settings.colors.randomHSLA.saturationMin":110,"settings.colors.randomHSLA.lightnessMin":117,"settings.colors.randomHSLA.lightnessMax":170,"settings.colors.randomHSLA.alphaMin":119,"settings.colors.gradient.firstColor":"#ffe9a2","settings.colors.gradient.secondColor":"#1e436e","settings.colors.gradient.alphaMin":127,"settings.lines.connectPoints":false,"settings.lines.changeSpeedConnected":false,"settings.lines.maxLineDist":6,"settings.centerAttractionForce.chance":0.66,"settings.centerAttractionForce.radius":0,"settings.centerAttractionForce.outside.max":4,"settings.centerAttractionForce.inside.min":-7,"settings.centerAttractionForce.extra.chance":0.55
+        "settings.originRadius.max":350,"settings.particleCount":400,"settings.mouseAttractionRange":240,"settings.drawTrails":false,"settings.velocitySettings.startingVelocity.minX": -2.2,"settings.velocitySettings.startingVelocity.minY": -2.2,"settings.velocitySettings.startingVelocity.maxX": 2.2,"settings.velocitySettings.startingVelocity.maxY": 2.2,"settings.velocitySettings.maxVelocity":12,"settings.colors.showParticles":true,"settings.colors.particleSettings.particleWidth":13,"settings.colors.particleSettings.particleHeight":13,"settings.colors.particleSettings.drawOutline":false,"settings.colors.backgroundColor":{"r":33,"g":33,"b":33},"settings.colors.backgroundAlpha":71,"settings.colors.particleColorType":"gradient","settings.colors.randomHSLA.hueMin":41,"settings.colors.randomHSLA.saturationMin":110,"settings.colors.randomHSLA.lightnessMin":117,"settings.colors.randomHSLA.lightnessMax":170,"settings.colors.randomHSLA.alphaMin":119,"settings.colors.gradient.firstColor":"#ffe9a2","settings.colors.gradient.secondColor":"#1e436e","settings.colors.gradient.alphaMin":127,"settings.lines.connectPoints":false,"settings.lines.changeSpeedConnected":false,"settings.lines.maxLineDist":6,"settings.centerAttractionForce.chance":0.66,"settings.centerAttractionForce.radius":0,"settings.centerAttractionForce.outside.max":4,"settings.centerAttractionForce.inside.min":-7,"settings.centerAttractionForce.extra.chance":0.55
     },
     "Phase": {
-        "settings.originRadius.ignoreRadius":true,"settings.originRadius.max":267,"settings.particleCount":400,"settings.mouseAttractsParticles":true,"settings.mouseAttractionRange":400,"settings.bounceEdges":true,"settings.drawTrails":false,"settings.maxStartingVelocity":2,"settings.maxVelocity":5,"settings.colors.particleOutline.particleWidth":10,"settings.colors.particleOutline.particleHeight":10,"settings.colors.particleOutline.drawOutline":false,"settings.colors.particleOutline.particleOutlineColor":"#000000","settings.colors.backgroundColor":{"r":255,"g":255,"b":255},"settings.colors.backgroundAlpha":30,"settings.colors.gradient.firstColor":"#2899ff","settings.colors.gradient.secondColor":"#fffe22","settings.colors.gradient.alphaMin":37,"settings.colors.gradient.alphaMax":236,"settings.lines.changeSpeedChance":1,"settings.lines.changeSpeedBy":-0.5,"settings.Attract Particles to Center":false,"settings.centerAttractionForce.radius":210,"settings.centerAttractionForce.outside.min":0,"settings.centerAttractionForce.outside.max":0,"settings.centerAttractionForce.extra.chance":0.1,"settings.centerAttractionForce.extra.min":-10,"settings.centerAttractionForce.extra.max":0
+        "settings.originRadius.ignoreRadius":true,"settings.originRadius.max":267,"settings.particleCount":400,"settings.mouseAttractsParticles":true,"settings.mouseAttractionRange":400,"settings.bounceEdges":true,"settings.drawTrails":false,"settings.velocitySettings.startingVelocity.minX": -2,"settings.velocitySettings.startingVelocity.minY": -2,"settings.velocitySettings.startingVelocity.maxX": 2,"settings.velocitySettings.startingVelocity.maxY": 2,"settings.velocitySettings.maxVelocity":5,"settings.colors.particleSettings.particleWidth":10,"settings.colors.particleSettings.particleHeight":10,"settings.colors.particleSettings.drawOutline":false,"settings.colors.particleSettings.particleOutlineColor":"#000000","settings.colors.backgroundColor":{"r":255,"g":255,"b":255},"settings.colors.backgroundAlpha":30,"settings.colors.gradient.firstColor":"#2899ff","settings.colors.gradient.secondColor":"#fffe22","settings.colors.gradient.alphaMin":37,"settings.colors.gradient.alphaMax":236,"settings.lines.changeSpeedChance":1,"settings.lines.changeSpeedBy":-0.5,"settings.Attract Particles to Center":false,"settings.centerAttractionForce.radius":210,"settings.centerAttractionForce.outside.min":0,"settings.centerAttractionForce.outside.max":0,"settings.centerAttractionForce.extra.chance":0.1,"settings.centerAttractionForce.extra.min":-10,"settings.centerAttractionForce.extra.max":0
     },
     "Draw From Image":{
-        "settings.canvas.width":1080,"settings.canvas.height":1080,"settings.originRadius.ignoreRadius":true,"settings.particleCount":200,"settings.bounceEdges":true,"settings.maxStartingVelocity":5,"settings.maxVelocity":3.5,"settings.colors.backgroundColor":{"r":255,"g":255,"b":255},"settings.colors.particleColorType":"image","settings.lines.changeSpeedConnected":false,"settings.lines.changeSpeedChance":0,"settings.lines.maxLineDist":75,"settings.Attract Particles to Center":false,"settings.centerAttractionForce.chance":0.5328,"settings.centerAttractionForce.radius":1472
+        "settings.originRadius.ignoreRadius":true,"settings.particleCount":200,"settings.bounceEdges":true,"settings.velocitySettings.startingVelocity.minX": -5,"settings.velocitySettings.startingVelocity.minY": -5,"settings.velocitySettings.startingVelocity.maxX": 5,"settings.velocitySettings.startingVelocity.maxY": 5,"settings.velocitySettings.maxVelocity":3.5,"settings.colors.backgroundColor":{"r":255,"g":255,"b":255},"settings.colors.particleColorType":"image","settings.lines.changeSpeedConnected":false,"settings.lines.changeSpeedChance":0,"settings.lines.maxLineDist":75,"settings.Attract Particles to Center":false,"settings.centerAttractionForce.chance":0.5328,"settings.centerAttractionForce.radius":1472
+    },
+    "Blurrr":{  
+        "settings.originRadius.ignoreRadius":true,
+        "settings.particleCount":219,
+        "settings.mouseAttractsParticles":true,
+        "settings.mouseAttractionRange":140,
+        "settings.bounceEdges":true,
+        "settings.velocitySettings.maxVelocity":3.78,
+        "settings.velocitySettings.changeForceChance":1,
+        "settings.velocitySettings.magnitudeBoundaries.min":0.26,
+        "settings.velocitySettings.magnitudeBoundaries.max":4.76,
+        "settings.velocitySettings.changeDirectionChance":0.8,
+        "settings.velocitySettings.rotationBoundaries.min":-35.49,
+        "settings.velocitySettings.rotationBoundaries.max":70.81,
+        "settings.colors.showParticles":true,
+        "settings.colors.particleSettings.particleWidth":18,
+        "settings.colors.particleSettings.particleHeight":18,
+        "settings.colors.particleSettings.drawOutline":false,
+        "settings.colors.particleSettings.strokeWeight":10.6,
+        "settings.colors.particleSettings.particleOutlineAlpha":65,
+        "settings.colors.backgroundColor":{  
+           "r":255,
+           "g":255,
+           "b":255
+        },
+        "settings.colors.particleColorType":"image",
+        "settings.colors.randomRGBA.alphaMin":131,
+        "settings.colors.randomRGBA.alphaMax":200,
+        "settings.colors.randomHSLA.saturationMin":255,
+        "settings.colors.randomHSLA.lightnessMin":119,
+        "settings.colors.randomHSLA.lightnessMax":196,
+        "settings.colors.randomHSLA.alphaMin":255,
+        "settings.colors.gradient.firstColor":"#6d41ff",
+        "settings.colors.gradient.secondColor":"#99ff8c",
+        "settings.colors.gradient.alphaMin":135,
+        "settings.colors.image.alphaMin":111,
+        "settings.colors.image.alphaMax":115,
+        "settings.colors.image.updateColorChance":0.21,
+        "settings.lines.strokeWeight":6.8,
+        "settings.lines.changeSpeedConnected":false,
+        "settings.lines.maxLineDist":70,
+        "settings.Attract Particles to Center":false,
+        "settings.centerAttractionForce.chance":0.04,
+        "settings.centerAttractionForce.radius":300,
+        "settings.centerAttractionForce.outside.min":10,
+        "settings.centerAttractionForce.outside.max":10,
+        "settings.centerAttractionForce.inside.min":10,
+        "settings.centerAttractionForce.inside.max":10,
+        "settings.centerAttractionForce.extra.chance":0.7,
+        "settings.centerAttractionForce.extra.min":-10,
+        "settings.centerAttractionForce.extra.max":0
     }
 }
 
