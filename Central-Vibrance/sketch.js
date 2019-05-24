@@ -268,6 +268,10 @@ function draw() {
             }
         }
 
+        particles[i].capVel(settings['velocitySettings']['maxVelocity'], settings['velocitySettings']['lockAxis']['xAxis'], settings['velocitySettings']['lockAxis']['yAxis'])
+
+        particles[i].update()
+
         if(endSim){
             if(alpha(particles[i].color) > 0) {
                 particles[i].color.setAlpha(alpha(particles[i].color) - 1)
@@ -275,10 +279,6 @@ function draw() {
                 particles.splice(i,1)
             }
         }
-
-        particles[i].capVel(settings['velocitySettings']['maxVelocity'], settings['velocitySettings']['lockAxis']['xAxis'], settings['velocitySettings']['lockAxis']['yAxis'])
-
-        particles[i].update()
     }
 }
 
