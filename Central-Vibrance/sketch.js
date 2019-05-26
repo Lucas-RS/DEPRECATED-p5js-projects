@@ -50,7 +50,7 @@ let settings = {
         "magnitudeBoundaries": {
             "min": 1,
             "max": 2,
-            _all: {min:-10,max:10,step:0.01}
+            _all: {min:-10,max:10,step:0.001}
         },
         "changeDirectionChance": 1,
         _changeDirectionChance: {min:0,max:1,step:0.0001},
@@ -130,7 +130,7 @@ let settings = {
             "alphaMin": 0,
             "alphaMax": 255,
             "updateColorChance": 1,
-            _updateColorChance: {min:0,max:1,step:0.01},
+            _updateColorChance: {min:0,max:1,step:0.0001},
             _all: {min:0,max:255,step:1}
         },
         _all: {openFolder:true,hide:true}
@@ -142,7 +142,7 @@ let settings = {
         "connectPoints": true,
         "changeSpeedConnected": true,
         changeSpeedChance: 0.1,
-        _changeSpeedChance: {min:0,max:1,step:0.01},
+        _changeSpeedChance: {min:0,max:1,step:0.0001},
         "changeSpeedBy": 0.97,
         _changeSpeedBy: {min:-4,max:4,step:0.01},
         "maxLineDist": 35,
