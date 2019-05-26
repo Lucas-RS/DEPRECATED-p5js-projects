@@ -29,6 +29,8 @@ let settings = {
     "mouseAttractsParticles": false,
     "mouseAttractionRange": 100,
     _mouseAttractionRange: {min:0,max:4096,step:1,name:'Mouse Attraction Range',hide:true},
+    "endSpeed": 0.5,
+    _endSpeed: {min:0.1,max:10,step:0.1},
     "bounceEdges": false,
     "drawTrails": true,
     "velocitySettings": {
@@ -143,7 +145,7 @@ let settings = {
         _changeSpeedChance: {min:0,max:1,step:0.01},
         "changeSpeedBy": 0.97,
         _changeSpeedBy: {min:-4,max:4,step:0.01},
-        "maxLineDist": 25,
+        "maxLineDist": 35,
         _maxLineDist: {min:1,max:512,step:1}
     },
     'Attract Particles to Center': true,
@@ -203,10 +205,8 @@ function draw() {
     }
 
     for (let i = 0; i < particles.length; i++) {
-        if ( sampledImg !== undefined && settings['colors']['particleColorType'] === "image" && Math.random() <= settings['colors']['image']['updateColorChance']) {
-            let c = sampledImg.get(particles[i].pos.x, particles[i].pos.y)
-            c[3] = alpha(particles[i].color)
-            particles[i].color.levels = c
+        if ( Math.random() <= settings['colors']['image']['updateColorChance']) {
+            updateParticleColorFromImage(i)
         }
 
         if(settings['colors']['showParticles']) {
@@ -274,7 +274,7 @@ function draw() {
 
         if(endSim){
             if(alpha(particles[i].color) > 0) {
-                particles[i].color.setAlpha(alpha(particles[i].color) - 1)
+                particles[i].color.setAlpha(alpha(particles[i].color) - settings["endSpeed"])
             } else {
                 particles.splice(i,1)
             }
@@ -307,6 +307,14 @@ function handleFile(file) {
         settings['canvas']['width'] = sampledImg.width
         resetSketch()
     }, 500)
+}
+
+function updateParticleColorFromImage(p) {
+    if ( sampledImg !== undefined && settings['colors']['particleColorType'] === "image" ) {
+        let c = sampledImg.get(particles[p].pos.x, particles[p].pos.y)
+        c[3] = alpha(particles[p].color)
+        particles[p].color = color(...c)
+    }
 }
 
 function generateColor() {
@@ -342,6 +350,11 @@ function resetSketch() {
     colorMode(RGB, 255)
     background(settings['colors']['backgroundColor']['r'],settings['colors']['backgroundColor']['g'],settings['colors']['backgroundColor']['b'],settings['colors']['backgroundAlpha'])
     
+    if ( sampledImg === undefined && settings['colors']['particleColorType'] === "image" ) {
+        alert('Please select an image.')
+        importImage()
+    }
+
     qtree = new QuadTree(new Rectangle(width/2,height/2,width/2,height/2), 1)
     for (var i = 0; i < settings['particleCount'];) {
         let origin = createVector(random(width), random(height))
@@ -353,13 +366,9 @@ function resetSketch() {
                     random(settings['velocitySettings']['startingVelocity']['minY'],settings['velocitySettings']['startingVelocity']['maxY'])
                 )
             )
+            updateParticleColorFromImage(i)
             i++
         }
-    }
-
-    if ( sampledImg === undefined && settings['colors']['particleColorType'] === "image" ) {
-        alert('Please select an image.')
-        importImage()
     }
 
     if (pageIsLoaded) {
@@ -391,6 +400,9 @@ window.onload = () => {
     gui.addToggleDisplayEvent('settings.colors.showParticles','settings.colors.particleSettings')
     gui.addMenuFolderSwitch('settings.colors.particleColorType', 'settings.colors')
     gui.presetsChanged = () => {
+        if ( sampledImg !== undefined ) {
+            sampledImg = undefined
+        }
         resetSketch()
     }
     if (windowWidth < 700){
