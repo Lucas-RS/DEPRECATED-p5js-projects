@@ -420,10 +420,10 @@ window.onload = () => {
     gui.enablePresets(defaultPresets, 'centralVibrance.userPresets')
     gui.autoAdd(settings, 'settings')
     gui.presetControllers.presetSave = () => {
-        if ( userCode !== "" ) {
-            gui.savePreset({userCode})
-        } else {
+        if ( userCode == "" ) {
             gui.savePreset()
+        } else {
+            gui.savePreset({userCode})
         }
     }
     gui.sticky('settings.Reset Canvas (R)')
@@ -438,8 +438,11 @@ window.onload = () => {
         if ( sampledImg !== undefined ) {
             sampledImg = undefined
         }
-        if ( gui.presets[gui.controllers.presetSelector.getValue()]._other !== undefined && gui.presets[gui.controllers.presetSelector.getValue()]._other.userCode !== undefined )
-        document.getElementById("code-area").value = gui.presets[gui.controllers.presetSelector.getValue()]._other.userCode
+        if ( gui.presets[gui.controllers.presetSelector.getValue()]._other !== undefined && gui.presets[gui.controllers.presetSelector.getValue()]._other.userCode !== undefined ) {
+            document.getElementById("code-area").value = gui.presets[gui.controllers.presetSelector.getValue()]._other.userCode
+        } else {
+            document.getElementById("code-area").value = ""
+        }
         resetSketch()
     }
     if (windowWidth < 700){
