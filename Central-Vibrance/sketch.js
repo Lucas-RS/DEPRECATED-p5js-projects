@@ -438,6 +438,7 @@ window.onload = () => {
         if ( sampledImg !== undefined ) {
             sampledImg = undefined
         }
+        if ( gui.presets[gui.controllers.presetSelector.getValue()]._other !== undefined && gui.presets[gui.controllers.presetSelector.getValue()]._other.userCode !== undefined )
         document.getElementById("code-area").value = gui.presets[gui.controllers.presetSelector.getValue()]._other.userCode
         resetSketch()
     }
