@@ -21,6 +21,10 @@
     <script src="../addons/dat.autogui.js"></script>
     <script src="sketch.js"></script>
     <style>
+      :root {
+        font-family: sans-serif;
+      }
+
       body {
         margin: 0;
       }
@@ -39,9 +43,30 @@
         left: 50%;
         transform: translate(-50%, -50%);
       }
+
+      #code-area-container {
+        display: none;
+        background-color: #eeeeee;
+        padding: 5px;
+        position: fixed;
+        top: 10px;
+        left: 10px;
+        z-index: 1;
+      }
+
+      #code-area-container p {
+        margin: 0;
+      }
     </style>
   </head>
   <body>
-      <div id="canvas-container"></div>
+    <div id="code-area-container">
+      <p>Enter custom code:</p>
+      <textarea name="hi" id="code-area" cols="60" rows="10"></textarea>
+      <p>This code is called each frame.</p>
+      <button onclick="toggleCodeArea()">Close</button>
+      <button onclick="toggleCodeArea();resetSketch()">Apply</button>
+    </div>
+    <div id="canvas-container"></div>
   </body>
 </html>

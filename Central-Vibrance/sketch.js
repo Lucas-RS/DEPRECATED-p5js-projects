@@ -4,12 +4,15 @@ let qtree
 let gui
 let endSim = false
 let pageIsLoaded = false
+let listenForKeys = true
 let sampledImg
-
+let showCodeArea = false
+let userCode
 let settings = {
     'Reset Canvas (R)': resetSketch,
     'End Simulation (E)': function(){endSim=true},
     'Save As PNG (S)': function(){saveCanvas(canvas, 'central-vibrance', 'png')},
+    'Show Code Area (C)': toggleCodeArea,
     "canvas": {
         "width": 1024,
         _width: {min:1,max:8192,step:1},
@@ -180,14 +183,8 @@ let settings = {
 
 function setup() {
     angleMode(DEGREES)
-    let ratio = windowWidth / windowHeight
-    if(ratio > 1) {
-        settings['canvas']['width'] = 1920
-        settings['canvas']['height'] = 1920 / ratio
-    } else {
-        settings['canvas']['width'] = 1920 * ratio
-        settings['canvas']['height'] = 1920
-    }
+    settings['canvas']['width'] = innerWidth
+    settings['canvas']['height'] = innerHeight
     canvas = createCanvas(settings['canvas']['width'], settings['canvas']['height']).parent("canvas-container")
     resetSketch()
 }
@@ -202,6 +199,12 @@ function draw() {
     if (!settings['drawTrails']) {
         colorMode(RGB, 255)
         background(settings['colors']['backgroundColor']['r'],settings['colors']['backgroundColor']['g'],settings['colors']['backgroundColor']['b'],settings['colors']['backgroundAlpha'])
+    }
+    
+    try {
+        eval(userCode); 
+    } catch (e) {
+        console.error(e.message)
     }
 
     for (let i = 0; i < particles.length; i++) {
@@ -283,12 +286,16 @@ function draw() {
 }
 
 function keyPressed() {
-    if (key === "r") {
-        resetSketch()
-    } else if (key === "s") {
-        saveCanvas(canvas, 'central-vibrance', 'png')
-    } else if (key === "e") {
-        endSim = true
+    if ( listenForKeys ) {
+        if (key === "r") {
+            resetSketch()
+        } else if (key === "s") {
+            saveCanvas(canvas, 'central-vibrance', 'png')
+        } else if (key === "e") {
+            endSim = true
+        } else if (key === "c") {
+            toggleCodeArea()
+        }
     }
 }
 
@@ -338,8 +345,11 @@ function generateColor() {
 }
 
 function resetSketch() {
+    frameCount = 0
     endSim = false
     particles = []
+
+    userCode = document.getElementById("code-area").value
 
     resizeCanvas(settings['canvas']['width'], settings['canvas']['height'])
 
@@ -388,13 +398,38 @@ function resetSketch() {
     }
 }
 
+function toggleCodeArea() {
+    let codeAreaElement = document.getElementById("code-area-container")
+    showCodeArea = !showCodeArea
+    if ( showCodeArea ) {
+        listenForKeys = false
+        codeAreaElement.style.display = "block"
+        if ( innerWidth >= 1000 ) {
+            codeAreaElement.children[1].cols = 60
+        } else {
+            codeAreaElement.children[1].cols = 20
+        }
+    } else {
+        listenForKeys = true
+        codeAreaElement.style.display = "none"
+    }
+}
+
 window.onload = () => {
     gui = new AutoGUI({width: 350})
     gui.enablePresets(defaultPresets, 'centralVibrance.userPresets')
     gui.autoAdd(settings, 'settings')
+    gui.presetControllers.presetSave = () => {
+        if ( userCode !== "" ) {
+            gui.savePreset({userCode})
+        } else {
+            gui.savePreset()
+        }
+    }
     gui.sticky('settings.Reset Canvas (R)')
     gui.sticky('settings.End Simulation (E)')
     gui.sticky('settings.Save As PNG (S)')
+    gui.sticky('settings.Show Code Area (C)')
     gui.addToggleDisplayEvent('settings.Attract Particles to Center','settings.centerAttractionForce')
     gui.addToggleDisplayEvent('settings.mouseAttractsParticles','settings.mouseAttractionRange')
     gui.addToggleDisplayEvent('settings.colors.showParticles','settings.colors.particleSettings')
@@ -403,6 +438,7 @@ window.onload = () => {
         if ( sampledImg !== undefined ) {
             sampledImg = undefined
         }
+        document.getElementById("code-area").value = gui.presets[gui.controllers.presetSelector.getValue()]._other.userCode
         resetSketch()
     }
     if (windowWidth < 700){
@@ -410,6 +446,7 @@ window.onload = () => {
         gui.close()
     }
     pageIsLoaded = true
+    gui.domElement.style.marginRight = 0
 }
 
 const defaultPresets = {

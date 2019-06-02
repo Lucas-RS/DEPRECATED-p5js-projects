@@ -12,10 +12,10 @@ class AutoGUI extends dat.GUI {
     this.presets = {}
   }
 
-  autoAdd(object, parentKey, parent = this) {
+  autoAdd(object, parentKey, enableListen, parent = this) {
     for(let key in object){
-      let controller
       if (!key.startsWith('_')) {
+        let controller
         let value = object[key]
         let keyPath = parentKey + "." + key
         let s = object['_' + key] || object['_all'] || {}
@@ -28,7 +28,7 @@ class AutoGUI extends dat.GUI {
             if (s.hasOwnProperty('openFolder') && s['openFolder']) {
               controller.open()
             }
-            this.autoAdd(value, keyPath, controller)
+            this.autoAdd(value, keyPath, enableListen, controller)
           }
         } else if (typeof value == 'string'){
           if(s.hasOwnProperty('type') && s['type'] == 'select'){
@@ -56,6 +56,9 @@ class AutoGUI extends dat.GUI {
           }
         }
 
+        if ( enableListen && !controller.hasOwnProperty('__controllers') ) {
+          controller.listen()
+        }
         this.controllers[keyPath] = controller
       }
     }
@@ -100,12 +103,16 @@ class AutoGUI extends dat.GUI {
 
   presetsChanged(){}
 
-  savePreset() {
+  savePreset(_other) {
     let newPreset = {}
+    if ( _other !== undefined ) {
+      newPreset = {_other}
+    }
     for(let i in this.controllers){
       let controller = this.controllers[i]
-      if(i !== 'presetSelector' && controller.hasOwnProperty('__li') && controller.getValue() !== controller['initialValue']){
+      if(i !== 'presetSelector' && i !== 'presetSave' && controller.hasOwnProperty('__li') && controller.getValue() !== controller['initialValue']){
         newPreset[i] = controller.getValue()
+        
       }
     }
     if(Object.keys(newPreset).length > 0) {
