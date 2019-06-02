@@ -130,8 +130,10 @@ let settings = {
         },
         "image":{
             "Open File": importImage,
+            "initColor": '#000000',
             "alphaMin": 0,
             "alphaMax": 255,
+            "updateAtStart": true,
             "updateColorChance": 1,
             _updateColorChance: {min:0,max:1,step:0.0001},
             _all: {min:0,max:255,step:1}
@@ -339,7 +341,8 @@ function generateColor() {
         c.setAlpha(random(settings['colors']['gradient']['alphaMin'],settings['colors']['gradient']['alphaMax']))
     } else {
         colorMode(RGB, 255)
-        c = color(0,0,0,random(settings.colors.image.alphaMin,settings.colors.image.alphaMax))
+        c = color(settings.colors.image.initColor)
+        c.setAlpha(random(settings.colors.image.alphaMin,settings.colors.image.alphaMax))
     }
     return c
 }
@@ -376,7 +379,9 @@ function resetSketch() {
                     random(settings['velocitySettings']['startingVelocity']['minY'],settings['velocitySettings']['startingVelocity']['maxY'])
                 )
             )
-            updateParticleColorFromImage(i)
+            if ( settings.colors.image.updateAtStart ) {
+                updateParticleColorFromImage(i)
+            }
             i++
         }
     }
@@ -421,10 +426,8 @@ window.onload = () => {
     gui.autoAdd(settings, 'settings')
     gui.presetControllers.presetSave = () => {
         if ( userCode == "" ) {
-            console.log('f')
             gui.savePreset()
-        } else 
-            {console.log('t')
+        } else {
             gui.savePreset({userCode})
         }
     }
