@@ -421,8 +421,10 @@ window.onload = () => {
     gui.autoAdd(settings, 'settings')
     gui.presetControllers.presetSave = () => {
         if ( userCode == "" ) {
+            console.log('f')
             gui.savePreset()
-        } else {
+        } else 
+            {console.log('t')
             gui.savePreset({userCode})
         }
     }
@@ -435,6 +437,15 @@ window.onload = () => {
     gui.addToggleDisplayEvent('settings.colors.showParticles','settings.colors.particleSettings')
     gui.addMenuFolderSwitch('settings.colors.particleColorType', 'settings.colors')
     gui.presetsChanged = () => {
+        gui.presetControllers.presetSave = () => {
+            if ( userCode == "" ) {
+                console.log('f')
+                gui.savePreset()
+            } else 
+                {console.log('t')
+                gui.savePreset({userCode})
+            }
+        }
         if ( sampledImg !== undefined ) {
             sampledImg = undefined
         }
