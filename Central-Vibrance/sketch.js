@@ -30,7 +30,7 @@ let settings = {
     "mouseAttractionRange": 100,
     _mouseAttractionRange: {min:0,max:4096,step:1,name:'Mouse Attraction Range',hide:true},
     "endSpeed": 0.5,
-    _endSpeed: {min:0.1,max:10,step:0.1},
+    _endSpeed: {min:0.1,max:255,step:0.1},
     "bounceEdges": false,
     "drawTrails": true,
     "velocitySettings": {
