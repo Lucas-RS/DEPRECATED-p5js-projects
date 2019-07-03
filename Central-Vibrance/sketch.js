@@ -13,6 +13,8 @@ let settings = {
     'End Simulation (E)': function(){endSim=true},
     'Save As PNG (S)': function(){saveCanvas(canvas, 'central-vibrance', 'png')},
     'Show Code Area (C)': toggleCodeArea,
+    "seed": 0,
+    "useCustomSeed": false,
     "canvas": {
         "width": 1024,
         _width: {min:1,max:8192,step:1},
@@ -185,6 +187,7 @@ let settings = {
 
 function setup() {
     angleMode(DEGREES)
+    settings.seed = new Date().getTime()
     settings['canvas']['width'] = innerWidth
     settings['canvas']['height'] = innerHeight
     canvas = createCanvas(settings['canvas']['width'], settings['canvas']['height']).parent("canvas-container")
@@ -210,7 +213,7 @@ function draw() {
     }
 
     for (let i = 0; i < particles.length; i++) {
-        if ( Math.random() <= settings['colors']['image']['updateColorChance']) {
+        if ( random() <= settings['colors']['image']['updateColorChance']) {
             updateParticleColorFromImage(i)
         }
 
@@ -227,33 +230,33 @@ function draw() {
             particles[i].mouseAttract(settings['mouseAttractionRange'])
         }
 
-        if(Math.random() <= settings['centerAttractionForce']['chance'] && settings['Attract Particles to Center']) {
+        if(random() <= settings['centerAttractionForce']['chance'] && settings['Attract Particles to Center']) {
             let attractCenterForce = createVector(width/2, height/2)
             attractCenterForce.sub(particles[i].pos)
             if(dist(particles[i].pos.x, particles[i].pos.y, width/2, height/2) > settings['centerAttractionForce']['radius']) {
-                if(Math.random() < 0.5) {
+                if(random() < 0.5) {
                     attractCenterForce.setMag(random(settings['centerAttractionForce']['outside']['min'], settings['centerAttractionForce']['outside']['max']))
                 } else {
                     attractCenterForce.setMag(0)
                 }
             } else {
-                if(Math.random() < settings['centerAttractionForce']['extra']['chance']) {
+                if(random() < settings['centerAttractionForce']['extra']['chance']) {
                     attractCenterForce.setMag(random(settings['centerAttractionForce']['extra']['min'], settings['centerAttractionForce']['extra']['max']))
                 } else {
                     attractCenterForce.setMag(random(settings['centerAttractionForce']['inside']['min'], settings['centerAttractionForce']['inside']['max']))
                 }
             }
             particles[i].applyForce(attractCenterForce);
-        } else if ( Math.random() < settings['velocitySettings']['changeForceChance'] ) {
-            if(Math.random() < settings['velocitySettings']['changeDirectionChance']){
+        } else if ( random() < settings['velocitySettings']['changeForceChance'] ) {
+            if(random() < settings['velocitySettings']['changeDirectionChance']){
                 particles[i].vel.rotate(random(settings['velocitySettings']['rotationBoundaries']['min'],settings['velocitySettings']['rotationBoundaries']['max']))
             }
-            if ( Math.random() < settings['velocitySettings']['changeMagnitudeChance'] ) {
+            if ( random() < settings['velocitySettings']['changeMagnitudeChance'] ) {
                 particles[i].vel.setMag(particles[i].vel.mag() * random(settings['velocitySettings']['magnitudeBoundaries']['min'],settings['velocitySettings']['magnitudeBoundaries']['max'])) 
             }
         }
 
-        if ( Math.random() < settings.velocitySettings.randomForce.randomForceChance ) {
+        if ( random() < settings.velocitySettings.randomForce.randomForceChance ) {
             particles[i].applyForce(createVector(random(settings.velocitySettings.randomForce.minX,settings.velocitySettings.randomForce.maxX), random(settings.velocitySettings.randomForce.minY,settings.velocitySettings.randomForce.maxY)))
         }
 
@@ -264,7 +267,7 @@ function draw() {
                     stroke(lerpColor(particles[i].color, point.color, 0.5))
                     strokeWeight(settings.lines.strokeWeight)
                     line(particles[i].pos.x, particles[i].pos.y, point.pos.x, point.pos.y)
-                    if(Math.random() < settings.lines.changeSpeedChance && settings.lines.changeSpeedConnected) {
+                    if(random() < settings.lines.changeSpeedChance && settings.lines.changeSpeedConnected) {
                         point.vel.mult(settings.lines.changeSpeedBy)
                     }
                 } else {
@@ -348,6 +351,14 @@ function generateColor() {
 }
 
 function resetSketch() {
+    if (settings.useCustomSeed) {
+        randomSeed(settings.seed)
+    } else {
+        const newSeed = Math.random() * 1000000000
+        randomSeed(newSeed)
+        settings.seed = newSeed
+    }
+
     frameCount = 0
     endSim = false
     particles = []
@@ -438,6 +449,7 @@ window.onload = () => {
     gui.addToggleDisplayEvent('settings.Attract Particles to Center','settings.centerAttractionForce')
     gui.addToggleDisplayEvent('settings.mouseAttractsParticles','settings.mouseAttractionRange')
     gui.addToggleDisplayEvent('settings.colors.showParticles','settings.colors.particleSettings')
+    gui.addToggleDisplayEvent('settings.useCustomSeed','settings.seed')
     gui.addMenuFolderSwitch('settings.colors.particleColorType', 'settings.colors')
     gui.presetsChanged = () => {
         gui.presetControllers.presetSave = () => {
