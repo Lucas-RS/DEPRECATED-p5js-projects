@@ -449,7 +449,6 @@ window.onload = () => {
     gui.addToggleDisplayEvent('settings.Attract Particles to Center','settings.centerAttractionForce')
     gui.addToggleDisplayEvent('settings.mouseAttractsParticles','settings.mouseAttractionRange')
     gui.addToggleDisplayEvent('settings.colors.showParticles','settings.colors.particleSettings')
-    gui.addToggleDisplayEvent('settings.useCustomSeed','settings.seed')
     gui.addMenuFolderSwitch('settings.colors.particleColorType', 'settings.colors')
     gui.presetsChanged = () => {
         gui.presetControllers.presetSave = () => {
