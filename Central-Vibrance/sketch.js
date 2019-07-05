@@ -184,10 +184,10 @@ let settings = {
     },
     _centerAttractionForce: {name:'Central Attraction Force'}
 }
+const router = new Navigo(null, true, "#!")
 
 function setup() {
     angleMode(DEGREES)
-    settings.seed = new Date().getTime()
     settings['canvas']['width'] = innerWidth
     settings['canvas']['height'] = innerHeight
     canvas = createCanvas(settings['canvas']['width'], settings['canvas']['height']).parent("canvas-container")
@@ -354,7 +354,7 @@ function resetSketch() {
     if (settings.useCustomSeed) {
         randomSeed(settings.seed)
     } else {
-        const newSeed = Math.random() * 1000000000
+        const newSeed = parseInt(Math.random() * 100000000000000000)
         randomSeed(newSeed)
         settings.seed = newSeed
     }
@@ -415,6 +415,7 @@ function resetSketch() {
 }
 
 function toggleCodeArea() {
+    updateURL()
     let codeAreaElement = document.getElementById("code-area-container")
     showCodeArea = !showCodeArea
     if ( showCodeArea ) {
@@ -431,6 +432,8 @@ function toggleCodeArea() {
     }
 }
 
+function updateURL() {}
+
 window.onload = () => {
     gui = new AutoGUI({width: 350})
     gui.enablePresets(defaultPresets, 'centralVibrance.userPresets')
@@ -442,6 +445,15 @@ window.onload = () => {
             gui.savePreset({userCode})
         }
     }
+
+    for (let controller in gui.controllers) {
+        if (controller !== 'presetSelector' && controller !== 'presetSave' && gui.controllers[controller].hasOwnProperty('__li')) {
+            gui.controllers[controller].onFinishChange(function(value) {
+                updateURL()
+            })
+        }
+    }
+
     gui.sticky('settings.Reset Canvas (R)')
     gui.sticky('settings.End Simulation (E)')
     gui.sticky('settings.Save As PNG (S)')
@@ -453,10 +465,8 @@ window.onload = () => {
     gui.presetsChanged = () => {
         gui.presetControllers.presetSave = () => {
             if ( userCode == "" ) {
-                console.log('f')
                 gui.savePreset()
-            } else 
-                {console.log('t')
+            } else {
                 gui.savePreset({userCode})
             }
         }
@@ -476,6 +486,45 @@ window.onload = () => {
     }
     pageIsLoaded = true
     gui.domElement.style.marginRight = 0
+
+    document.getElementById("code-area").oninput = () => {
+        updateURL()
+    }
+
+    router
+        .on(':id', function (params) {
+            let URLSettings = JSON.parse(decodeURIComponent(params.id))
+            for(let i in gui.controllers){
+                let controller = gui.controllers[i]
+                if(i !== 'presetSelector' && i !== 'presetSave' && controller.hasOwnProperty('__li')) {
+                    if(URLSettings.hasOwnProperty(i)){
+                        controller.setValue(URLSettings[i])
+                    }
+                }
+            }
+            if (URLSettings._other !== undefined && URLSettings._other.userCode !== undefined) {
+                document.getElementById("code-area").value = URLSettings._other.userCode
+            }
+        })
+        .resolve()
+
+    window.updateURL = function() {
+        userCode = document.getElementById("code-area").value
+        let changedSettings = {}
+        if (userCode !== "") {
+            changedSettings = {
+                _other: {userCode}
+            }
+        }
+        for(let i in gui.controllers){
+            let controller = gui.controllers[i]
+            let exclude = ['presetSelector', 'presetSave', 'settings.canvas.width', 'settings.canvas.height']
+            if(!exclude.includes(i) && controller.hasOwnProperty('__li') && controller.getValue() !== controller['initialValue']){
+                changedSettings[i] = controller.getValue()
+            }
+        }
+        router.navigate(encodeURIComponent(JSON.stringify(changedSettings)))
+    }
 }
 
 const defaultPresets = {
