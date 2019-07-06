@@ -9,6 +9,7 @@ let sampledImg
 let showCodeArea = false
 let userCode
 let settings = {
+    updateURL: false,
     'Reset Canvas (R)': resetSketch,
     'End Simulation (E)': function(){endSim=true},
     'Save As PNG (S)': function(){saveCanvas(canvas, 'central-vibrance', 'png')},
@@ -203,7 +204,9 @@ function draw() {
 
     if (!settings['drawTrails']) {
         colorMode(RGB, 255)
-        background(settings['colors']['backgroundColor'])
+        let bgColor = color(settings['colors']['backgroundColor'])
+        bgColor.setAlpha(settings['colors']['backgroundAlpha'])
+        background(bgColor)
     }
     
     try {
@@ -372,7 +375,9 @@ function resetSketch() {
     canvasElem.style.height = ""
 
     colorMode(RGB, 255)
-    background(settings['colors']['backgroundColor'])
+    let bgColor = color(settings['colors']['backgroundColor'])
+    bgColor.setAlpha(settings['colors']['backgroundAlpha'])
+    background(bgColor)
     
     if ( sampledImg === undefined && settings['colors']['particleColorType'] === "image" ) {
         alert('Please select an image.')
