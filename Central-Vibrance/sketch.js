@@ -94,7 +94,7 @@ let settings = {
             _all:{min:1,max:250,step:1}
         },
         _particleSettings: {name: "Particle Settings",hide:true},
-        "backgroundColor": {r:255,g:255,b:255},
+        "backgroundColor": "#ffffff",
         _backgroundColor: {name:'Background Color',type:'color'},
         "backgroundAlpha": 255,
         _backgroundAlpha: {min:0,max:255,step:1,name:'Background Alpha'},
@@ -203,7 +203,7 @@ function draw() {
 
     if (!settings['drawTrails']) {
         colorMode(RGB, 255)
-        background(settings['colors']['backgroundColor']['r'],settings['colors']['backgroundColor']['g'],settings['colors']['backgroundColor']['b'],settings['colors']['backgroundAlpha'])
+        background(settings['colors']['backgroundColor'])
     }
     
     try {
@@ -372,7 +372,7 @@ function resetSketch() {
     canvasElem.style.height = ""
 
     colorMode(RGB, 255)
-    background(settings['colors']['backgroundColor']['r'],settings['colors']['backgroundColor']['g'],settings['colors']['backgroundColor']['b'],settings['colors']['backgroundAlpha'])
+    background(settings['colors']['backgroundColor'])
     
     if ( sampledImg === undefined && settings['colors']['particleColorType'] === "image" ) {
         alert('Please select an image.')
@@ -415,11 +415,9 @@ function resetSketch() {
 }
 
 function toggleCodeArea() {
-    updateURL()
     let codeAreaElement = document.getElementById("code-area-container")
     showCodeArea = !showCodeArea
     if ( showCodeArea ) {
-        listenForKeys = false
         codeAreaElement.style.display = "block"
         if ( innerWidth >= 1000 ) {
             codeAreaElement.children[1].cols = 60
@@ -427,7 +425,6 @@ function toggleCodeArea() {
             codeAreaElement.children[1].cols = 20
         }
     } else {
-        listenForKeys = true
         codeAreaElement.style.display = "none"
     }
 }
@@ -462,7 +459,7 @@ window.onload = () => {
     gui.addToggleDisplayEvent('settings.mouseAttractsParticles','settings.mouseAttractionRange')
     gui.addToggleDisplayEvent('settings.colors.showParticles','settings.colors.particleSettings')
     gui.addMenuFolderSwitch('settings.colors.particleColorType', 'settings.colors')
-    gui.presetsChanged = () => {
+    gui.presetsChanged = (value) => {
         gui.presetControllers.presetSave = () => {
             if ( userCode == "" ) {
                 gui.savePreset()
@@ -473,10 +470,12 @@ window.onload = () => {
         if ( sampledImg !== undefined ) {
             sampledImg = undefined
         }
-        if ( gui.presets[gui.controllers.presetSelector.getValue()]._other !== undefined && gui.presets[gui.controllers.presetSelector.getValue()]._other.userCode !== undefined ) {
-            document.getElementById("code-area").value = gui.presets[gui.controllers.presetSelector.getValue()]._other.userCode
-        } else {
-            document.getElementById("code-area").value = ""
+        if(value !== 'Default') {
+            if ( gui.presets[gui.controllers.presetSelector.getValue()]._other !== undefined && gui.presets[gui.controllers.presetSelector.getValue()]._other.userCode !== undefined ) {
+                document.getElementById("code-area").value = gui.presets[gui.controllers.presetSelector.getValue()]._other.userCode
+            } else {
+                document.getElementById("code-area").value = ""
+            }
         }
         resetSketch()
     }
@@ -491,9 +490,17 @@ window.onload = () => {
         updateURL()
     }
 
+    document.getElementById("code-area").onfocus = () => {
+        listenForKeys = false
+    }
+
+    document.getElementById("code-area").onblur = () => {
+        listenForKeys = true
+    }
+
     router
         .on(':id', function (params) {
-            let URLSettings = JSON.parse(decodeURIComponent(params.id))
+            let URLSettings = JSON.parse(atob(params.id))
             for(let i in gui.controllers){
                 let controller = gui.controllers[i]
                 if(i !== 'presetSelector' && i !== 'presetSave' && controller.hasOwnProperty('__li')) {
@@ -523,7 +530,7 @@ window.onload = () => {
                 changedSettings[i] = controller.getValue()
             }
         }
-        router.navigate(encodeURIComponent(JSON.stringify(changedSettings)))
+        router.navigate(btoa(JSON.stringify(changedSettings)))
     }
 }
 
@@ -531,7 +538,7 @@ const defaultPresets = {
     "Connected Points":{
         "settings.Attract Particles to Center": false,
         "settings.bounceEdges": true,
-        "settings.colors.backgroundColor": {"r":255,"g":255,"b":255},
+        "settings.colors.backgroundColor": "#ffffff",
         "settings.colors.gradient.alphaMax": 0,
         "settings.colors.particleColorType": "randomHSLA",
         "settings.colors.particleSettings.particleOutlineAlpha": 160,
@@ -566,7 +573,7 @@ const defaultPresets = {
         "settings.colors.particleSettings.particleHeight":2,
         "settings.colors.particleSettings.drawOutline":false,
         "settings.colors.particleSettings.particleOutlineColor":"#000000",
-        "settings.colors.backgroundColor":{"r":129,"g":132.5,"b":137.5},
+        "settings.colors.backgroundColor":"#81848a",
         "settings.colors.particleColorType":"gradient",
         "settings.colors.gradient.alphaMin":5,
         "settings.colors.gradient.alphaMax":45,
@@ -591,7 +598,7 @@ const defaultPresets = {
         "settings.colors.particleSettings.particleHeight":2,
         "settings.colors.particleSettings.drawOutline":false,
         "settings.colors.particleSettings.particleOutlineColor":"#000000",
-        "settings.colors.backgroundColor":{"r":53,"g":87,"b":167.5},
+        "settings.colors.backgroundColor":"#3557a8",
         "settings.colors.particleColorType":"gradient",
         "settings.colors.gradient.alphaMin":5,
         "settings.colors.gradient.alphaMax":45,
@@ -628,11 +635,7 @@ const defaultPresets = {
         "settings.colors.particleSettings.particleHeight":10,
         "settings.colors.particleSettings.drawOutline":false,
         "settings.colors.particleSettings.particleOutlineColor":"#000000",
-        "settings.colors.backgroundColor":{
-          "r":255,
-          "g":255,
-          "b":255
-        },
+        "settings.colors.backgroundColor":"#ffffff",
         "settings.colors.particleColorType":"gradient",
         "settings.colors.gradient.firstColor":"#000000",
         "settings.colors.gradient.alphaMin":37,
@@ -665,11 +668,7 @@ const defaultPresets = {
         "settings.colors.particleSettings.particleHeight":1,
         "settings.colors.particleSettings.drawOutline":false,
         "settings.colors.particleSettings.particleOutlineColor":"#000000",
-        "settings.colors.backgroundColor":{
-          "r":45,
-          "g":14,
-          "b":40
-        },
+        "settings.colors.backgroundColor":"#2d0f28",
         "settings.colors.particleColorType":"randomHSLA",
         "settings.colors.randomHSLA.saturationMin":160,
         "settings.colors.randomHSLA.lightnessMin":140,
@@ -698,13 +697,13 @@ const defaultPresets = {
         "settings.colors.gradient.secondColor":"#ff9232"
     },
     "Fusion":{
-        "settings.originRadius.max":350,"settings.particleCount":400,"settings.mouseAttractionRange":240,"settings.drawTrails":false,"settings.velocitySettings.startingVelocity.minX": -2.2,"settings.velocitySettings.startingVelocity.minY": -2.2,"settings.velocitySettings.startingVelocity.maxX": 2.2,"settings.velocitySettings.startingVelocity.maxY": 2.2,"settings.velocitySettings.maxVelocity":12,"settings.colors.showParticles":true,"settings.colors.particleSettings.particleWidth":13,"settings.colors.particleSettings.particleHeight":13,"settings.colors.particleSettings.drawOutline":false,"settings.colors.backgroundColor":{"r":33,"g":33,"b":33},"settings.colors.backgroundAlpha":71,"settings.colors.particleColorType":"gradient","settings.colors.randomHSLA.hueMin":41,"settings.colors.randomHSLA.saturationMin":110,"settings.colors.randomHSLA.lightnessMin":117,"settings.colors.randomHSLA.lightnessMax":170,"settings.colors.randomHSLA.alphaMin":119,"settings.colors.gradient.firstColor":"#ffe9a2","settings.colors.gradient.secondColor":"#1e436e","settings.colors.gradient.alphaMin":127,"settings.lines.connectPoints":false,"settings.lines.changeSpeedConnected":false,"settings.lines.maxLineDist":6,"settings.centerAttractionForce.chance":0.66,"settings.centerAttractionForce.radius":0,"settings.centerAttractionForce.outside.max":4,"settings.centerAttractionForce.inside.min":-7,"settings.centerAttractionForce.extra.chance":0.55
+        "settings.originRadius.max":350,"settings.particleCount":400,"settings.mouseAttractionRange":240,"settings.drawTrails":false,"settings.velocitySettings.startingVelocity.minX": -2.2,"settings.velocitySettings.startingVelocity.minY": -2.2,"settings.velocitySettings.startingVelocity.maxX": 2.2,"settings.velocitySettings.startingVelocity.maxY": 2.2,"settings.velocitySettings.maxVelocity":12,"settings.colors.showParticles":true,"settings.colors.particleSettings.particleWidth":13,"settings.colors.particleSettings.particleHeight":13,"settings.colors.particleSettings.drawOutline":false,"settings.colors.backgroundColor":"#212121","settings.colors.backgroundAlpha":71,"settings.colors.particleColorType":"gradient","settings.colors.randomHSLA.hueMin":41,"settings.colors.randomHSLA.saturationMin":110,"settings.colors.randomHSLA.lightnessMin":117,"settings.colors.randomHSLA.lightnessMax":170,"settings.colors.randomHSLA.alphaMin":119,"settings.colors.gradient.firstColor":"#ffe9a2","settings.colors.gradient.secondColor":"#1e436e","settings.colors.gradient.alphaMin":127,"settings.lines.connectPoints":false,"settings.lines.changeSpeedConnected":false,"settings.lines.maxLineDist":6,"settings.centerAttractionForce.chance":0.66,"settings.centerAttractionForce.radius":0,"settings.centerAttractionForce.outside.max":4,"settings.centerAttractionForce.inside.min":-7,"settings.centerAttractionForce.extra.chance":0.55
     },
     "Phase": {
-        "settings.originRadius.ignoreRadius":true,"settings.originRadius.max":267,"settings.particleCount":400,"settings.mouseAttractsParticles":true,"settings.mouseAttractionRange":400,"settings.bounceEdges":true,"settings.drawTrails":false,"settings.velocitySettings.startingVelocity.minX": -2,"settings.velocitySettings.startingVelocity.minY": -2,"settings.velocitySettings.startingVelocity.maxX": 2,"settings.velocitySettings.startingVelocity.maxY": 2,"settings.velocitySettings.maxVelocity":5,"settings.colors.particleSettings.particleWidth":10,"settings.colors.particleSettings.particleHeight":10,"settings.colors.particleSettings.drawOutline":false,"settings.colors.particleSettings.particleOutlineColor":"#000000","settings.colors.backgroundColor":{"r":255,"g":255,"b":255},"settings.colors.backgroundAlpha":30,"settings.colors.gradient.firstColor":"#2899ff","settings.colors.gradient.secondColor":"#fffe22","settings.colors.gradient.alphaMin":37,"settings.colors.gradient.alphaMax":236,"settings.lines.changeSpeedChance":1,"settings.lines.changeSpeedBy":-0.5,"settings.Attract Particles to Center":false,"settings.centerAttractionForce.radius":210,"settings.centerAttractionForce.outside.min":0,"settings.centerAttractionForce.outside.max":0,"settings.centerAttractionForce.extra.chance":0.1,"settings.centerAttractionForce.extra.min":-10,"settings.centerAttractionForce.extra.max":0
+        "settings.originRadius.ignoreRadius":true,"settings.originRadius.max":267,"settings.particleCount":400,"settings.mouseAttractsParticles":true,"settings.mouseAttractionRange":400,"settings.bounceEdges":true,"settings.drawTrails":false,"settings.velocitySettings.startingVelocity.minX": -2,"settings.velocitySettings.startingVelocity.minY": -2,"settings.velocitySettings.startingVelocity.maxX": 2,"settings.velocitySettings.startingVelocity.maxY": 2,"settings.velocitySettings.maxVelocity":5,"settings.colors.particleSettings.particleWidth":10,"settings.colors.particleSettings.particleHeight":10,"settings.colors.particleSettings.drawOutline":false,"settings.colors.particleSettings.particleOutlineColor":"#000000","settings.colors.backgroundColor":"#ffffff","settings.colors.backgroundAlpha":30,"settings.colors.gradient.firstColor":"#2899ff","settings.colors.gradient.secondColor":"#fffe22","settings.colors.gradient.alphaMin":37,"settings.colors.gradient.alphaMax":236,"settings.lines.changeSpeedChance":1,"settings.lines.changeSpeedBy":-0.5,"settings.Attract Particles to Center":false,"settings.centerAttractionForce.radius":210,"settings.centerAttractionForce.outside.min":0,"settings.centerAttractionForce.outside.max":0,"settings.centerAttractionForce.extra.chance":0.1,"settings.centerAttractionForce.extra.min":-10,"settings.centerAttractionForce.extra.max":0
     },
     "Draw From Image":{
-        "settings.originRadius.ignoreRadius":true,"settings.particleCount":200,"settings.bounceEdges":true,"settings.velocitySettings.startingVelocity.minX": -5,"settings.velocitySettings.startingVelocity.minY": -5,"settings.velocitySettings.startingVelocity.maxX": 5,"settings.velocitySettings.startingVelocity.maxY": 5,"settings.velocitySettings.maxVelocity":3.5,"settings.colors.backgroundColor":{"r":255,"g":255,"b":255},"settings.colors.particleColorType":"image","settings.lines.changeSpeedConnected":false,"settings.lines.changeSpeedChance":0,"settings.lines.maxLineDist":75,"settings.Attract Particles to Center":false,"settings.centerAttractionForce.chance":0.5328,"settings.centerAttractionForce.radius":1472
+        "settings.originRadius.ignoreRadius":true,"settings.particleCount":200,"settings.bounceEdges":true,"settings.velocitySettings.startingVelocity.minX": -5,"settings.velocitySettings.startingVelocity.minY": -5,"settings.velocitySettings.startingVelocity.maxX": 5,"settings.velocitySettings.startingVelocity.maxY": 5,"settings.velocitySettings.maxVelocity":3.5,"settings.colors.backgroundColor":"#ffffff","settings.colors.particleColorType":"image","settings.lines.changeSpeedConnected":false,"settings.lines.changeSpeedChance":0,"settings.lines.maxLineDist":75,"settings.Attract Particles to Center":false,"settings.centerAttractionForce.chance":0.5328,"settings.centerAttractionForce.radius":1472
     },
     "Blurrr":{  
         "settings.originRadius.ignoreRadius":true,
@@ -725,11 +724,7 @@ const defaultPresets = {
         "settings.colors.particleSettings.drawOutline":false,
         "settings.colors.particleSettings.strokeWeight":10.6,
         "settings.colors.particleSettings.particleOutlineAlpha":65,
-        "settings.colors.backgroundColor":{  
-           "r":255,
-           "g":255,
-           "b":255
-        },
+        "settings.colors.backgroundColor":"#ffffff",
         "settings.colors.particleColorType":"image",
         "settings.colors.randomRGBA.alphaMin":131,
         "settings.colors.randomRGBA.alphaMax":200,

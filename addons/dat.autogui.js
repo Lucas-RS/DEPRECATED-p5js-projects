@@ -97,7 +97,7 @@ class AutoGUI extends dat.GUI {
           }
         }
       }
-      this.presetsChanged()
+      this.presetsChanged(value)
     })
   }
 
