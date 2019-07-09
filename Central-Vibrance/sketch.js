@@ -1,4 +1,3 @@
-//Need to stop p5 from listening for key presses when editing input values with keyboard.
 let particles = []
 let qtree
 let gui
@@ -528,7 +527,7 @@ window.onload = () => {
         }
         for(let i in gui.controllers){
             let controller = gui.controllers[i]
-            let exclude = ['presetSelector', 'presetSave', 'settings.canvas.width', 'settings.canvas.height']
+            let exclude = ['presetSelector', 'presetSave', 'settings.updateURL']
             if(!exclude.includes(i) && controller.hasOwnProperty('__li') && controller.getValue() !== controller['initialValue']){
                 changedSettings[i] = controller.getValue()
             }
