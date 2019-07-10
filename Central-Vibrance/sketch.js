@@ -306,7 +306,7 @@ function keyPressed() {
             toggleCodeArea()
         } else if (key === "h") {
             gui.isHidden = !gui.isHidden
-            gui.domElement.style.display = gui.isHidden ? 'none' : '';
+            gui.domElement.style.display = gui.isHidden ? 'none' : ''
         }
     }
 }
@@ -474,7 +474,7 @@ function share() {
     textArea.select()
     document.execCommand("copy")
     textArea.remove()
-    alert("Link has been copied to your clipboard.\n" + URL)
+    alert("Link has been copied to your clipboard.\n" + URL.substring(0, 150))
 }
 
 function updateSettingsFromURL() {
