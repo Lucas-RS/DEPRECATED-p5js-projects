@@ -437,18 +437,25 @@ function toggleCodeArea() {
 function updateURL() {
     userCode = document.getElementById("code-area").value
     let changedSettings = {}
+
     if (userCode !== "") {
         changedSettings = {
             _other: {userCode}
         }
     }
+
     for(let i in gui.controllers){
         let controller = gui.controllers[i]
-        if(controller.hasOwnProperty('__li') && controller.getValue() !== controller['initialValue']){
+        if(i !== "presetSelector" && i !== "presetSave" && controller.hasOwnProperty('__li') && controller.getValue() !== controller['initialValue']){
             changedSettings[i] = controller.getValue()
         }
     }
-    window.location.hash = "!" + btoa(JSON.stringify(changedSettings))
+
+    if (Object.keys(changedSettings).length > 0) {
+        window.location.hash = "!" + btoa(JSON.stringify(changedSettings))        
+    } else {
+        window.location.hash = ""
+    }
 }
 
 function updateSettingsFromURL() {
@@ -465,6 +472,8 @@ function updateSettingsFromURL() {
         if (URLSettings._other !== undefined && URLSettings._other.userCode !== undefined) {
             document.getElementById("code-area").value = URLSettings._other.userCode
         }
+    } else {
+        window.location.hash = ""
     }
 }
 
