@@ -8,7 +8,6 @@ let sampledImg
 let showCodeArea = false
 let userCode
 let settings = {
-    updateURL: false,
     'Reset Canvas (R)': resetSketch,
     'End Simulation (E)': function(){endSim=true},
     'Save As PNG (S)': function(){saveCanvas(canvas, 'central-vibrance', 'png')},
@@ -184,7 +183,6 @@ let settings = {
     },
     _centerAttractionForce: {name:'Central Attraction Force'}
 }
-const router = new Navigo(null, true, "#!")
 
 function setup() {
     angleMode(DEGREES)
@@ -302,6 +300,9 @@ function keyPressed() {
             endSim = true
         } else if (key === "c") {
             toggleCodeArea()
+        } else if (key === "h") {
+            gui.isHidden = !gui.isHidden
+            gui.domElement.style.display = gui.isHidden ? 'none' : '';
         }
     }
 }
@@ -433,10 +434,43 @@ function toggleCodeArea() {
     }
 }
 
-function updateURL() {}
+function updateURL() {
+    userCode = document.getElementById("code-area").value
+    let changedSettings = {}
+    if (userCode !== "") {
+        changedSettings = {
+            _other: {userCode}
+        }
+    }
+    for(let i in gui.controllers){
+        let controller = gui.controllers[i]
+        if(controller.hasOwnProperty('__li') && controller.getValue() !== controller['initialValue']){
+            changedSettings[i] = controller.getValue()
+        }
+    }
+    window.location.hash = "!" + btoa(JSON.stringify(changedSettings))
+}
+
+function updateSettingsFromURL() {
+    if (window.location.hash !== "") {    
+        let URLSettings = JSON.parse(atob(window.location.hash.substr(2)))
+        for(let i in gui.controllers){
+            let controller = gui.controllers[i]
+            if(controller.hasOwnProperty('__li')) {
+                if(URLSettings.hasOwnProperty(i)){
+                    controller.setValue(URLSettings[i])
+                }
+            }
+        }
+        if (URLSettings._other !== undefined && URLSettings._other.userCode !== undefined) {
+            document.getElementById("code-area").value = URLSettings._other.userCode
+        }
+    }
+}
 
 window.onload = () => {
-    gui = new AutoGUI({width: 350})
+    gui = new AutoGUI({width: 350, hideable: false})
+    gui.isHidden = false
     gui.enablePresets(defaultPresets, 'centralVibrance.userPresets')
     gui.autoAdd(settings, 'settings')
     gui.presetControllers.presetSave = () => {
@@ -500,40 +534,7 @@ window.onload = () => {
         listenForKeys = true
     }
 
-    router
-        .on(':id', function (params) {
-            let URLSettings = JSON.parse(atob(params.id))
-            for(let i in gui.controllers){
-                let controller = gui.controllers[i]
-                if(i !== 'presetSelector' && i !== 'presetSave' && controller.hasOwnProperty('__li')) {
-                    if(URLSettings.hasOwnProperty(i)){
-                        controller.setValue(URLSettings[i])
-                    }
-                }
-            }
-            if (URLSettings._other !== undefined && URLSettings._other.userCode !== undefined) {
-                document.getElementById("code-area").value = URLSettings._other.userCode
-            }
-        })
-        .resolve()
-
-    window.updateURL = function() {
-        userCode = document.getElementById("code-area").value
-        let changedSettings = {}
-        if (userCode !== "") {
-            changedSettings = {
-                _other: {userCode}
-            }
-        }
-        for(let i in gui.controllers){
-            let controller = gui.controllers[i]
-            let exclude = ['presetSelector', 'presetSave', 'settings.updateURL']
-            if(!exclude.includes(i) && controller.hasOwnProperty('__li') && controller.getValue() !== controller['initialValue']){
-                changedSettings[i] = controller.getValue()
-            }
-        }
-        router.navigate(btoa(JSON.stringify(changedSettings)))
-    }
+    updateSettingsFromURL()
 }
 
 const defaultPresets = {
