@@ -7,11 +7,13 @@ let listenForKeys = true
 let sampledImg
 let showCodeArea = false
 let userCode
+let useCustomCode = false
 let settings = {
     'Reset Canvas (R)': resetSketch,
     'End Simulation (E)': function(){endSim=true},
     'Save As PNG (S)': function(){saveCanvas(canvas, 'central-vibrance', 'png')},
     'Show Code Area (C)': toggleCodeArea,
+    'Share': share,
     "seed": 0,
     "useCustomSeed": false,
     "canvas": {
@@ -205,13 +207,15 @@ function draw() {
         bgColor.setAlpha(settings['colors']['backgroundAlpha'])
         background(bgColor)
     }
-    
-    try {
-        eval(userCode); 
-    } catch (e) {
-        console.error(e.message)
-    }
 
+    if (useCustomCode) {   
+        try {
+            eval(userCode)
+        } catch (e) {
+            console.error(e.message)
+        }
+    }
+    
     for (let i = 0; i < particles.length; i++) {
         if ( random() <= settings['colors']['image']['updateColorChance']) {
             updateParticleColorFromImage(i)
@@ -434,7 +438,7 @@ function toggleCodeArea() {
     }
 }
 
-function updateURL() {
+function getEncodedSettingsString() {
     userCode = document.getElementById("code-area").value
     let changedSettings = {}
 
@@ -454,10 +458,22 @@ function updateURL() {
     }
 
     if (Object.keys(changedSettings).length > 0) {
-        window.location.replace("#!" + btoa(JSON.stringify(changedSettings)))
+        return btoa(JSON.stringify(changedSettings))
     } else {
-        window.location.replace("#")
+        return ""
     }
+    
+}
+
+function share() {
+    let textArea = document.createElement("textarea")
+    textArea.value = window.location.origin + window.location.pathname + "#!" + getEncodedSettingsString()
+    document.body.appendChild(textArea)
+    textArea.focus()
+    textArea.select()
+    document.execCommand("copy")
+    textArea.remove()
+    alert("Link has been copied to your clipboard.")
 }
 
 function updateSettingsFromURL() {
@@ -472,6 +488,7 @@ function updateSettingsFromURL() {
             }
         }
         if (URLSettings._other !== undefined && URLSettings._other.userCode !== undefined) {
+            alert("Custom user code has been set. \nTo enable this, press C and enable the checkbox.")
             document.getElementById("code-area").value = URLSettings._other.userCode
         }
     }
@@ -487,14 +504,6 @@ window.onload = () => {
             gui.savePreset()
         } else {
             gui.savePreset({userCode})
-        }
-    }
-
-    for (let controller in gui.controllers) {
-        if (controller !== 'presetSelector' && controller !== 'presetSave' && gui.controllers[controller].hasOwnProperty('__li')) {
-            gui.controllers[controller].onFinishChange(function(value) {
-                updateURL()
-            })
         }
     }
 
@@ -524,22 +533,30 @@ window.onload = () => {
         }
         resetSketch()
     }
+
     if (windowWidth < 700){
         gui.width = windowWidth - 30
         gui.close()
     }
+
     pageIsLoaded = true
     gui.domElement.style.marginRight = 0
 
-    document.getElementById("code-area").oninput = () => {
-        updateURL()
+    document.getElementById("use-custom-code-checkbox").onchange = (e) => {
+        useCustomCode = e.srcElement.checked
     }
 
-    document.getElementById("code-area").onfocus = () => {
+    let codeArea = document.getElementById("code-area")
+
+    codeArea.oninput = () => {
+        userCode = codeArea.value
+    }
+
+    codeArea.onfocus = () => {
         listenForKeys = false
     }
 
-    document.getElementById("code-area").onblur = () => {
+    codeArea.onblur = () => {
         listenForKeys = true
     }
 
