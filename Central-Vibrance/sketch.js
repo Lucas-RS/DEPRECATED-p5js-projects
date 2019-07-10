@@ -529,6 +529,8 @@ window.onload = () => {
         }
         if (value !== 'Default' && gui.presets[gui.controllers.presetSelector.getValue()]._other !== undefined && gui.presets[gui.controllers.presetSelector.getValue()]._other.userCode !== undefined ) {
             document.getElementById("code-area").value = gui.presets[gui.controllers.presetSelector.getValue()]._other.userCode
+            document.getElementById("use-custom-code-checkbox").checked = true
+            useCustomCode = true
         } else {
             document.getElementById("code-area").value = ""
         }
