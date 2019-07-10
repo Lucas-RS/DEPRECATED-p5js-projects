@@ -452,9 +452,9 @@ function updateURL() {
     }
 
     if (Object.keys(changedSettings).length > 0) {
-        window.location.hash = "!" + btoa(JSON.stringify(changedSettings))        
+        window.location.replace("#!" + btoa(JSON.stringify(changedSettings)))
     } else {
-        window.location.hash = ""
+        window.location.replace("#")
     }
 }
 
@@ -472,8 +472,6 @@ function updateSettingsFromURL() {
         if (URLSettings._other !== undefined && URLSettings._other.userCode !== undefined) {
             document.getElementById("code-area").value = URLSettings._other.userCode
         }
-    } else {
-        window.location.hash = ""
     }
 }
 
@@ -544,6 +542,8 @@ window.onload = () => {
     }
 
     updateSettingsFromURL()
+    
+    resetSketch()
 }
 
 const defaultPresets = {
