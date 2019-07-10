@@ -467,13 +467,14 @@ function getEncodedSettingsString() {
 
 function share() {
     let textArea = document.createElement("textarea")
-    textArea.value = window.location.origin + window.location.pathname + "#!" + getEncodedSettingsString()
+    let URL = window.location.origin + window.location.pathname + "#!" + getEncodedSettingsString()
+    textArea.value = URL
     document.body.appendChild(textArea)
     textArea.focus()
     textArea.select()
     document.execCommand("copy")
     textArea.remove()
-    alert("Link has been copied to your clipboard.")
+    alert("Link has been copied to your clipboard.\n" + URL)
 }
 
 function updateSettingsFromURL() {
