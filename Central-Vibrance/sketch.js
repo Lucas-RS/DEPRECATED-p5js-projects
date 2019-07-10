@@ -446,7 +446,9 @@ function updateURL() {
 
     for(let i in gui.controllers){
         let controller = gui.controllers[i]
-        if(i !== "presetSelector" && i !== "presetSave" && controller.hasOwnProperty('__li') && controller.getValue() !== controller['initialValue']){
+        if(!["presetSelector","presetSave","settings.seed"].includes(i) && controller.hasOwnProperty('__li') && controller.getValue() !== controller['initialValue']){
+            changedSettings[i] = controller.getValue()
+        } else if (i === "settings.seed" && settings.useCustomSeed) {
             changedSettings[i] = controller.getValue()
         }
     }
