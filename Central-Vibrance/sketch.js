@@ -889,7 +889,7 @@ const defaultPresets = {
       userSetupCode:
         "setFrameRate(60)\nsettings.colors.showParticles = true\nsettings.lines.connectPoints = true"
     },
-    "settings.seed": 167,
+    "settings.seed": -1,
     "settings.useCustomSeed": true,
     "settings.canvas.width": 1080,
     "settings.canvas.height": 1080,
@@ -900,8 +900,8 @@ const defaultPresets = {
     "settings.velocitySettings.magnitudeBoundaries.min": 10,
     "settings.velocitySettings.magnitudeBoundaries.max": 10,
     "settings.velocitySettings.changeDirectionChance": 0.23,
-    "settings.velocitySettings.rotationBoundaries.min": 19.093031476987274,
-    "settings.velocitySettings.rotationBoundaries.max": 19.093031476987274,
+    "settings.velocitySettings.rotationBoundaries.min": 0,
+    "settings.velocitySettings.rotationBoundaries.max": 0,
     "settings.velocitySettings.randomForce.randomForceChance": 0,
     "settings.colors.particleSettings.particleWidth": 16,
     "settings.colors.particleSettings.particleHeight": 16,
@@ -913,7 +913,6 @@ const defaultPresets = {
     "settings.colors.randomHSLA.saturationMax": 123,
     "settings.colors.randomHSLA.lightnessMin": 55,
     "settings.lines.strokeWeight": 4,
-    "settings.lines.connectPoints": false,
     "settings.lines.changeSpeedConnected": false,
     "settings.lines.maxLineDist": 70,
     "settings.Attract Particles to Center": false,
