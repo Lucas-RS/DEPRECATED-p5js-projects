@@ -8,7 +8,11 @@ let sampledImg;
 let showCodeArea = false;
 let userDrawCode, userSetupCode;
 let useCustomCode = false;
+let doLoop = true;
 let settings = {
+  "Pause (Space)": toggleLoop, 
+  "Step (Right Arrow)": draw,
+  "_Step (Right Arrow)": {hide: true},
   "Reset Canvas (R)": resetSketch,
   "End Simulation (E)": function() {
     endSim = true;
@@ -393,7 +397,32 @@ function keyPressed() {
     } else if (key === "h") {
       gui.isHidden = !gui.isHidden;
       gui.domElement.style.display = gui.isHidden ? "none" : "";
+    } else if (key === " ") {
+      toggleLoop()
+    } else if (key === "ArrowRight") {
+      if (!doLoop) {
+        draw()
+      }
     }
+  }
+}
+
+function keyIsDown() {
+  if (listenForKeys) {
+    
+  }
+}
+
+function toggleLoop() {
+  doLoop = !doLoop
+  if (doLoop) {
+    loop()
+    gui.controllers["settings.Pause (Space)"].name("Pause (Space)")
+    gui.controllers["settings.Step (Right Arrow)"].__li.style.display = "none";
+  } else {
+    noLoop()
+    gui.controllers["settings.Pause (Space)"].name("Play (Space)")
+    gui.controllers["settings.Step (Right Arrow)"].__li.style.display = "";
   }
 }
 
