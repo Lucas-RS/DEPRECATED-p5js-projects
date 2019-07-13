@@ -10,9 +10,9 @@ let userDrawCode, userSetupCode;
 let useCustomCode = false;
 let doLoop = true;
 let settings = {
-  "Pause (Space)": toggleLoop, 
+  "Pause (Space)": toggleLoop,
   "Step (Right Arrow)": draw,
-  "_Step (Right Arrow)": {hide: true},
+  "_Step (Right Arrow)": { hide: true },
   "Reset Canvas (R)": resetSketch,
   "End Simulation (E)": function() {
     endSim = true;
@@ -140,6 +140,7 @@ let settings = {
       lightnessMax: 255,
       alphaMin: 0,
       alphaMax: 255,
+      boostRed: false,
       _all: { min: 0, max: 255, step: 1 }
     },
     gradient: {
@@ -398,10 +399,10 @@ function keyPressed() {
       gui.isHidden = !gui.isHidden;
       gui.domElement.style.display = gui.isHidden ? "none" : "";
     } else if (key === " ") {
-      toggleLoop()
+      toggleLoop();
     } else if (key === "ArrowRight") {
       if (!doLoop) {
-        draw()
+        draw();
       }
     }
   }
@@ -409,19 +410,18 @@ function keyPressed() {
 
 function keyIsDown() {
   if (listenForKeys) {
-    
   }
 }
 
 function toggleLoop() {
-  doLoop = !doLoop
+  doLoop = !doLoop;
   if (doLoop) {
-    loop()
-    gui.controllers["settings.Pause (Space)"].name("Pause (Space)")
+    loop();
+    gui.controllers["settings.Pause (Space)"].name("Pause (Space)");
     gui.controllers["settings.Step (Right Arrow)"].__li.style.display = "none";
   } else {
-    noLoop()
-    gui.controllers["settings.Pause (Space)"].name("Play (Space)")
+    noLoop();
+    gui.controllers["settings.Pause (Space)"].name("Play (Space)");
     gui.controllers["settings.Step (Right Arrow)"].__li.style.display = "";
   }
 }
@@ -479,11 +479,15 @@ function generateColor() {
     );
   } else if (colorType === "randomHSLA") {
     colorMode(HSL, 255);
+    let hue = random(
+      settings["colors"]["randomHSLA"]["hueMin"],
+      settings["colors"]["randomHSLA"]["hueMax"]
+    );
+    if (settings.colors.randomHSLA.boostRed) {
+      hue = Math.pow(hue, 2) / 255;
+    }
     c = color(
-      random(
-        settings["colors"]["randomHSLA"]["hueMin"],
-        settings["colors"]["randomHSLA"]["hueMax"]
-      ),
+      hue,
       random(
         settings["colors"]["randomHSLA"]["saturationMin"],
         settings["colors"]["randomHSLA"]["saturationMax"]
