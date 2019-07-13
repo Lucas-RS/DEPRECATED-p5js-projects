@@ -1,4 +1,5 @@
 let particles = [];
+let attractors = [];
 let qtree;
 let gui;
 let endSim = false;
@@ -100,7 +101,7 @@ let settings = {
     particleSettings: {
       particleWidth: 25,
       particleHeight: 25,
-      drawOutline: true,
+      drawOutline: false,
       strokeWeight: 1,
       _strokeWeight: { min: 0.1, max: 50, step: 0.1 },
       particleOutlineColor: "#ffffff",
@@ -202,7 +203,11 @@ let settings = {
     },
     _extra: { openFolder: true, name: "Extra Force Inside Center" }
   },
-  _centerAttractionForce: { name: "Central Attraction Force" }
+  _centerAttractionForce: { name: "Central Attraction Force" },
+  attractors: {
+    attractChance: 0.5,
+    _attractChance: { min: 0, max: 1, step: 0.0001 },
+  }
 };
 
 function setup() {
@@ -240,7 +245,7 @@ function draw() {
 
   for (let i = 0; i < particles.length; i++) {
     if (random() <= settings["colors"]["image"]["updateColorChance"]) {
-      updateParticleColorFromImage(i);
+      updateParticleColorFromImage(particles[i]);
     }
 
     if (settings["colors"]["showParticles"]) {
@@ -260,6 +265,26 @@ function draw() {
 
     if (settings["mouseAttractsParticles"]) {
       particles[i].mouseAttract(settings["mouseAttractionRange"]);
+    }
+
+    if (attractors.length > 0) {
+      for (let a = 0; a < attractors.length; a++) {
+        if (random() < settings.attractors.attractChance) {
+          ellipse(attractors[a].pos.x, attractors[a].pos.y, 5, 5);
+          let f = createVector(attractors[a].pos.x, attractors[a].pos.y);
+          f.sub(particles[i].pos);
+          f.setMag(
+            0.5 /
+              dist(
+                particles[i].pos.x,
+                particles[i].pos.y,
+                attractors[a].pos.x,
+                attractors[a].pos.y
+              )
+          );
+          particles[i].applyForce(f);
+        }
+      }
     }
 
     if (
@@ -385,6 +410,16 @@ function draw() {
   }
 }
 
+function mousePressed() {
+  if (mouseButton === LEFT) {
+    particles.push(createParticle(createVector(mouseX, mouseY)));
+  } else if (mouseButton === RIGHT) {
+    attractors.push(
+      new Particle(createVector(mouseX, mouseY), color(0, 255, 0))
+    );
+  }
+}
+
 function keyPressed() {
   if (listenForKeys) {
     if (key === "r") {
@@ -405,11 +440,6 @@ function keyPressed() {
         draw();
       }
     }
-  }
-}
-
-function keyIsDown() {
-  if (listenForKeys) {
   }
 }
 
@@ -443,14 +473,14 @@ function handleFile(file) {
   }, 500);
 }
 
-function updateParticleColorFromImage(p) {
+function updateParticleColorFromImage(particle) {
   if (
     sampledImg !== undefined &&
     settings["colors"]["particleColorType"] === "image"
   ) {
-    let c = sampledImg.get(particles[p].pos.x, particles[p].pos.y);
-    c[3] = alpha(particles[p].color);
-    particles[p].color = color(...c);
+    let c = sampledImg.get(particle.pos.x, particle.pos.y);
+    c[3] = alpha(particle.color);
+    particle.color = color(...c);
   }
 }
 
@@ -524,6 +554,26 @@ function generateColor() {
   return c;
 }
 
+function createParticle(origin) {
+  let particle = new Particle(origin, generateColor());
+  particle.applyForce(
+    createVector(
+      random(
+        settings["velocitySettings"]["startingVelocity"]["minX"],
+        settings["velocitySettings"]["startingVelocity"]["maxX"]
+      ),
+      random(
+        settings["velocitySettings"]["startingVelocity"]["minY"],
+        settings["velocitySettings"]["startingVelocity"]["maxY"]
+      )
+    )
+  );
+  if (settings.colors.image.updateAtStart) {
+    updateParticleColorFromImage(particle);
+  }
+  return particle;
+}
+
 function resetSketch() {
   if (settings.useCustomSeed) {
     randomSeed(settings.seed);
@@ -564,32 +614,19 @@ function resetSketch() {
     1
   );
 
-  for (var i = 0; i < settings["particleCount"]; ) {
-    let origin = createVector(random(width), random(height));
-    if (
-      settings.originRadius.ignoreRadius ||
-      (dist(origin.x, origin.y, width / 2, height / 2) <
-        settings["originRadius"]["max"] &&
-        dist(origin.x, origin.y, width / 2, height / 2)) >
-        settings["originRadius"]["min"]
-    ) {
-      particles[i] = new Particle(origin, generateColor());
-      particles[i].applyForce(
-        createVector(
-          random(
-            settings["velocitySettings"]["startingVelocity"]["minX"],
-            settings["velocitySettings"]["startingVelocity"]["maxX"]
-          ),
-          random(
-            settings["velocitySettings"]["startingVelocity"]["minY"],
-            settings["velocitySettings"]["startingVelocity"]["maxY"]
-          )
-        )
-      );
-      if (settings.colors.image.updateAtStart) {
-        updateParticleColorFromImage(i);
+  for (var i = 0; i < settings["particleCount"]; i++) {
+    while (true) {
+      let origin = createVector(random(width), random(height));
+      if (
+        settings.originRadius.ignoreRadius ||
+        (dist(origin.x, origin.y, width / 2, height / 2) <
+          settings["originRadius"]["max"] &&
+          dist(origin.x, origin.y, width / 2, height / 2)) >
+          settings["originRadius"]["min"]
+      ) {
+        particles[i] = createParticle(origin);
+        break;
       }
-      i++;
     }
   }
 
