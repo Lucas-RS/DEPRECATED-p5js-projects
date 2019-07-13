@@ -46,8 +46,9 @@
 
       #code-area-container {
         display: none;
-        background-color: #eeeeee;
-        padding: 5px;
+        box-shadow: 0 0 5px #aaa;
+        background-color: white;
+        padding: 15px;
         position: fixed;
         top: 10px;
         left: 10px;
@@ -61,9 +62,11 @@
   </head>
   <body>
     <div id="code-area-container">
-      <p>Enter custom code:</p>
-      <textarea name="hi" id="code-area" cols="60" rows="10"></textarea>
-      <p>This code is called each frame.</p>
+      <b><p>Custom Code:</p></b>
+      <p>setup()</p>
+      <textarea id="setup-code-area" cols="50" rows="10" wrap="off"></textarea><br>
+      <p>draw()</p>
+      <textarea id="draw-code-area" cols="50" rows="10" wrap="off"></textarea><br>
       <button onclick="toggleCodeArea()">Close</button>
       Use Custom Code: <input type="checkbox" name="Use Custom Code" id="use-custom-code-checkbox">
     </div>

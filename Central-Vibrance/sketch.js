@@ -6,7 +6,7 @@ let pageIsLoaded = false;
 let listenForKeys = true;
 let sampledImg;
 let showCodeArea = false;
-let userCode;
+let userDrawCode, userSetupCode;
 let useCustomCode = false;
 let settings = {
   "Reset Canvas (R)": resetSketch,
@@ -227,7 +227,7 @@ function draw() {
 
   if (useCustomCode) {
     try {
-      eval(userCode);
+      eval(userDrawCode);
     } catch (e) {
       console.error(e.message);
     }
@@ -504,7 +504,8 @@ function resetSketch() {
   endSim = false;
   particles = [];
 
-  userCode = document.getElementById("code-area").value;
+  userSetupCode = document.getElementById("setup-code-area").value;
+  userDrawCode = document.getElementById("draw-code-area").value;
 
   resizeCanvas(settings["canvas"]["width"], settings["canvas"]["height"]);
 
@@ -529,6 +530,7 @@ function resetSketch() {
     new Rectangle(width / 2, height / 2, width / 2, height / 2),
     1
   );
+
   for (var i = 0; i < settings["particleCount"]; ) {
     let origin = createVector(random(width), random(height));
     if (
@@ -581,6 +583,14 @@ function resetSketch() {
 
     gui.updateAllDisplays();
   }
+
+  if (useCustomCode) {
+    try {
+      eval(userSetupCode);
+    } catch (e) {
+      console.error(e.message);
+    }
+  }
 }
 
 function toggleCodeArea() {
@@ -599,11 +609,10 @@ function toggleCodeArea() {
 }
 
 function getEncodedSettingsString() {
-  userCode = document.getElementById("code-area").value;
   let changedSettings = {};
   let sameAsPreset = true;
 
-  if (gui.controllers.presetSelector.getValue() !== "Default") {
+  if (defaultPresets.hasOwnProperty(gui.controllers.presetSelector.getValue())) {
     for (let i in gui.controllers) {
       if (
         !["presetSave", "presetSelector", "settings.seed"].includes(i) &&
@@ -639,9 +648,17 @@ function getEncodedSettingsString() {
     ] = gui.controllers.presetSelector.getValue();
     return btoa(JSON.stringify(changedSettings));
   } else {
-    if (userCode !== "") {
+    let otherSettings = {};
+    if (userDrawCode !== "") {
+      otherSettings.userDrawCode = userDrawCode;
+    }
+    if (userSetupCode !== "") {
+      otherSettings.userSetupCode = userSetupCode;
+    }
+
+    if (Object.keys(otherSettings).length > 0) {
       changedSettings = {
-        _other: { userCode }
+        _other: otherSettings
       };
     }
 
@@ -697,16 +714,25 @@ function updateSettingsFromURL() {
         }
       }
       if (
-        URLSettings._other !== undefined &&
-        URLSettings._other.userCode !== undefined
+        URLSettings._other !== undefined
       ) {
         alert(
           "Custom user code has been set. \nTo enable this, press C and enable the checkbox."
         );
         showCodeArea = false;
         toggleCodeArea();
-        document.getElementById("code-area").value =
-          URLSettings._other.userCode;
+        if (
+          URLSettings._other.userDrawCode !== undefined
+        ) {
+          document.getElementById("draw-code-area").value =
+          URLSettings._other.userDrawCode;
+        }
+        if (
+          URLSettings._other.userSetupCode !== undefined
+        ) {
+          document.getElementById("setup-code-area").value =
+          URLSettings._other.userSetupCode;
+        }
       }
     }
   }
@@ -718,10 +744,20 @@ window.onload = () => {
   gui.enablePresets(defaultPresets, "centralVibrance.userPresets");
   gui.autoAdd(settings, "settings");
   gui.presetControllers.presetSave = () => {
-    if (userCode == "") {
-      gui.savePreset();
+    let otherSettings = {};
+
+    if (userDrawCode !== "") {
+      otherSettings.userDrawCode = userDrawCode;
+    }
+
+    if (userSetupCode !== "") {
+      otherSettings.userSetupCode = userSetupCode;
+    }
+
+    if (Object.keys(otherSettings).length > 0) {
+      gui.savePreset(otherSettings);
     } else {
-      gui.savePreset({ userCode });
+      gui.savePreset();
     }
   };
 
@@ -747,10 +783,20 @@ window.onload = () => {
   );
   gui.presetsChanged = value => {
     gui.presetControllers.presetSave = () => {
-      if (userCode == "") {
-        gui.savePreset();
+      let otherSettings = {};
+
+      if (userDrawCode !== "") {
+        otherSettings.userDrawCode = userDrawCode;
+      }
+
+      if (userSetupCode !== "") {
+        otherSettings.userSetupCode = userSetupCode;
+      }
+
+      if (Object.keys(otherSettings).length > 0) {
+        gui.savePreset(otherSettings);
       } else {
-        gui.savePreset({ userCode });
+        gui.savePreset();
       }
     };
     if (sampledImg !== undefined) {
@@ -759,16 +805,37 @@ window.onload = () => {
     if (
       value !== "Default" &&
       gui.presets[gui.controllers.presetSelector.getValue()]._other !==
-        undefined &&
-      gui.presets[gui.controllers.presetSelector.getValue()]._other.userCode !==
         undefined
     ) {
-      document.getElementById("code-area").value =
-        gui.presets[gui.controllers.presetSelector.getValue()]._other.userCode;
+      if (
+        gui.presets[gui.controllers.presetSelector.getValue()]._other
+          .userDrawCode !== undefined
+      ) {
+        document.getElementById("draw-code-area").value =
+          gui.presets[
+            gui.controllers.presetSelector.getValue()
+          ]._other.userDrawCode;
+      } else {
+        document.getElementById("draw-code-area").value = "";
+      }
+
+      if (
+        gui.presets[gui.controllers.presetSelector.getValue()]._other
+          .userSetupCode !== undefined
+      ) {
+        document.getElementById("setup-code-area").value =
+          gui.presets[
+            gui.controllers.presetSelector.getValue()
+          ]._other.userSetupCode;
+      } else {
+        document.getElementById("setup-code-area").value = "";
+      }
+
       document.getElementById("use-custom-code-checkbox").checked = true;
       useCustomCode = true;
     } else {
-      document.getElementById("code-area").value = "";
+      document.getElementById("draw-code-area").value = "";
+      document.getElementById("setup-code-area").value = "";
     }
     resetSketch();
   };
@@ -785,17 +852,31 @@ window.onload = () => {
     useCustomCode = e.srcElement.checked;
   };
 
-  let codeArea = document.getElementById("code-area");
+  let drawCodeArea = document.getElementById("draw-code-area");
 
-  codeArea.oninput = () => {
-    userCode = codeArea.value;
+  drawCodeArea.oninput = () => {
+    userDrawCode = drawCodeArea.value;
   };
 
-  codeArea.onfocus = () => {
+  drawCodeArea.onfocus = () => {
     listenForKeys = false;
   };
 
-  codeArea.onblur = () => {
+  drawCodeArea.onblur = () => {
+    listenForKeys = true;
+  };
+
+  let startCodeArea = document.getElementById("setup-code-area");
+
+  startCodeArea.oninput = () => {
+    userSetupCode = startCodeArea.value;
+  };
+
+  startCodeArea.onfocus = () => {
+    listenForKeys = false;
+  };
+
+  startCodeArea.onblur = () => {
     listenForKeys = true;
   };
 
@@ -807,7 +888,7 @@ window.onload = () => {
 const defaultPresets = {
   "Line Dot Turn": {
     _other: {
-      userCode:
+      userDrawCode:
         "if (random() < 0.4) {\n  for (let i = 0; i < particles.length; i++) {\n    particles[i].color = generateColor()\n  }\n}\n\nif (frameCount == 1) {\n  setFrameRate(60)\n  settings.colors.showParticles = true\n  settings.lines.connectPoints = true\n}\n\nif (frameCount == 20) {\n  settings.colors.showParticles = false\n  settings.lines.connectPoints = false\n}\n\nif (frameCount == 60) {\n  settings.seed += 1\n  settings.velocitySettings.rotationBoundaries.min = Math.sin(settings.seed * 0.19625 + 1.57) * 90\n  settings.velocitySettings.rotationBoundaries.max = Math.sin(settings.seed * 0.19625 + 1.57) * 90\n  resetSketch()\n}"
     },
     "settings.seed": -1,
