@@ -612,7 +612,9 @@ function getEncodedSettingsString() {
   let changedSettings = {};
   let sameAsPreset = true;
 
-  if (defaultPresets.hasOwnProperty(gui.controllers.presetSelector.getValue())) {
+  if (
+    defaultPresets.hasOwnProperty(gui.controllers.presetSelector.getValue())
+  ) {
     for (let i in gui.controllers) {
       if (
         !["presetSave", "presetSelector", "settings.seed"].includes(i) &&
@@ -713,25 +715,19 @@ function updateSettingsFromURL() {
           }
         }
       }
-      if (
-        URLSettings._other !== undefined
-      ) {
+      if (URLSettings._other !== undefined) {
         alert(
           "Custom user code has been set. \nTo enable this, press C and enable the checkbox."
         );
         showCodeArea = false;
         toggleCodeArea();
-        if (
-          URLSettings._other.userDrawCode !== undefined
-        ) {
+        if (URLSettings._other.userDrawCode !== undefined) {
           document.getElementById("draw-code-area").value =
-          URLSettings._other.userDrawCode;
+            URLSettings._other.userDrawCode;
         }
-        if (
-          URLSettings._other.userSetupCode !== undefined
-        ) {
+        if (URLSettings._other.userSetupCode !== undefined) {
           document.getElementById("setup-code-area").value =
-          URLSettings._other.userSetupCode;
+            URLSettings._other.userSetupCode;
         }
       }
     }
@@ -889,9 +885,11 @@ const defaultPresets = {
   "Line Dot Turn": {
     _other: {
       userDrawCode:
-        "if (random() < 0.4) {\n  for (let i = 0; i < particles.length; i++) {\n    particles[i].color = generateColor()\n  }\n}\n\nif (frameCount == 1) {\n  setFrameRate(60)\n  settings.colors.showParticles = true\n  settings.lines.connectPoints = true\n}\n\nif (frameCount == 20) {\n  settings.colors.showParticles = false\n  settings.lines.connectPoints = false\n}\n\nif (frameCount == 60) {\n  settings.seed += 1\n  settings.velocitySettings.rotationBoundaries.min = Math.sin(settings.seed * 0.19625 + 1.57) * 90\n  settings.velocitySettings.rotationBoundaries.max = Math.sin(settings.seed * 0.19625 + 1.57) * 90\n  resetSketch()\n}"
+        "if (random() < 0.4) {\n  for (let i = 0; i < particles.length; i++) {\n    particles[i].color = generateColor()\n  }\n}\n\nif (frameCount == 20) {\n  settings.colors.showParticles = false\n  settings.lines.connectPoints = false\n}\n\nif (frameCount == 60) {\n  settings.seed += 1\n  settings.velocitySettings.rotationBoundaries.min = Math.sin(settings.seed * 0.19625 + 1.57) * 90\n  settings.velocitySettings.rotationBoundaries.max = Math.sin(settings.seed * 0.19625 + 1.57) * 90\n  resetSketch()\n}",
+      userSetupCode:
+        "setFrameRate(60)\nsettings.colors.showParticles = true\nsettings.lines.connectPoints = true"
     },
-    "settings.seed": -1,
+    "settings.seed": 167,
     "settings.useCustomSeed": true,
     "settings.canvas.width": 1080,
     "settings.canvas.height": 1080,
@@ -902,8 +900,8 @@ const defaultPresets = {
     "settings.velocitySettings.magnitudeBoundaries.min": 10,
     "settings.velocitySettings.magnitudeBoundaries.max": 10,
     "settings.velocitySettings.changeDirectionChance": 0.23,
-    "settings.velocitySettings.rotationBoundaries.min": 90,
-    "settings.velocitySettings.rotationBoundaries.max": 90,
+    "settings.velocitySettings.rotationBoundaries.min": 19.093031476987274,
+    "settings.velocitySettings.rotationBoundaries.max": 19.093031476987274,
     "settings.velocitySettings.randomForce.randomForceChance": 0,
     "settings.colors.particleSettings.particleWidth": 16,
     "settings.colors.particleSettings.particleHeight": 16,
@@ -920,30 +918,6 @@ const defaultPresets = {
     "settings.lines.maxLineDist": 70,
     "settings.Attract Particles to Center": false,
     "settings.centerAttractionForce.chance": 0.05
-  },
-  "Connected Points": {
-    "settings.Attract Particles to Center": false,
-    "settings.bounceEdges": true,
-    "settings.colors.backgroundColor": "#ffffff",
-    "settings.colors.gradient.alphaMax": 0,
-    "settings.colors.particleColorType": "randomHSLA",
-    "settings.colors.particleSettings.particleOutlineAlpha": 160,
-    "settings.colors.particleSettings.particleOutlineColor": "#ff487e",
-    "settings.colors.randomHSLA.lightnessMin": 80,
-    "settings.colors.randomHSLA.saturationMin": 160,
-    "settings.colors.showParticles": true,
-    "settings.drawTrails": false,
-    "settings.lines.maxLineDist": 50,
-    "settings.lines.slowWhenConnected": false,
-    "settings.velocitySettings.startingVelocity.minX": -3,
-    "settings.velocitySettings.startingVelocity.minY": -3,
-    "settings.velocitySettings.startingVelocity.maxX": 3,
-    "settings.velocitySettings.startingVelocity.maxY": 3,
-    "settings.velocitySettings.maxVelocity": 3,
-    "settings.mouseAttractionRange": 70,
-    "settings.mouseAttractsParticles": true,
-    "settings.originRadius.ignoreRadius": true,
-    "settings.originRadius.max": 400
   },
   Smoke: {
     "settings.originRadius.max": 300,
@@ -1071,8 +1045,6 @@ const defaultPresets = {
     "settings.centerAttractionForce.extra.chance": 0.5,
     "settings.centerAttractionForce.extra.min": -10,
     "settings.centerAttractionForce.extra.max": 0,
-    "settings.canvas.width": 1000,
-    "settings.canvas.height": 2100,
     "settings.originRadius.min": 263,
     "settings.velocitySettings.lockAxis.xAxis": true,
     "settings.colors.particleSettings.particleOutlineAlpha": 20,
@@ -1166,52 +1138,5 @@ const defaultPresets = {
     "settings.Attract Particles to Center": false,
     "settings.centerAttractionForce.chance": 0.5328,
     "settings.centerAttractionForce.radius": 1472
-  },
-  Blurrr: {
-    "settings.originRadius.ignoreRadius": true,
-    "settings.particleCount": 219,
-    "settings.mouseAttractsParticles": true,
-    "settings.mouseAttractionRange": 140,
-    "settings.bounceEdges": true,
-    "settings.velocitySettings.maxVelocity": 3.78,
-    "settings.velocitySettings.changeForceChance": 1,
-    "settings.velocitySettings.magnitudeBoundaries.min": 0.26,
-    "settings.velocitySettings.magnitudeBoundaries.max": 4.76,
-    "settings.velocitySettings.changeDirectionChance": 0.8,
-    "settings.velocitySettings.rotationBoundaries.min": -35.49,
-    "settings.velocitySettings.rotationBoundaries.max": 70.81,
-    "settings.colors.showParticles": true,
-    "settings.colors.particleSettings.particleWidth": 18,
-    "settings.colors.particleSettings.particleHeight": 18,
-    "settings.colors.particleSettings.drawOutline": false,
-    "settings.colors.particleSettings.strokeWeight": 10.6,
-    "settings.colors.particleSettings.particleOutlineAlpha": 65,
-    "settings.colors.backgroundColor": "#ffffff",
-    "settings.colors.particleColorType": "image",
-    "settings.colors.randomRGBA.alphaMin": 131,
-    "settings.colors.randomRGBA.alphaMax": 200,
-    "settings.colors.randomHSLA.saturationMin": 255,
-    "settings.colors.randomHSLA.lightnessMin": 119,
-    "settings.colors.randomHSLA.lightnessMax": 196,
-    "settings.colors.randomHSLA.alphaMin": 255,
-    "settings.colors.gradient.firstColor": "#6d41ff",
-    "settings.colors.gradient.secondColor": "#99ff8c",
-    "settings.colors.gradient.alphaMin": 135,
-    "settings.colors.image.alphaMin": 111,
-    "settings.colors.image.alphaMax": 115,
-    "settings.colors.image.updateColorChance": 0.21,
-    "settings.lines.strokeWeight": 6.8,
-    "settings.lines.changeSpeedConnected": false,
-    "settings.lines.maxLineDist": 70,
-    "settings.Attract Particles to Center": false,
-    "settings.centerAttractionForce.chance": 0.04,
-    "settings.centerAttractionForce.radius": 300,
-    "settings.centerAttractionForce.outside.min": 10,
-    "settings.centerAttractionForce.outside.max": 10,
-    "settings.centerAttractionForce.inside.min": 10,
-    "settings.centerAttractionForce.inside.max": 10,
-    "settings.centerAttractionForce.extra.chance": 0.7,
-    "settings.centerAttractionForce.extra.min": -10,
-    "settings.centerAttractionForce.extra.max": 0
   }
 };
