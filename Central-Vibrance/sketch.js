@@ -5,24 +5,37 @@ let gui;
 let endSim = false;
 let pageIsLoaded = false;
 let listenForKeys = true;
+let listenForMouse = true;
 let sampledImg;
 let showCodeArea = false;
 let userDrawCode, userSetupCode;
 let useCustomCode = false;
 let doLoop = true;
 let settings = {
+  "Shift + Click to Add Particle | Ctrl + Click to Add Attractor": {},
+  Share: share,
   "Pause (Space)": toggleLoop,
-  "Step (Right Arrow)": draw,
-  "_Step (Right Arrow)": { hide: true },
-  "Reset Canvas (R)": resetSketch,
-  "End Simulation (E)": function() {
-    endSim = true;
+  "Step (./Period)": draw,
+  "_Step (./Period)": { hide: true },
+  "Reset Canvas (r)": resetSketch,
+  "Reset Attractors (a)": function() {
+    attractors = [];
   },
-  "Save As PNG (S)": function() {
+  "Save As PNG (s)": function() {
     saveCanvas(canvas, "central-vibrance", "png");
   },
-  "Show Code Area (C)": toggleCodeArea,
-  Share: share,
+  "Show Code Area (c)": toggleCodeArea,
+  "Collapse All Folders": function() {
+    for (let c in gui.controllers) {
+      if (
+        c !== "presetSave" &&
+        c !== "presetSelector" &&
+        gui.controllers[c].hasOwnProperty("__ul")
+      ) {
+        gui.controllers[c].close();
+      }
+    }
+  },
   seed: 0,
   useCustomSeed: false,
   canvas: {
@@ -31,16 +44,14 @@ let settings = {
     height: 1024,
     _height: { min: 1, max: 8192, step: 1 }
   },
-  _canvas: { openFolder: true, name: "Canvas Size" },
   originRadius: {
     ignoreRadius: false,
     min: 0,
     max: 192,
     _all: { min: 0, max: 8192, step: 1 }
   },
-  _originRadius: { openFolder: true, name: "Origin Radius" },
   particleCount: 100,
-  _particleCount: { min: 1, max: 1000, step: 1, name: "Particle Count" },
+  _particleCount: { min: 0, max: 1000, step: 1, name: "Particle Count" },
   mouseAttractsParticles: false,
   mouseAttractionRange: 100,
   _mouseAttractionRange: {
@@ -50,10 +61,23 @@ let settings = {
     name: "Mouse Attraction Range",
     hide: true
   },
+  "End Simulation (e)": function() {
+    endSim = true;
+  },
   endSpeed: 0.5,
   _endSpeed: { min: 0.1, max: 255, step: 0.1 },
   bounceEdges: false,
   drawTrails: true,
+  attractors: {
+    "Reset Attractors (a)": function() {
+      attractors = [];
+    },
+    showAttractors: true,
+    attractChance: 1,
+    _attractChance: { min: 0, max: 1, step: 0.0001 },
+    forceMultiplier: 0.5,
+    _forceMultiplier: { min: -3, max: 3, step: 0.01 }
+  },
   velocitySettings: {
     maxVelocity: 1,
     _maxVelocity: { min: 0, max: 100, step: 0.01 },
@@ -163,7 +187,6 @@ let settings = {
     },
     _all: { openFolder: true, hide: true }
   },
-  _colors: { openFolder: true, name: "Colors" },
   lines: {
     strokeWeight: 1,
     _strokeWeight: { min: 0.1, max: 50, step: 0.1 },
@@ -202,13 +225,31 @@ let settings = {
       _all: { min: -100, max: 100, step: 0.01 }
     },
     _extra: { openFolder: true, name: "Extra Force Inside Center" }
-  },
-  _centerAttractionForce: { name: "Central Attraction Force" },
-  attractors: {
-    attractChance: 0.5,
-    _attractChance: { min: 0, max: 1, step: 0.0001 },
   }
 };
+
+let uiCanvas = new p5(function(p) {
+  p.setup = function() {
+    p.createCanvas(
+      settings["canvas"]["width"],
+      settings["canvas"]["height"]
+    ).parent("canvas-container");
+    p.stroke(255);
+    p.strokeWeight(1);
+    p.fill(0);
+  };
+
+  p.draw = function() {
+    p.clear();
+    if (settings.attractors.showAttractors) {
+      let size =
+        Math.pow(Math.pow(p.width, 2) + Math.pow(p.height, 2), 0.5) * 0.003;
+      for (let a = 0; a < attractors.length; a++) {
+        p.ellipse(attractors[a].pos.x, attractors[a].pos.y, size, size);
+      }
+    }
+  };
+});
 
 function setup() {
   angleMode(DEGREES);
@@ -267,23 +308,18 @@ function draw() {
       particles[i].mouseAttract(settings["mouseAttractionRange"]);
     }
 
-    if (attractors.length > 0) {
-      for (let a = 0; a < attractors.length; a++) {
-        if (random() < settings.attractors.attractChance) {
-          ellipse(attractors[a].pos.x, attractors[a].pos.y, 5, 5);
-          let f = createVector(attractors[a].pos.x, attractors[a].pos.y);
-          f.sub(particles[i].pos);
-          f.setMag(
-            0.5 /
-              dist(
-                particles[i].pos.x,
-                particles[i].pos.y,
-                attractors[a].pos.x,
-                attractors[a].pos.y
-              )
-          );
-          particles[i].applyForce(f);
-        }
+    for (let a = 0; a < attractors.length; a++) {
+      if (random() < settings.attractors.attractChance) {
+        let f = createVector(attractors[a].pos.x, attractors[a].pos.y);
+        f.sub(particles[i].pos);
+        let r = dist(
+          particles[i].pos.x,
+          particles[i].pos.y,
+          attractors[a].pos.x,
+          attractors[a].pos.y
+        );
+        f.setMag(settings.attractors.forceMultiplier / (1 + r));
+        particles[i].applyForce(f);
       }
     }
 
@@ -410,49 +446,16 @@ function draw() {
   }
 }
 
-function mousePressed() {
-  if (mouseButton === LEFT) {
-    particles.push(createParticle(createVector(mouseX, mouseY)));
-  } else if (mouseButton === RIGHT) {
-    attractors.push(
-      new Particle(createVector(mouseX, mouseY), color(0, 255, 0))
-    );
-  }
-}
-
-function keyPressed() {
-  if (listenForKeys) {
-    if (key === "r") {
-      resetSketch();
-    } else if (key === "s") {
-      saveCanvas(canvas, "central-vibrance", "png");
-    } else if (key === "e") {
-      endSim = true;
-    } else if (key === "c") {
-      toggleCodeArea();
-    } else if (key === "h") {
-      gui.isHidden = !gui.isHidden;
-      gui.domElement.style.display = gui.isHidden ? "none" : "";
-    } else if (key === " ") {
-      toggleLoop();
-    } else if (key === "ArrowRight") {
-      if (!doLoop) {
-        draw();
-      }
-    }
-  }
-}
-
 function toggleLoop() {
   doLoop = !doLoop;
   if (doLoop) {
     loop();
     gui.controllers["settings.Pause (Space)"].name("Pause (Space)");
-    gui.controllers["settings.Step (Right Arrow)"].__li.style.display = "none";
+    gui.controllers["settings.Step (./Period)"].__li.style.display = "none";
   } else {
     noLoop();
     gui.controllers["settings.Pause (Space)"].name("Play (Space)");
-    gui.controllers["settings.Step (Right Arrow)"].__li.style.display = "";
+    gui.controllers["settings.Step (./Period)"].__li.style.display = "";
   }
 }
 
@@ -591,10 +594,16 @@ function resetSketch() {
   userDrawCode = document.getElementById("draw-code-area").value;
 
   resizeCanvas(settings["canvas"]["width"], settings["canvas"]["height"]);
+  uiCanvas.resizeCanvas(
+    settings["canvas"]["width"],
+    settings["canvas"]["height"]
+  );
 
-  let canvasElem = document.getElementById("defaultCanvas0");
-  canvasElem.style.width = "";
-  canvasElem.style.height = "";
+  let canvasElems = document.getElementsByClassName("p5Canvas");
+  for (let elem of canvasElems) {
+    elem.style.width = "";
+    elem.style.height = "";
+  }
 
   colorMode(RGB, 255);
   let bgColor = color(settings["colors"]["backgroundColor"]);
@@ -805,7 +814,46 @@ function updateSettingsFromURL() {
 }
 
 window.onload = () => {
-  gui = new AutoGUI({ width: 350, hideable: false });
+  document.onkeypress = function(e) {
+    e = e || window.event;
+    if (listenForKeys) {
+      if (e.key === "r") {
+        resetSketch();
+      } else if (e.key === "s") {
+        saveCanvas(canvas, "central-vibrance", "png");
+      } else if (e.key === "e") {
+        endSim = true;
+      } else if (e.key === "c") {
+        toggleCodeArea();
+      } else if (e.key === "h") {
+        gui.isHidden = !gui.isHidden;
+        gui.domElement.style.display = gui.isHidden ? "none" : "";
+      } else if (e.key === " ") {
+        toggleLoop();
+      } else if (e.key === ".") {
+        if (!doLoop) {
+          draw();
+        }
+      } else if (e.key === "a") {
+        attractors = [];
+      }
+    }
+  };
+
+  document.onmousedown = function(e) {
+    e = e || window.event;
+    if (listenForMouse) {
+      if (e.ctrlKey && e.button === 0) {
+        attractors.push(
+          new Particle(createVector(mouseX, mouseY), color(0, 255, 0))
+        );
+      } else if (e.shiftKey && e.button === 0) {
+        particles.push(createParticle(createVector(mouseX, mouseY)));
+      }
+    }
+  };
+
+  gui = new AutoGUI({ width: 450, hideable: false });
   gui.isHidden = false;
   gui.enablePresets(defaultPresets, "centralVibrance.userPresets");
   gui.autoAdd(settings, "settings");
@@ -827,10 +875,11 @@ window.onload = () => {
     }
   };
 
-  gui.sticky("settings.Reset Canvas (R)");
-  gui.sticky("settings.End Simulation (E)");
-  gui.sticky("settings.Save As PNG (S)");
-  gui.sticky("settings.Show Code Area (C)");
+  gui.sticky("settings.Reset Canvas (r)");
+  gui.sticky("settings.End Simulation (e)");
+  gui.sticky("settings.Save As PNG (s)");
+  gui.sticky("settings.Show Code Area (c)");
+  gui.sticky("settings.Collapse All Folders");
   gui.addToggleDisplayEvent(
     "settings.Attract Particles to Center",
     "settings.centerAttractionForce"
@@ -907,12 +956,20 @@ window.onload = () => {
   };
 
   if (windowWidth < 700) {
-    gui.width = windowWidth - 30;
+    gui.width = windowWidth;
     gui.close();
   }
 
   pageIsLoaded = true;
   gui.domElement.style.marginRight = 0;
+
+  gui.domElement.onmouseenter = () => {
+    listenForMouse = false;
+  };
+
+  gui.domElement.onmouseleave = () => {
+    listenForMouse = true;
+  };
 
   document.getElementById("use-custom-code-checkbox").onchange = e => {
     useCustomCode = e.srcElement.checked;
