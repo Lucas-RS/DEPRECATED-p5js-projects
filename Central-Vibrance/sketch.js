@@ -10,6 +10,7 @@ let sampledImg;
 let showCodeArea = false;
 let userDrawCode, userSetupCode;
 let useCustomCode = false;
+let t = 0;
 let doLoop = true;
 let settings = {
   "Shift + Click to Add Particle | Ctrl + Click to Add Attractor": {},
@@ -20,6 +21,14 @@ let settings = {
   "Reset Canvas (r)": resetSketch,
   "Reset Attractors (a)": function() {
     attractors = [];
+    for (let folder in gui.controllers["settings.attractorSettings.attractors"]
+      .__folders) {
+      gui.controllers["settings.attractorSettings.attractors"].removeFolder(
+        gui.controllers["settings.attractorSettings.attractors"].__folders[
+          folder
+        ]
+      );
+    }
   },
   "Save As PNG (s)": function() {
     saveCanvas(canvas, "central-vibrance", "png");
@@ -68,15 +77,21 @@ let settings = {
   _endSpeed: { min: 0.1, max: 255, step: 0.1 },
   bounceEdges: false,
   drawTrails: true,
-  attractors: {
+  attractorSettings: {
     "Reset Attractors (a)": function() {
       attractors = [];
+      for (let folder in gui.controllers[
+        "settings.attractorSettings.attractors"
+      ].__folders) {
+        gui.controllers["settings.attractorSettings.attractors"].removeFolder(
+          gui.controllers["settings.attractorSettings.attractors"].__folders[
+            folder
+          ]
+        );
+      }
     },
     showAttractors: true,
-    attractChance: 1,
-    _attractChance: { min: 0, max: 1, step: 0.0001 },
-    forceMultiplier: 0.5,
-    _forceMultiplier: { min: -3, max: 3, step: 0.01 }
+    attractors: {}
   },
   velocitySettings: {
     maxVelocity: 1,
@@ -241,11 +256,11 @@ let uiCanvas = new p5(function(p) {
 
   p.draw = function() {
     p.clear();
-    if (settings.attractors.showAttractors) {
+    if (settings.attractorSettings.showAttractors) {
       let size =
-        Math.pow(Math.pow(p.width, 2) + Math.pow(p.height, 2), 0.5) * 0.003;
+        Math.pow(Math.pow(p.width, 2) + Math.pow(p.height, 2), 0.5) * 0.005;
       for (let a = 0; a < attractors.length; a++) {
-        p.ellipse(attractors[a].pos.x, attractors[a].pos.y, size, size);
+        p.ellipse(attractors[a].x, attractors[a].y, size, size);
       }
     }
   };
@@ -263,6 +278,7 @@ function setup() {
 }
 
 function draw() {
+  t = frameCount;
   qtree.clear();
   for (let particle of particles) {
     qtree.insert(particle);
@@ -281,6 +297,18 @@ function draw() {
       eval(userDrawCode);
     } catch (e) {
       console.error(e.message);
+    }
+  }
+
+  for (let i = 0; i < attractors.length; i++) {
+    attractor = attractors[i];
+    if (attractor.useEquations) {
+      try {
+        attractor.x = eval(attractor.xEquation) + attractor.initX;
+        attractor.y = eval(attractor.yEquation) + attractor.initY;
+      } catch (e) {
+        console.error(e.message);
+      }
     }
   }
 
@@ -309,16 +337,17 @@ function draw() {
     }
 
     for (let a = 0; a < attractors.length; a++) {
-      if (random() < settings.attractors.attractChance) {
-        let f = createVector(attractors[a].pos.x, attractors[a].pos.y);
+      let attractor = attractors[a];
+      if (random() < attractor.attractChance) {
+        let f = createVector(attractor.x, attractor.y);
         f.sub(particles[i].pos);
         let r = dist(
           particles[i].pos.x,
           particles[i].pos.y,
-          attractors[a].pos.x,
-          attractors[a].pos.y
+          attractor.x,
+          attractor.y
         );
-        f.setMag(settings.attractors.forceMultiplier / (1 + r));
+        f.setMag(attractor.forceMultiplier / (1 + r));
         particles[i].applyForce(f);
       }
     }
@@ -590,6 +619,12 @@ function resetSketch() {
   endSim = false;
   particles = [];
 
+  for (let i = 0; i < attractors.length; i++) {
+    attractor = attractors[i];
+    attractor.x = attractor.initX;
+    attractor.y = attractor.initY;
+  }
+
   userSetupCode = document.getElementById("setup-code-area").value;
   userDrawCode = document.getElementById("draw-code-area").value;
 
@@ -736,7 +771,9 @@ function getEncodedSettingsString() {
     if (userSetupCode !== "") {
       otherSettings.userSetupCode = userSetupCode;
     }
-
+    if (attractors.length > 0) {
+      otherSettings.attractors = attractors;
+    }
     if (Object.keys(otherSettings).length > 0) {
       changedSettings = {
         _other: otherSettings
@@ -795,18 +832,23 @@ function updateSettingsFromURL() {
         }
       }
       if (URLSettings._other !== undefined) {
-        alert(
-          "Custom user code has been set. \nTo enable this, press C and enable the checkbox."
-        );
-        showCodeArea = false;
-        toggleCodeArea();
-        if (URLSettings._other.userDrawCode !== undefined) {
-          document.getElementById("draw-code-area").value =
-            URLSettings._other.userDrawCode;
+        if (URLSettings._other.userDrawCode !== undefined || URLSettings._other.userSetupCode !== undefined) {
+          alert(
+            "Custom user code has been set. \nTo enable this, press C and enable the checkbox."
+          );
+          if (URLSettings._other.userDrawCode !== undefined) {
+            document.getElementById("draw-code-area").value =
+              URLSettings._other.userDrawCode;
+          }
+          if (URLSettings._other.userSetupCode !== undefined) {
+            document.getElementById("setup-code-area").value =
+              URLSettings._other.userSetupCode;
+          }
+          showCodeArea = false;
+          toggleCodeArea();
         }
-        if (URLSettings._other.userSetupCode !== undefined) {
-          document.getElementById("setup-code-area").value =
-            URLSettings._other.userSetupCode;
+        if (URLSettings._other.attractors !== undefined) {
+          attractors = URLSettings._other.attractors
         }
       }
     }
@@ -836,6 +878,15 @@ window.onload = () => {
         }
       } else if (e.key === "a") {
         attractors = [];
+        for (let folder in gui.controllers[
+          "settings.attractorSettings.attractors"
+        ].__folders) {
+          gui.controllers["settings.attractorSettings.attractors"].removeFolder(
+            gui.controllers["settings.attractorSettings.attractors"].__folders[
+              folder
+            ]
+          );
+        }
       }
     }
   };
@@ -844,9 +895,32 @@ window.onload = () => {
     e = e || window.event;
     if (listenForMouse) {
       if (e.ctrlKey && e.button === 0) {
-        attractors.push(
-          new Particle(createVector(mouseX, mouseY), color(0, 255, 0))
-        );
+        let newAttractor = {
+          attractChance: 1,
+          forceMultiplier: 0.5,
+          initX: mouseX,
+          initY: mouseY,
+          useEquations: false,
+          xEquation: "0.001 * t",
+          yEquation: "0.001 * t"
+        };
+
+        let attractorFolder = gui.controllers[
+          "settings.attractorSettings.attractors"
+        ].addFolder(attractors.length);
+
+        attractorFolder.add(newAttractor, "attractChance", 0, 1, 0.0001);
+        attractorFolder.add(newAttractor, "forceMultiplier", -10, 10, 0.01);
+        attractorFolder.add(newAttractor, "initX");
+        attractorFolder.add(newAttractor, "initY");
+        attractorFolder.add(newAttractor, "useEquations");
+        attractorFolder.add(newAttractor, "xEquation");
+        attractorFolder.add(newAttractor, "yEquation");
+
+        newAttractor.x = newAttractor.initX;
+        newAttractor.y = newAttractor.initY;
+
+        attractors.push(newAttractor);
       } else if (e.shiftKey && e.button === 0) {
         particles.push(createParticle(createVector(mouseX, mouseY)));
       }
@@ -868,6 +942,10 @@ window.onload = () => {
       otherSettings.userSetupCode = userSetupCode;
     }
 
+    if (attractors.length > 0) {
+      otherSettings.attractors = attractors;
+    }
+
     if (Object.keys(otherSettings).length > 0) {
       gui.savePreset(otherSettings);
     } else {
@@ -876,7 +954,6 @@ window.onload = () => {
   };
 
   gui.sticky("settings.Reset Canvas (r)");
-  gui.sticky("settings.End Simulation (e)");
   gui.sticky("settings.Save As PNG (s)");
   gui.sticky("settings.Show Code Area (c)");
   gui.sticky("settings.Collapse All Folders");
@@ -897,23 +974,6 @@ window.onload = () => {
     "settings.colors"
   );
   gui.presetsChanged = value => {
-    gui.presetControllers.presetSave = () => {
-      let otherSettings = {};
-
-      if (userDrawCode !== "") {
-        otherSettings.userDrawCode = userDrawCode;
-      }
-
-      if (userSetupCode !== "") {
-        otherSettings.userSetupCode = userSetupCode;
-      }
-
-      if (Object.keys(otherSettings).length > 0) {
-        gui.savePreset(otherSettings);
-      } else {
-        gui.savePreset();
-      }
-    };
     if (sampledImg !== undefined) {
       sampledImg = undefined;
     }
