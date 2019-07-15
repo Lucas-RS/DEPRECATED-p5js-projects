@@ -85,7 +85,7 @@ class AutoGUI extends dat.GUI {
     this.controllers['presetSelector'].onChange((value) => {
       for(let i in this.controllers){
         let controller = this.controllers[i]
-        if(i !== 'presetSelector' && controller.hasOwnProperty('__li')) {
+        if(i !== 'presetSave' && i !== 'presetSelector' && controller.hasOwnProperty('__li')) {
           if(value === 'Default') {
             controller.setValue(controller["initialValue"])
           } else {

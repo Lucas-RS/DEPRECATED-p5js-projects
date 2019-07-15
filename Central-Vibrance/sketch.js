@@ -11,6 +11,7 @@ let showCodeArea = false;
 let userDrawCode, userSetupCode;
 let useCustomCode = false;
 let t = 0;
+let e = Math.E;
 let doLoop = true;
 let settings = {
   "Shift + Click to Add Particle | Ctrl + Click to Add Attractor": {},
@@ -19,17 +20,7 @@ let settings = {
   "Step (./Period)": draw,
   "_Step (./Period)": { hide: true },
   "Reset Canvas (r)": resetSketch,
-  "Reset Attractors (a)": function() {
-    attractors = [];
-    for (let folder in gui.controllers["settings.attractorSettings.attractors"]
-      .__folders) {
-      gui.controllers["settings.attractorSettings.attractors"].removeFolder(
-        gui.controllers["settings.attractorSettings.attractors"].__folders[
-          folder
-        ]
-      );
-    }
-  },
+  "Reset Attractors (a)": resetAttractors,
   "Save As PNG (s)": function() {
     saveCanvas(canvas, "central-vibrance", "png");
   },
@@ -47,6 +38,8 @@ let settings = {
   },
   seed: 0,
   useCustomSeed: false,
+  timeScale: 1,
+  _timeScale: { step: 0.00001, name: "t = frameCount \u00D7" },
   canvas: {
     width: 1024,
     _width: { min: 1, max: 8192, step: 1 },
@@ -78,18 +71,7 @@ let settings = {
   bounceEdges: false,
   drawTrails: true,
   attractorSettings: {
-    "Reset Attractors (a)": function() {
-      attractors = [];
-      for (let folder in gui.controllers[
-        "settings.attractorSettings.attractors"
-      ].__folders) {
-        gui.controllers["settings.attractorSettings.attractors"].removeFolder(
-          gui.controllers["settings.attractorSettings.attractors"].__folders[
-            folder
-          ]
-        );
-      }
-    },
+    "Reset Attractors (a)": resetAttractors,
     showAttractors: true,
     attractors: {}
   },
@@ -244,6 +226,8 @@ let settings = {
 };
 
 let uiCanvas = new p5(function(p) {
+  let size;
+
   p.setup = function() {
     p.createCanvas(
       settings["canvas"]["width"],
@@ -252,13 +236,12 @@ let uiCanvas = new p5(function(p) {
     p.stroke(255);
     p.strokeWeight(1);
     p.fill(0);
+    size = Math.pow(Math.pow(p.width, 2) + Math.pow(p.height, 2), 0.5) * 0.005;
   };
 
   p.draw = function() {
     p.clear();
     if (settings.attractorSettings.showAttractors) {
-      let size =
-        Math.pow(Math.pow(p.width, 2) + Math.pow(p.height, 2), 0.5) * 0.005;
       for (let a = 0; a < attractors.length; a++) {
         p.ellipse(attractors[a].x, attractors[a].y, size, size);
       }
@@ -278,7 +261,7 @@ function setup() {
 }
 
 function draw() {
-  t = frameCount;
+  t = frameCount * settings.timeScale;
   qtree.clear();
   for (let particle of particles) {
     qtree.insert(particle);
@@ -301,7 +284,7 @@ function draw() {
   }
 
   for (let i = 0; i < attractors.length; i++) {
-    attractor = attractors[i];
+    let attractor = attractors[i];
     if (attractor.useEquations) {
       try {
         attractor.x = eval(attractor.xEquation) + attractor.initX;
@@ -586,6 +569,16 @@ function generateColor() {
   return c;
 }
 
+function resetAttractors() {
+  attractors = [];
+  for (let folder in gui.controllers["settings.attractorSettings.attractors"]
+    .__folders) {
+    gui.controllers["settings.attractorSettings.attractors"].removeFolder(
+      gui.controllers["settings.attractorSettings.attractors"].__folders[folder]
+    );
+  }
+}
+
 function createParticle(origin) {
   let particle = new Particle(origin, generateColor());
   particle.applyForce(
@@ -620,7 +613,7 @@ function resetSketch() {
   particles = [];
 
   for (let i = 0; i < attractors.length; i++) {
-    attractor = attractors[i];
+    let attractor = attractors[i];
     attractor.x = attractor.initX;
     attractor.y = attractor.initY;
   }
@@ -832,7 +825,10 @@ function updateSettingsFromURL() {
         }
       }
       if (URLSettings._other !== undefined) {
-        if (URLSettings._other.userDrawCode !== undefined || URLSettings._other.userSetupCode !== undefined) {
+        if (
+          URLSettings._other.userDrawCode !== undefined ||
+          URLSettings._other.userSetupCode !== undefined
+        ) {
           alert(
             "Custom user code has been set. \nTo enable this, press C and enable the checkbox."
           );
@@ -848,10 +844,54 @@ function updateSettingsFromURL() {
           toggleCodeArea();
         }
         if (URLSettings._other.attractors !== undefined) {
-          attractors = URLSettings._other.attractors
+          attractors = URLSettings._other.attractors;
         }
       }
     }
+  }
+}
+
+function addAttractor(attractor) {
+  let attractorFolder = gui.controllers[
+    "settings.attractorSettings.attractors"
+  ].addFolder(attractors.length);
+
+  attractorFolder.add(attractor, "attractChance", 0, 1, 0.0001);
+  attractorFolder.add(attractor, "forceMultiplier", -10, 10, 0.01);
+  attractorFolder.add(attractor, "initX");
+  attractorFolder.add(attractor, "initY");
+  attractorFolder.add(attractor, "useEquations");
+  attractorFolder.add(attractor, "xEquation");
+  attractorFolder.add(attractor, "yEquation");
+
+  for (let i in attractorFolder.__controllers) {
+    addControllerKeyListenToggle(attractorFolder.__controllers[i]);
+  }
+
+  attractor.x = attractor.initX;
+  attractor.y = attractor.initY;
+
+  attractors.push(attractor);
+}
+
+function addControllerKeyListenToggle(controller) {
+  if (controller.domElement.firstChild.tagName === "INPUT") {
+    controller.domElement.firstChild.onfocus = () => {
+      listenForKeys = false;
+    };
+    controller.domElement.firstChild.onblur = () => {
+      listenForKeys = true;
+    };
+  } else if (
+    controller.domElement.firstChild.firstChild !== null &&
+    controller.domElement.firstChild.firstChild.tagName === "INPUT"
+  ) {
+    controller.domElement.firstChild.firstChild.onfocus = () => {
+      listenForKeys = false;
+    };
+    controller.domElement.firstChild.firstChild.onblur = () => {
+      listenForKeys = true;
+    };
   }
 }
 
@@ -877,16 +917,7 @@ window.onload = () => {
           draw();
         }
       } else if (e.key === "a") {
-        attractors = [];
-        for (let folder in gui.controllers[
-          "settings.attractorSettings.attractors"
-        ].__folders) {
-          gui.controllers["settings.attractorSettings.attractors"].removeFolder(
-            gui.controllers["settings.attractorSettings.attractors"].__folders[
-              folder
-            ]
-          );
-        }
+        resetAttractors();
       }
     }
   };
@@ -898,29 +929,13 @@ window.onload = () => {
         let newAttractor = {
           attractChance: 1,
           forceMultiplier: 0.5,
-          initX: mouseX,
-          initY: mouseY,
+          initX: parseInt(mouseX),
+          initY: parseInt(mouseY),
           useEquations: false,
           xEquation: "0.001 * t",
           yEquation: "0.001 * t"
         };
-
-        let attractorFolder = gui.controllers[
-          "settings.attractorSettings.attractors"
-        ].addFolder(attractors.length);
-
-        attractorFolder.add(newAttractor, "attractChance", 0, 1, 0.0001);
-        attractorFolder.add(newAttractor, "forceMultiplier", -10, 10, 0.01);
-        attractorFolder.add(newAttractor, "initX");
-        attractorFolder.add(newAttractor, "initY");
-        attractorFolder.add(newAttractor, "useEquations");
-        attractorFolder.add(newAttractor, "xEquation");
-        attractorFolder.add(newAttractor, "yEquation");
-
-        newAttractor.x = newAttractor.initX;
-        newAttractor.y = newAttractor.initY;
-
-        attractors.push(newAttractor);
+        addAttractor(newAttractor);
       } else if (e.shiftKey && e.button === 0) {
         particles.push(createParticle(createVector(mouseX, mouseY)));
       }
@@ -943,6 +958,10 @@ window.onload = () => {
     }
 
     if (attractors.length > 0) {
+      for (let i of attractors) {
+        delete i.x;
+        delete i.y;
+      }
       otherSettings.attractors = attractors;
     }
 
@@ -974,9 +993,10 @@ window.onload = () => {
     "settings.colors"
   );
   gui.presetsChanged = value => {
-    if (sampledImg !== undefined) {
-      sampledImg = undefined;
-    }
+    sampledImg = undefined;
+    document.getElementById("draw-code-area").value = "";
+    document.getElementById("setup-code-area").value = "";
+    resetAttractors();
     if (
       value !== "Default" &&
       gui.presets[gui.controllers.presetSelector.getValue()]._other !==
@@ -984,40 +1004,62 @@ window.onload = () => {
     ) {
       if (
         gui.presets[gui.controllers.presetSelector.getValue()]._other
-          .userDrawCode !== undefined
-      ) {
-        document.getElementById("draw-code-area").value =
-          gui.presets[
-            gui.controllers.presetSelector.getValue()
-          ]._other.userDrawCode;
-      } else {
-        document.getElementById("draw-code-area").value = "";
-      }
-
-      if (
+          .userDrawCode !== undefined ||
         gui.presets[gui.controllers.presetSelector.getValue()]._other
           .userSetupCode !== undefined
       ) {
-        document.getElementById("setup-code-area").value =
-          gui.presets[
-            gui.controllers.presetSelector.getValue()
-          ]._other.userSetupCode;
-      } else {
-        document.getElementById("setup-code-area").value = "";
-      }
+        if (
+          gui.presets[gui.controllers.presetSelector.getValue()]._other
+            .userDrawCode !== undefined
+        ) {
+          document.getElementById("draw-code-area").value =
+            gui.presets[
+              gui.controllers.presetSelector.getValue()
+            ]._other.userDrawCode;
+        }
 
-      document.getElementById("use-custom-code-checkbox").checked = true;
-      useCustomCode = true;
-    } else {
-      document.getElementById("draw-code-area").value = "";
-      document.getElementById("setup-code-area").value = "";
+        if (
+          gui.presets[gui.controllers.presetSelector.getValue()]._other
+            .userSetupCode !== undefined
+        ) {
+          document.getElementById("setup-code-area").value =
+            gui.presets[
+              gui.controllers.presetSelector.getValue()
+            ]._other.userSetupCode;
+        }
+
+        document.getElementById("use-custom-code-checkbox").checked = true;
+        useCustomCode = true;
+      }
+      if (
+        gui.presets[gui.controllers.presetSelector.getValue()]._other
+          .attractors !== undefined
+      ) {
+        let presetAttractors =
+          gui.presets[gui.controllers.presetSelector.getValue()]._other
+            .attractors;
+        for (let i = 0; i < presetAttractors.length; i++) {
+          addAttractor(presetAttractors[i]);
+        }
+      }
     }
+    loop();
     resetSketch();
   };
 
   if (windowWidth < 700) {
     gui.width = windowWidth;
     gui.close();
+  }
+
+  for (let i in gui.controllers) {
+    let controller = gui.controllers[i];
+    if (
+      !["presetSave", "presetSelector"].includes(i) &&
+      controller.hasOwnProperty("__li")
+    ) {
+      addControllerKeyListenToggle(controller);
+    }
   }
 
   pageIsLoaded = true;
