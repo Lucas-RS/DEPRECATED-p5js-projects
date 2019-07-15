@@ -54,6 +54,7 @@ let settings = {
     _all: { min: 0, max: 8192, step: 1 }
   },
   attractorSettings: {
+    __show: false,
     "Reset Attractors (a)": resetAttractors,
     showAttractors: true,
     attractors: {}
@@ -178,6 +179,7 @@ let settings = {
     _maxLineDist: { min: 1, max: 512, step: 1 }
   },
   centerAttractionForce: {
+    __show: false,
     attractParticlesToCenter: true,
     chance: 0.1,
     _chance: { min: 0, max: 1, step: 0.0001 },
@@ -231,19 +233,31 @@ let uiCanvas = new p5(function(p) {
     ).parent("canvas-container");
     size = Math.pow(Math.pow(p.width, 2) + Math.pow(p.height, 2), 0.5) * 0.005;
     p.stroke(0);
+    p.strokeWeight(1);
   };
 
   p.draw = function() {
     p.clear();
     if (settings.attractorSettings.showAttractors) {
-      for (let a = 0; a < attractors.length; a++) {
-        if (attractors[a].active) {
+      p.push();
+      if (settings.attractorSettings.__show) {
+        for (let a = 0; a < attractors.length; a++) {
           p.noFill();
+          if (attractors[a].active) {
+            p.stroke(0, 255, 255);
+            p.strokeWeight(2);
+          }
           p.ellipse(
             attractors[a].x,
             attractors[a].y,
-            10 + size * 1.5 * Math.abs(attractors[a].forceMultiplier)
+            20 + size * 2 * Math.abs(attractors[a].forceMultiplier)
           );
+          p.stroke(0);
+          p.strokeWeight(1);
+        }
+      }
+      for (let a = 0; a < attractors.length; a++) {
+        if (settings.attractorSettings.__show) {
           if (attractors[a].forceMultiplier > 0) {
             p.fill(0, 255, 0);
           } else {
@@ -254,6 +268,40 @@ let uiCanvas = new p5(function(p) {
         }
         p.ellipse(attractors[a].x, attractors[a].y, size);
       }
+      p.pop();
+    }
+    if (
+      settings.centerAttractionForce.__show &&
+      settings.centerAttractionForce.attractParticlesToCenter
+    ) {
+      let s = settings.centerAttractionForce;
+      p.push();
+      p.noStroke();
+      p.fill(0, 255, 255, Math.pow(s.chance, 0.25) * 204);
+      p.ellipse(width / 2, height / 2, 2 * s.radius);
+      p.strokeWeight(size * 0.5);
+      p.stroke(255, 0, 0);
+      p.line(
+        width / 2 - s.radius - s.outside.min * 10,
+        height / 2,
+        width / 2 - s.radius - s.outside.max * 10,
+        height / 2
+      );
+      p.stroke(0, 255, 0);
+      p.line(
+        width / 2 + s.radius + s.inside.min * 10,
+        height / 2 - size * 0.5,
+        width / 2 + s.radius + s.inside.max * 10,
+        height / 2 - size * 0.5
+      );
+      p.stroke(255, 128, 0, Math.pow(s.extra.chance, 0.25) * 204);
+      p.line(
+        width / 2 + s.radius + s.extra.min * 10,
+        height / 2 + size * 0.5,
+        width / 2 + s.radius + s.extra.max * 10,
+        height / 2 + size * 0.5
+      );
+      p.pop();
     }
   };
 });
@@ -1098,6 +1146,30 @@ window.onload = () => {
 
   gui.domElement.onmouseleave = () => {
     listenForMouse = true;
+  };
+
+  gui.controllers[
+    "settings.attractorSettings"
+  ].domElement.onmouseenter = () => {
+    settings.attractorSettings.__show = true;
+  };
+
+  gui.controllers[
+    "settings.attractorSettings"
+  ].domElement.onmouseleave = () => {
+    settings.attractorSettings.__show = false;
+  };
+
+  gui.controllers[
+    "settings.centerAttractionForce"
+  ].domElement.onmouseenter = () => {
+    settings.centerAttractionForce.__show = true;
+  };
+
+  gui.controllers[
+    "settings.centerAttractionForce"
+  ].domElement.onmouseleave = () => {
+    settings.centerAttractionForce.__show = false;
   };
 
   gui.controllers["settings.centerAttractionForce"];
