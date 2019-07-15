@@ -1,18 +1,3 @@
-let particles = [];
-let attractors = [];
-let qtree;
-let gui;
-let endSim = false;
-let pageIsLoaded = false;
-let listenForKeys = true;
-let listenForMouse = true;
-let sampledImg;
-let showCodeArea = false;
-let userDrawCode, userSetupCode;
-let useCustomCode = false;
-let t = 0;
-let e = Math.E;
-let doLoop = true;
 let settings = {
   "Shift + Click to Add Particle | Ctrl + Click to Add Attractor": {},
   Share: share,
@@ -39,7 +24,23 @@ let settings = {
   seed: 0,
   useCustomSeed: false,
   timeScale: 1,
-  _timeScale: { step: 0.00001, name: "t = frameCount \u00D7" },
+  _timeScale: { step: 0.00001, name: "(timeScale) t = frameCount \u00D7" },
+  particleCount: 100,
+  _particleCount: { min: 0, max: 1000, step: 1 },
+  mouseAttractsParticles: false,
+  mouseAttractionRange: 100,
+  _mouseAttractionRange: {
+    min: 0,
+    max: 4096,
+    step: 1
+  },
+  "End Simulation (e)": function() {
+    endSim = true;
+  },
+  endSpeed: 0.5,
+  _endSpeed: { min: 0.1, max: 255, step: 0.1 },
+  bounceEdges: false,
+  drawTrails: true,
   canvas: {
     width: 1024,
     _width: { min: 1, max: 8192, step: 1 },
@@ -52,24 +53,6 @@ let settings = {
     max: 192,
     _all: { min: 0, max: 8192, step: 1 }
   },
-  particleCount: 100,
-  _particleCount: { min: 0, max: 1000, step: 1, name: "Particle Count" },
-  mouseAttractsParticles: false,
-  mouseAttractionRange: 100,
-  _mouseAttractionRange: {
-    min: 0,
-    max: 4096,
-    step: 1,
-    name: "Mouse Attraction Range",
-    hide: true
-  },
-  "End Simulation (e)": function() {
-    endSim = true;
-  },
-  endSpeed: 0.5,
-  _endSpeed: { min: 0.1, max: 255, step: 0.1 },
-  bounceEdges: false,
-  drawTrails: true,
   attractorSettings: {
     "Reset Attractors (a)": resetAttractors,
     showAttractors: true,
@@ -101,7 +84,7 @@ let settings = {
       max: 360,
       _all: { min: -360, max: 360, step: 0.01 }
     },
-    _rotationBoundaries: { name: "Rotation Boundaries (in degrees)" },
+    _rotationBoundaries: { name: "rotationBoundaries (in degrees)" },
     lockAxis: {
       xAxis: false,
       yAxis: false
@@ -118,7 +101,6 @@ let settings = {
   },
   colors: {
     showParticles: false,
-    _showParticles: { name: "Show Particles" },
     particleSettings: {
       particleWidth: 25,
       particleHeight: 25,
@@ -130,15 +112,14 @@ let settings = {
       _particleOutlineAlpha: { min: 0, max: 255, step: 1 },
       _all: { min: 1, max: 250, step: 1 }
     },
-    _particleSettings: { name: "Particle Settings", hide: true },
+    _particleSettings: { hide: true },
     backgroundColor: "#ffffff",
-    _backgroundColor: { name: "Background Color", type: "color" },
+    _backgroundColor: { type: "color" },
     backgroundAlpha: 255,
-    _backgroundAlpha: { min: 0, max: 255, step: 1, name: "Background Alpha" },
+    _backgroundAlpha: { min: 0, max: 255, step: 1 },
     particleColorType: "randomRGBA",
     _particleColorType: {
       type: "select",
-      name: "Particle Color Type",
       options: ["randomRGBA", "randomHSLA", "gradient", "image"]
     },
     randomRGBA: {
@@ -196,10 +177,10 @@ let settings = {
     maxLineDist: 35,
     _maxLineDist: { min: 1, max: 512, step: 1 }
   },
-  "Attract Particles to Center": true,
   centerAttractionForce: {
+    attractParticlesToCenter: true,
     chance: 0.1,
-    _chance: { min: 0, max: 1, step: 0.0001, name: "Chance of Forces" },
+    _chance: { min: 0, max: 1, step: 0.0001 },
     radius: 128,
     _radius: { min: 0, max: 8192, step: 1 },
     outside: {
@@ -207,13 +188,13 @@ let settings = {
       max: 1,
       _all: { min: -100, max: 100, step: 0.01 }
     },
-    _outside: { openFolder: true, name: "Force Outside Of Center" },
+    _outside: { openFolder: true },
     inside: {
       min: -2,
       max: 2,
       _all: { min: -100, max: 100, step: 0.01 }
     },
-    _inside: { openFolder: true, name: "Force Inside Center" },
+    _inside: { openFolder: true },
     extra: {
       chance: 0.005,
       _chance: { min: 0, max: 1, step: 0.0001 },
@@ -221,9 +202,24 @@ let settings = {
       max: 5,
       _all: { min: -100, max: 100, step: 0.01 }
     },
-    _extra: { openFolder: true, name: "Extra Force Inside Center" }
+    _extra: { openFolder: true, name: "extra (extra force in center)" }
   }
 };
+let particles = [];
+let attractors = [];
+let qtree;
+let gui;
+let endSim = false;
+let pageIsLoaded = false;
+let listenForKeys = true;
+let listenForMouse = true;
+let sampledImg;
+let showCodeArea = false;
+let userDrawCode, userSetupCode;
+let useCustomCode = false;
+let t = 0;
+let e = Math.E;
+let doLoop = true;
 
 let uiCanvas = new p5(function(p) {
   let size;
@@ -243,13 +239,16 @@ let uiCanvas = new p5(function(p) {
       for (let a = 0; a < attractors.length; a++) {
         if (attractors[a].active) {
           p.noFill();
-          p.ellipse(attractors[a].x, attractors[a].y, 10 + size * 1.5 * Math.abs(attractors[a].forceMultiplier));
+          p.ellipse(
+            attractors[a].x,
+            attractors[a].y,
+            10 + size * 1.5 * Math.abs(attractors[a].forceMultiplier)
+          );
           if (attractors[a].forceMultiplier > 0) {
             p.fill(0, 255, 0);
           } else {
             p.fill(255, 0, 0);
           }
-
         } else {
           p.fill(0);
         }
@@ -347,7 +346,7 @@ function draw() {
 
     if (
       random() <= settings["centerAttractionForce"]["chance"] &&
-      settings["Attract Particles to Center"]
+      settings.centerAttractionForce.attractParticlesToCenter
     ) {
       let attractCenterForce = createVector(width / 2, height / 2);
       attractCenterForce.sub(particles[i].pos);
@@ -885,11 +884,13 @@ function refreshAttractorsGUI() {
       addControllerKeyListenToggle(attractorFolder.__controllers[i]);
     }
 
-    attractorFolder.__ul.onmouseenter = () => {
+    attractorFolder.open();
+
+    attractorFolder.domElement.onmouseenter = () => {
       attractor.active = true;
     };
 
-    attractorFolder.__ul.onmouseleave = () => {
+    attractorFolder.domElement.onmouseleave = () => {
       attractor.active = false;
     };
   }
@@ -948,11 +949,10 @@ window.onload = () => {
     e = e || window.event;
     if (listenForMouse) {
       if (e.ctrlKey && e.button === 0) {
-        let index = attractors.length;
         let newAttractor = {
           active: false,
           removeAttractor: () => {
-            attractors.splice(index, 1);
+            attractors.splice(attractors.indexOf(newAttractor), 1);
             refreshAttractorsGUI();
           },
           attractChance: 1,
@@ -1010,14 +1010,6 @@ window.onload = () => {
   gui.sticky("settings.Save As PNG (s)");
   gui.sticky("settings.Show Code Area (c)");
   gui.sticky("settings.Collapse All Folders");
-  gui.addToggleDisplayEvent(
-    "settings.Attract Particles to Center",
-    "settings.centerAttractionForce"
-  );
-  gui.addToggleDisplayEvent(
-    "settings.mouseAttractsParticles",
-    "settings.mouseAttractionRange"
-  );
   gui.addToggleDisplayEvent(
     "settings.colors.showParticles",
     "settings.colors.particleSettings"
@@ -1108,6 +1100,8 @@ window.onload = () => {
     listenForMouse = true;
   };
 
+  gui.controllers["settings.centerAttractionForce"];
+
   document.getElementById("use-custom-code-checkbox").onchange = e => {
     useCustomCode = e.srcElement.checked;
   };
@@ -1179,7 +1173,7 @@ const defaultPresets = {
     "settings.lines.strokeWeight": 4,
     "settings.lines.changeSpeedConnected": false,
     "settings.lines.maxLineDist": 70,
-    "settings.Attract Particles to Center": false,
+    "settings.centerAttractionForce.attractParticlesToCenter": false,
     "settings.centerAttractionForce.chance": 0.05
   },
   Smoke: {
@@ -1265,7 +1259,7 @@ const defaultPresets = {
     "settings.colors.gradient.alphaMax": 236,
     "settings.lines.changeSpeedConnected": false,
     "settings.lines.changeSpeedBy": 1,
-    "settings.Attract Particles to Center": false,
+    "settings.centerAttractionForce.attractParticlesToCenter": false,
     "settings.centerAttractionForce.chance": 0.1,
     "settings.centerAttractionForce.radius": 210,
     "settings.centerAttractionForce.outside.min": 0,
@@ -1300,7 +1294,7 @@ const defaultPresets = {
     "settings.colors.gradient.alphaMax": 236,
     "settings.lines.changeSpeedConnected": false,
     "settings.lines.changeSpeedBy": 1.1,
-    "settings.Attract Particles to Center": false,
+    "settings.centerAttractionForce.attractParticlesToCenter": false,
     "settings.centerAttractionForce.chance": 0.1052,
     "settings.centerAttractionForce.radius": 209,
     "settings.centerAttractionForce.outside.min": 0,
@@ -1376,7 +1370,7 @@ const defaultPresets = {
     "settings.colors.gradient.alphaMax": 236,
     "settings.lines.changeSpeedChance": 1,
     "settings.lines.changeSpeedBy": -0.5,
-    "settings.Attract Particles to Center": false,
+    "settings.centerAttractionForce.attractParticlesToCenter": false,
     "settings.centerAttractionForce.radius": 210,
     "settings.centerAttractionForce.outside.min": 0,
     "settings.centerAttractionForce.outside.max": 0,
@@ -1398,7 +1392,7 @@ const defaultPresets = {
     "settings.lines.changeSpeedConnected": false,
     "settings.lines.changeSpeedChance": 0,
     "settings.lines.maxLineDist": 75,
-    "settings.Attract Particles to Center": false,
+    "settings.centerAttractionForce.attractParticlesToCenter": false,
     "settings.centerAttractionForce.chance": 0.5328,
     "settings.centerAttractionForce.radius": 1472
   }
