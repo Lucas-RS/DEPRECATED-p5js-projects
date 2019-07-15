@@ -364,11 +364,14 @@ function draw() {
     let attractor = attractors[i];
     if (attractor.useEquations) {
       try {
-        attractor.x = eval(attractor.xEquation) + attractor.initX;
-        attractor.y = eval(attractor.yEquation) + attractor.initY;
+        attractor.x = eval(attractor.xEquation) + attractor.initX + width / 2;
+        attractor.y = eval(attractor.yEquation) + attractor.initY + height / 2;
       } catch (e) {
         console.error(e.message);
       }
+    } else {
+      attractor.x = attractor.initX + width / 2;
+      attractor.y = attractor.initY + height / 2;
     }
   }
 
@@ -686,8 +689,8 @@ function resetSketch() {
 
   for (let i = 0; i < attractors.length; i++) {
     let attractor = attractors[i];
-    attractor.x = attractor.initX;
-    attractor.y = attractor.initY;
+    attractor.x = attractor.initX + width / 2;
+    attractor.y = attractor.initY + height / 2;
   }
 
   userSetupCode = document.getElementById("setup-code-area").value;
@@ -1036,15 +1039,15 @@ window.onload = () => {
         let newAttractor = {
           attractChance: 1,
           forceMultiplier: 0.5,
-          initX: parseInt(mouseX),
-          initY: parseInt(mouseY),
+          initX: parseInt(mouseX - width / 2),
+          initY: parseInt(mouseY - height / 2),
           useEquations: false,
           xEquation: "0.001 * t",
           yEquation: "0.001 * t"
         };
 
-        newAttractor.x = newAttractor.initX;
-        newAttractor.y = newAttractor.initY;
+        newAttractor.x = newAttractor.initX + width / 2;
+        newAttractor.y = newAttractor.initY + height / 2;
 
         attractors.push(newAttractor);
         refreshAttractorsGUI();
@@ -1072,7 +1075,7 @@ window.onload = () => {
     if (attractors.length > 0) {
       otherSettings.attractors = attractors;
       for (let i of otherSettings.attractors) {
-        delete i.removeAttractor
+        delete i.removeAttractor;
         delete i.active;
         delete i.x;
         delete i.y;
@@ -1270,6 +1273,48 @@ window.onload = () => {
 };
 
 const defaultPresets = {
+  Butterfly: {
+    _other: {
+      attractors: [
+        {
+          attractChance: 1,
+          forceMultiplier: 2,
+          initX: 0,
+          initY: 0,
+          useEquations: true,
+          xEquation:
+            "100 * sin(t) * (pow(e,cos(t)) - 2 * cos (4 * t) - pow(sin (t / 12),5))",
+          yEquation:
+            "-50 + 100 * cos(t) * (pow(e,cos(t)) - 2 * cos (4 * t) - pow(sin (t / 12),5))"
+        },
+        {
+          attractChance: 1,
+          forceMultiplier: 2,
+          initX: 0,
+          initY: 0,
+          useEquations: true,
+          xEquation: "300 * sin(3 * t)",
+          yEquation: "300 * cos(3 * t)"
+        }
+      ]
+    },
+    "settings.timeScale": 0.3,
+    "settings.particleCount": 173,
+    "settings.canvas.width": 1000,
+    "settings.canvas.height": 1000,
+    "settings.originRadius.max": 42,
+    "settings.velocitySettings.maxVelocity": 2,
+    "settings.velocitySettings.changeForceChance": 0,
+    "settings.velocitySettings.randomForce.randomForceChance": 0,
+    "settings.colors.showParticles": true,
+    "settings.colors.particleSettings.particleWidth": 2,
+    "settings.colors.particleSettings.particleHeight": 2,
+    "settings.colors.particleColorType": "randomHSLA",
+    "settings.colors.randomHSLA.boostRed": true,
+    "settings.lines.changeSpeedConnected": false,
+    "settings.lines.changeSpeedBy": 1.61,
+    "settings.centerAttractionForce.attractParticlesToCenter": false
+  },
   "Line Dot Turn": {
     _other: {
       userDrawCode:
