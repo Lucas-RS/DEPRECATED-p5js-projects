@@ -939,6 +939,11 @@ function refreshAttractorsGUI() {
       ).length
     );
 
+    attractor.removeAttractor = () => {
+      attractors.splice(attractors.indexOf(attractor), 1);
+      refreshAttractorsGUI();
+    };
+
     attractorFolder.add(attractor, "removeAttractor");
     attractorFolder.add(attractor, "attractChance", 0, 1, 0.0001);
     attractorFolder.add(attractor, "forceMultiplier", -10, 10, 0.01);
@@ -999,6 +1004,10 @@ window.onload = () => {
         toggleCodeArea();
       } else if (e.key === "h") {
         gui.isHidden = !gui.isHidden;
+        document.getElementById("canvas-container").style.width =
+          gui.closed || gui.isHidden ? "100vw" : "calc(100vw - 450px)";
+        document.getElementById("canvas-container").style.left =
+          gui.closed || gui.isHidden ? "0" : "50px";
         if (gui.isHidden) {
           gui.domElement.style.display = "none";
           uiCanvas.canvas.style.display = "none";
@@ -1025,11 +1034,6 @@ window.onload = () => {
     if (listenForMouse) {
       if (e.ctrlKey && e.button === 0) {
         let newAttractor = {
-          active: false,
-          removeAttractor: () => {
-            attractors.splice(attractors.indexOf(newAttractor), 1);
-            refreshAttractorsGUI();
-          },
           attractChance: 1,
           forceMultiplier: 0.5,
           initX: parseInt(mouseX),
@@ -1050,7 +1054,7 @@ window.onload = () => {
     }
   };
 
-  gui = new AutoGUI({ width: 450, hideable: false });
+  gui = new AutoGUI({ width: 350, hideable: false });
   gui.isHidden = false;
   gui.enablePresets(defaultPresets, "centralVibrance.userPresets");
   gui.autoAdd(settings, "settings");
@@ -1068,6 +1072,7 @@ window.onload = () => {
     if (attractors.length > 0) {
       otherSettings.attractors = attractors;
       for (let i of otherSettings.attractors) {
+        delete i.removeAttractor
         delete i.active;
         delete i.x;
         delete i.y;
@@ -1133,12 +1138,9 @@ window.onload = () => {
         gui.presets[gui.controllers.presetSelector.getValue()]._other
           .attractors !== undefined
       ) {
-        let presetAttractors =
+        attractors =
           gui.presets[gui.controllers.presetSelector.getValue()]._other
             .attractors;
-        for (let i = 0; i < presetAttractors.length; i++) {
-          attractors.push(presetAttractors[i]);
-        }
         refreshAttractorsGUI();
       }
     }
@@ -1162,6 +1164,16 @@ window.onload = () => {
   }
 
   pageIsLoaded = true;
+
+  gui.__closeButton.onclick = () => {
+    document.getElementById("canvas-container").style.width = gui.closed
+      ? "100vw"
+      : "calc(100vw - 450px)";
+    document.getElementById("canvas-container").style.left = gui.closed
+      ? "0"
+      : "50px";
+  };
+
   gui.domElement.style.marginRight = 0;
 
   gui.domElement.onmouseenter = () => {
