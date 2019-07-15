@@ -233,17 +233,27 @@ let uiCanvas = new p5(function(p) {
       settings["canvas"]["width"],
       settings["canvas"]["height"]
     ).parent("canvas-container");
-    p.stroke(255);
-    p.strokeWeight(1);
-    p.fill(0);
     size = Math.pow(Math.pow(p.width, 2) + Math.pow(p.height, 2), 0.5) * 0.005;
+    p.stroke(0);
   };
 
   p.draw = function() {
     p.clear();
     if (settings.attractorSettings.showAttractors) {
       for (let a = 0; a < attractors.length; a++) {
-        p.ellipse(attractors[a].x, attractors[a].y, size, size);
+        if (attractors[a].active) {
+          p.noFill();
+          p.ellipse(attractors[a].x, attractors[a].y, 10 + size * 1.5 * Math.abs(attractors[a].forceMultiplier));
+          if (attractors[a].forceMultiplier > 0) {
+            p.fill(0, 255, 0);
+          } else {
+            p.fill(255, 0, 0);
+          }
+
+        } else {
+          p.fill(0);
+        }
+        p.ellipse(attractors[a].x, attractors[a].y, size);
       }
     }
   };
@@ -571,12 +581,7 @@ function generateColor() {
 
 function resetAttractors() {
   attractors = [];
-  for (let folder in gui.controllers["settings.attractorSettings.attractors"]
-    .__folders) {
-    gui.controllers["settings.attractorSettings.attractors"].removeFolder(
-      gui.controllers["settings.attractorSettings.attractors"].__folders[folder]
-    );
-  }
+  refreshAttractorsGUI();
 }
 
 function createParticle(origin) {
@@ -851,27 +856,43 @@ function updateSettingsFromURL() {
   }
 }
 
-function addAttractor(attractor) {
-  let attractorFolder = gui.controllers[
-    "settings.attractorSettings.attractors"
-  ].addFolder(attractors.length);
-
-  attractorFolder.add(attractor, "attractChance", 0, 1, 0.0001);
-  attractorFolder.add(attractor, "forceMultiplier", -10, 10, 0.01);
-  attractorFolder.add(attractor, "initX");
-  attractorFolder.add(attractor, "initY");
-  attractorFolder.add(attractor, "useEquations");
-  attractorFolder.add(attractor, "xEquation");
-  attractorFolder.add(attractor, "yEquation");
-
-  for (let i in attractorFolder.__controllers) {
-    addControllerKeyListenToggle(attractorFolder.__controllers[i]);
+function refreshAttractorsGUI() {
+  for (let folder in gui.controllers["settings.attractorSettings.attractors"]
+    .__folders) {
+    gui.controllers["settings.attractorSettings.attractors"].removeFolder(
+      gui.controllers["settings.attractorSettings.attractors"].__folders[folder]
+    );
   }
+  for (let attractor of attractors) {
+    let attractorFolder = gui.controllers[
+      "settings.attractorSettings.attractors"
+    ].addFolder(
+      Object.keys(
+        gui.controllers["settings.attractorSettings.attractors"].__folders
+      ).length
+    );
 
-  attractor.x = attractor.initX;
-  attractor.y = attractor.initY;
+    attractorFolder.add(attractor, "removeAttractor");
+    attractorFolder.add(attractor, "attractChance", 0, 1, 0.0001);
+    attractorFolder.add(attractor, "forceMultiplier", -10, 10, 0.01);
+    attractorFolder.add(attractor, "initX");
+    attractorFolder.add(attractor, "initY");
+    attractorFolder.add(attractor, "useEquations");
+    attractorFolder.add(attractor, "xEquation");
+    attractorFolder.add(attractor, "yEquation");
 
-  attractors.push(attractor);
+    for (let i in attractorFolder.__controllers) {
+      addControllerKeyListenToggle(attractorFolder.__controllers[i]);
+    }
+
+    attractorFolder.__ul.onmouseenter = () => {
+      attractor.active = true;
+    };
+
+    attractorFolder.__ul.onmouseleave = () => {
+      attractor.active = false;
+    };
+  }
 }
 
 function addControllerKeyListenToggle(controller) {
@@ -927,7 +948,13 @@ window.onload = () => {
     e = e || window.event;
     if (listenForMouse) {
       if (e.ctrlKey && e.button === 0) {
+        let index = attractors.length;
         let newAttractor = {
+          active: false,
+          removeAttractor: () => {
+            attractors.splice(index, 1);
+            refreshAttractorsGUI();
+          },
           attractChance: 1,
           forceMultiplier: 0.5,
           initX: parseInt(mouseX),
@@ -936,7 +963,12 @@ window.onload = () => {
           xEquation: "0.001 * t",
           yEquation: "0.001 * t"
         };
-        addAttractor(newAttractor);
+
+        newAttractor.x = newAttractor.initX;
+        newAttractor.y = newAttractor.initY;
+
+        attractors.push(newAttractor);
+        refreshAttractorsGUI();
       } else if (e.shiftKey && e.button === 0) {
         particles.push(createParticle(createVector(mouseX, mouseY)));
       }
@@ -959,11 +991,12 @@ window.onload = () => {
     }
 
     if (attractors.length > 0) {
-      for (let i of attractors) {
+      otherSettings.attractors = attractors;
+      for (let i of otherSettings.attractors) {
+        delete i.active;
         delete i.x;
         delete i.y;
       }
-      otherSettings.attractors = attractors;
     }
 
     if (Object.keys(otherSettings).length > 0) {
@@ -1040,8 +1073,9 @@ window.onload = () => {
           gui.presets[gui.controllers.presetSelector.getValue()]._other
             .attractors;
         for (let i = 0; i < presetAttractors.length; i++) {
-          addAttractor(presetAttractors[i]);
+          attractors.push(presetAttractors[i]);
         }
+        refreshAttractorsGUI();
       }
     }
     loop();
