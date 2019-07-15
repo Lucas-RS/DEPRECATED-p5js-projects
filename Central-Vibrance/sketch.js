@@ -48,6 +48,7 @@ let settings = {
     _height: { min: 1, max: 8192, step: 1 }
   },
   originRadius: {
+    __show: false,
     ignoreRadius: false,
     min: 0,
     max: 192,
@@ -102,6 +103,7 @@ let settings = {
   },
   colors: {
     showParticles: false,
+    _showParticles: {},
     particleSettings: {
       particleWidth: 25,
       particleHeight: 25,
@@ -113,7 +115,7 @@ let settings = {
       _particleOutlineAlpha: { min: 0, max: 255, step: 1 },
       _all: { min: 1, max: 250, step: 1 }
     },
-    _particleSettings: { hide: true },
+    _particleSettings: {},
     backgroundColor: "#ffffff",
     _backgroundColor: { type: "color" },
     backgroundAlpha: 255,
@@ -301,6 +303,24 @@ let uiCanvas = new p5(function(p) {
         width / 2 + s.radius + s.extra.max * 10,
         height / 2 + size * 0.5
       );
+      p.pop();
+    }
+    if (settings.originRadius.__show) {
+      p.push();
+      if (settings.originRadius.ignoreRadius) {
+        p.background(255, 0, 255, 51);
+      } else {
+        let radiusDifference =
+          settings.originRadius.max - settings.originRadius.min;
+        p.noFill();
+        p.stroke(255, 0, 255, 51);
+        p.strokeWeight(radiusDifference);
+        p.ellipse(
+          width / 2,
+          height / 2,
+          2 * (settings.originRadius.min + radiusDifference / 2)
+        );
+      }
       p.pop();
     }
   };
@@ -979,8 +999,15 @@ window.onload = () => {
         toggleCodeArea();
       } else if (e.key === "h") {
         gui.isHidden = !gui.isHidden;
-        gui.domElement.style.display = gui.isHidden ? "none" : "";
-        uiCanvas.canvas.style.display = gui.isHidden ? "none" : "";
+        if (gui.isHidden) {
+          gui.domElement.style.display = "none";
+          uiCanvas.canvas.style.display = "none";
+          uiCanvas.noLoop();
+        } else {
+          gui.domElement.style.display = "";
+          uiCanvas.canvas.style.display = "";
+          uiCanvas.loop();
+        }
       } else if (e.key === " ") {
         toggleLoop();
       } else if (e.key === ".") {
@@ -1058,13 +1085,10 @@ window.onload = () => {
   gui.sticky("settings.Save As PNG (s)");
   gui.sticky("settings.Show Code Area (c)");
   gui.sticky("settings.Collapse All Folders");
-  gui.addToggleDisplayEvent(
-    "settings.colors.showParticles",
-    "settings.colors.particleSettings"
-  );
   gui.addMenuFolderSwitch(
     "settings.colors.particleColorType",
-    "settings.colors"
+    "settings.colors",
+    ["particleSettings"]
   );
   gui.presetsChanged = value => {
     sampledImg = undefined;
@@ -1172,7 +1196,29 @@ window.onload = () => {
     settings.centerAttractionForce.__show = false;
   };
 
-  gui.controllers["settings.centerAttractionForce"];
+  gui.controllers["settings.originRadius"].domElement.onmouseenter = () => {
+    settings.originRadius.__show = true;
+  };
+
+  gui.controllers["settings.originRadius"].domElement.onmouseleave = () => {
+    settings.originRadius.__show = false;
+  };
+
+  gui.controllers["settings.originRadius.min"].onChange(value => {
+    if (value >= gui.controllers["settings.originRadius.max"].getValue()) {
+      gui.controllers["settings.originRadius.min"].setValue(
+        gui.controllers["settings.originRadius.max"].getValue() - 1
+      );
+    }
+  });
+
+  gui.controllers["settings.originRadius.max"].onChange(value => {
+    if (value <= gui.controllers["settings.originRadius.min"].getValue()) {
+      gui.controllers["settings.originRadius.max"].setValue(
+        gui.controllers["settings.originRadius.min"].getValue() + 1
+      );
+    }
+  });
 
   document.getElementById("use-custom-code-checkbox").onchange = e => {
     useCustomCode = e.srcElement.checked;
