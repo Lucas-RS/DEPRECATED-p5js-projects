@@ -910,6 +910,7 @@ window.onload = () => {
       } else if (e.key === "h") {
         gui.isHidden = !gui.isHidden;
         gui.domElement.style.display = gui.isHidden ? "none" : "";
+        uiCanvas.canvas.style.display = gui.isHidden ? "none" : "";
       } else if (e.key === " ") {
         toggleLoop();
       } else if (e.key === ".") {
