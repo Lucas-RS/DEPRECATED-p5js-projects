@@ -46,7 +46,6 @@ class AutoGUI extends dat.GUI {
             controller.name(s["name"]);
           }
           if (s.hasOwnProperty("hide") && s["hide"]) {
-            console.log(key)
             controller.__li.style.display = "none";
           }
         } else {
