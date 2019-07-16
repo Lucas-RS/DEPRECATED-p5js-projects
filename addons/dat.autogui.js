@@ -36,6 +36,8 @@ class AutoGUI extends dat.GUI {
             controller = parent.add(object, key, s["options"]);
           } else if (value.startsWith("#")) {
             controller = parent.addColor(object, key);
+          } else {
+            controller = parent.add(object, key);
           }
         } else {
           controller = parent.add(object, key, s["min"], s["max"], s["step"]);
