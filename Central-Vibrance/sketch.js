@@ -920,6 +920,7 @@ function updateSettingsFromURL() {
         }
         if (URLSettings._other.attractors !== undefined) {
           attractors = URLSettings._other.attractors;
+          refreshAttractorsGUI()
         }
       }
     }
