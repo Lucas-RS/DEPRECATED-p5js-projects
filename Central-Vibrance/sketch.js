@@ -328,8 +328,8 @@ let uiCanvas = new p5(function(p) {
 
 function setup() {
   angleMode(DEGREES);
-  settings["canvas"]["width"] = innerWidth;
-  settings["canvas"]["height"] = innerHeight;
+  settings["canvas"]["width"] = screen.width;
+  settings["canvas"]["height"] = screen.height;
   canvas = createCanvas(
     settings["canvas"]["width"],
     settings["canvas"]["height"]
