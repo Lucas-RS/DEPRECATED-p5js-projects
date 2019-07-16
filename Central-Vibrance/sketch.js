@@ -965,10 +965,12 @@ function refreshAttractorsGUI() {
 
     attractorFolder.domElement.onmouseenter = () => {
       attractor.active = true;
+      settings.attractorSettings.showAttractors = true;
     };
 
     attractorFolder.domElement.onmouseleave = () => {
       attractor.active = false;
+      settings.attractorSettings.showAttractors = false;
     };
   }
 }
