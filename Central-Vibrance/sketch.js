@@ -1,16 +1,42 @@
+let capturer;
 let settings = {
   "Shift + Click to Add Particle | Ctrl + Click to Add Attractor": {},
+  captureFrames: {
+    __doCapture: false,
+    __startFrame: 1,
+    captureLength: 300,
+    _captureLength: { name: "captureLength (No. of frames)" },
+    resetSketchOnStart: true,
+    format: "webm",
+    _format: {
+      type: "select",
+      options: ["webm", "png"]
+    },
+    start: () => {
+      capturer = new CCapture({
+        format: settings.captureFrames.format
+      });
+      capturer.start();
+      settings.captureFrames.__doCapture = true;
+      if (settings.captureFrames.resetSketchOnStart) {
+        settings.captureFrames.__startFrame = 1;
+        resetSketch();
+      } else {
+        settings.captureFrames.__startFrame = frameCount;
+      }
+    }
+  },
   Share: share,
   "Pause (Space)": toggleLoop,
   "Step (./Period)": draw,
   "_Step (./Period)": { hide: true },
   "Reset Canvas (r)": resetSketch,
   "Reset Attractors": resetAttractors,
-  "Save As PNG (s)": function() {
+  "Save As PNG (s)": () => {
     saveCanvas(canvas, "central-vibrance", "png");
   },
   "Show Code Area (c)": toggleCodeArea,
-  "Collapse All Folders": function() {
+  "Collapse All Folders": () => {
     for (let c in gui.controllers) {
       if (
         c !== "presetSave" &&
@@ -35,7 +61,7 @@ let settings = {
     max: 4096,
     step: 1
   },
-  "End Simulation (e)": function() {
+  "End Simulation (e)": () => {
     endSim = true;
   },
   endSpeed: 0.5,
@@ -212,6 +238,7 @@ let settings = {
 };
 let particles = [];
 let attractors = [];
+let canvas;
 let qtree;
 let gui;
 let endSim = false;
@@ -223,7 +250,7 @@ let showCodeArea = false;
 let userDrawCode, userSetupCode;
 let useCustomCode = false;
 let t = 0;
-let e = Math.E;
+const e = Math.E;
 let doLoop = true;
 
 let uiCanvas = new p5(function(p) {
@@ -242,7 +269,7 @@ let uiCanvas = new p5(function(p) {
 
   p.draw = function() {
     p.clear();
-    if (settings.__showTimeScale) {
+    if (settings.__showTimeScale || settings.captureFrames.__doCapture) {
       p.text("frameCount = " + frameCount, 20, height - 64);
       p.text("t = " + t, 20, height - 20);
     }
@@ -344,6 +371,22 @@ function setup() {
 }
 
 function draw() {
+  if (
+    settings.captureFrames.__doCapture &&
+    frameCount - settings.captureFrames.__startFrame <
+      settings.captureFrames.captureLength
+  ) {
+    capturer.capture(canvas.canvas);
+  } else if (
+    settings.captureFrames.__doCapture &&
+    frameCount - settings.captureFrames.__startFrame ===
+      settings.captureFrames.captureLength
+  ) {
+    capturer.stop();
+    capturer.save();
+    settings.captureFrames.__doCapture = false;
+  }
+
   t = frameCount * settings.timeScale;
   qtree.clear();
   for (let particle of particles) {
