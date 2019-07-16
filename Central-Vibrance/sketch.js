@@ -920,7 +920,7 @@ function updateSettingsFromURL() {
         }
         if (URLSettings._other.attractors !== undefined) {
           attractors = URLSettings._other.attractors;
-          refreshAttractorsGUI()
+          refreshAttractorsGUI();
         }
       }
     }
@@ -1072,7 +1072,7 @@ window.onload = () => {
     }
 
     if (attractors.length > 0) {
-      otherSettings.attractors = attractors;
+      otherSettings.attractors = Object.assign([], attractors);
       for (let i of otherSettings.attractors) {
         delete i.removeAttractor;
         delete i.active;
@@ -1140,9 +1140,12 @@ window.onload = () => {
         gui.presets[gui.controllers.presetSelector.getValue()]._other
           .attractors !== undefined
       ) {
-        attractors =
+        attractors = Object.assign(
+          [],
           gui.presets[gui.controllers.presetSelector.getValue()]._other
-            .attractors;
+            .attractors
+        );
+
         refreshAttractorsGUI();
       }
     }
