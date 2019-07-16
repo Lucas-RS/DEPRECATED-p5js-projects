@@ -971,12 +971,10 @@ function refreshAttractorsGUI() {
 
     attractorFolder.domElement.onmouseenter = () => {
       attractor.active = true;
-      settings.attractorSettings.showAttractors = true;
     };
 
     attractorFolder.domElement.onmouseleave = () => {
       attractor.active = false;
-      settings.attractorSettings.showAttractors = false;
     };
   }
 }
@@ -1080,7 +1078,10 @@ window.onload = () => {
     }
 
     if (attractors.length > 0) {
-      otherSettings.attractors = Object.assign([], attractors);
+      otherSettings.attractors = [];
+      for (let i = 0; i < attractors.length; i++) {
+        otherSettings.attractors[i] = Object.assign({}, attractors[i]);
+      }
       for (let i of otherSettings.attractors) {
         delete i.removeAttractor;
         delete i.active;
@@ -1148,12 +1149,20 @@ window.onload = () => {
         gui.presets[gui.controllers.presetSelector.getValue()]._other
           .attractors !== undefined
       ) {
-        attractors = Object.assign(
-          [],
+        attractors = [];
+        for (
+          let i = 0;
+          i <
           gui.presets[gui.controllers.presetSelector.getValue()]._other
-            .attractors
-        );
-
+            .attractors.length;
+          i++
+        ) {
+          attractors[i] = Object.assign(
+            {},
+            gui.presets[gui.controllers.presetSelector.getValue()]._other
+              .attractors[i]
+          );
+        }
         refreshAttractorsGUI();
       }
     }
