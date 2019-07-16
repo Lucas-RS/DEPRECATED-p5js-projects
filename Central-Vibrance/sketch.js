@@ -5,7 +5,7 @@ let settings = {
   "Step (./Period)": draw,
   "_Step (./Period)": { hide: true },
   "Reset Canvas (r)": resetSketch,
-  "Reset Attractors (a)": resetAttractors,
+  "Reset Attractors": resetAttractors,
   "Save As PNG (s)": function() {
     saveCanvas(canvas, "central-vibrance", "png");
   },
@@ -56,7 +56,7 @@ let settings = {
   },
   attractorSettings: {
     __show: false,
-    "Reset Attractors (a)": resetAttractors,
+    "Reset Attractors": resetAttractors,
     showAttractors: true,
     attractors: {}
   },
@@ -1027,8 +1027,6 @@ window.onload = () => {
         if (!doLoop) {
           draw();
         }
-      } else if (e.key === "a") {
-        resetAttractors();
       }
     }
   };
