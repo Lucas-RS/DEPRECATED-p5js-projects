@@ -5,12 +5,12 @@ let settings = {
     __doCapture: false,
     __startFrame: 1,
     captureLength: 300,
-    _captureLength: { name: "captureLength (No. of frames)" },
+    _captureLength: { min: 1, step: 1, name: "captureLength (No. of frames)" },
     resetSketchOnStart: true,
     format: "webm",
     _format: {
       type: "select",
-      options: ["webm", "png"]
+      options: ["webm", "png", "jpg"]
     },
     start: () => {
       capturer = new CCapture({
@@ -261,17 +261,21 @@ let uiCanvas = new p5(function(p) {
       settings["canvas"]["width"],
       settings["canvas"]["height"]
     ).parent("canvas-container");
-    size = Math.pow(Math.pow(p.width, 2) + Math.pow(p.height, 2), 0.5) * 0.005;
-    p.textSize(24);
     p.stroke(0);
     p.strokeWeight(1);
   };
 
   p.draw = function() {
+    size = parseInt(
+      Math.pow(Math.pow(p.width, 2) + Math.pow(p.height, 2), 0.5) * 0.005
+    );
     p.clear();
     if (settings.__showTimeScale || settings.captureFrames.__doCapture) {
-      p.text("frameCount = " + frameCount, 20, height - 64);
-      p.text("t = " + t, 20, height - 20);
+      p.push();
+      p.textSize(size * 4);
+      p.text("frameCount = " + frameCount, size * 2, height - size * 8);
+      p.text("t = " + t, size * 2, height - size * 2);
+      p.pop();
     }
     if (settings.attractorSettings.showAttractors) {
       p.push();
@@ -382,9 +386,9 @@ function draw() {
     frameCount - settings.captureFrames.__startFrame ===
       settings.captureFrames.captureLength
   ) {
+    settings.captureFrames.__doCapture = false;
     capturer.stop();
     capturer.save();
-    settings.captureFrames.__doCapture = false;
   }
 
   t = frameCount * settings.timeScale;
