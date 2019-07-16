@@ -25,6 +25,7 @@ let settings = {
   useCustomSeed: false,
   timeScale: 1,
   _timeScale: { step: 0.00001, name: "(timeScale) t = frameCount \u00D7" },
+  __showTimeScale: false,
   particleCount: 100,
   _particleCount: { min: 0, max: 1000, step: 1 },
   mouseAttractsParticles: false,
@@ -234,12 +235,17 @@ let uiCanvas = new p5(function(p) {
       settings["canvas"]["height"]
     ).parent("canvas-container");
     size = Math.pow(Math.pow(p.width, 2) + Math.pow(p.height, 2), 0.5) * 0.005;
+    p.textSize(24);
     p.stroke(0);
     p.strokeWeight(1);
   };
 
   p.draw = function() {
     p.clear();
+    if (settings.__showTimeScale) {
+      p.text("frameCount = " + frameCount, 20, height - 64);
+      p.text("t = " + t, 20, height - 20);
+    }
     if (settings.attractorSettings.showAttractors) {
       p.push();
       if (settings.attractorSettings.__show) {
@@ -1189,6 +1195,14 @@ window.onload = () => {
 
   gui.domElement.onmouseleave = () => {
     listenForMouse = true;
+  };
+
+  gui.controllers["settings.timeScale"].__li.onmouseenter = () => {
+    settings.__showTimeScale = true;
+  };
+
+  gui.controllers["settings.timeScale"].__li.onmouseleave = () => {
+    settings.__showTimeScale = false;
   };
 
   gui.controllers[
