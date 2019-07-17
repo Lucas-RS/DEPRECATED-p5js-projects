@@ -236,6 +236,24 @@ let settings = {
     _extra: { openFolder: true, name: "extra (extra force in center)" }
   }
 };
+const defaultAttractor = {
+  active: false,
+  removeAttractor: () => {
+    attractors.splice(attractors.indexOf(attractor), 1);
+    refreshAttractorsGUI();
+  },
+  attractChance: 1,
+  forceMultiplier: 0.5,
+  initX: 0,
+  initY: 0,
+  useEquations: false,
+  xEquation: "sin(t)",
+  yEquation: "cos(t)",
+  spawnParticles: false,
+  spawnChance: 0.1,
+  deleteParticles: false,
+  deleteChance: 1
+};
 let particles = [];
 let attractors = [];
 let canvas;
@@ -426,6 +444,11 @@ function draw() {
       attractor.x = attractor.initX + width / 2;
       attractor.y = attractor.initY + height / 2;
     }
+    if (attractor.spawnParticles && random() < attractor.spawnChance) {
+      for (let j = 0; j < 1; j++) {
+        particles.push(createParticle(createVector(attractor.x, attractor.y), generateColor()));
+      }
+    }
   }
 
   for (let i = 0; i < particles.length; i++) {
@@ -450,22 +473,6 @@ function draw() {
 
     if (settings["mouseAttractsParticles"]) {
       particles[i].mouseAttract(settings["mouseAttractionRange"]);
-    }
-
-    for (let a = 0; a < attractors.length; a++) {
-      let attractor = attractors[a];
-      if (random() < attractor.attractChance) {
-        let f = createVector(attractor.x, attractor.y);
-        f.sub(particles[i].pos);
-        let r = dist(
-          particles[i].pos.x,
-          particles[i].pos.y,
-          attractor.x,
-          attractor.y
-        );
-        f.setMag(attractor.forceMultiplier / (1 + r));
-        particles[i].applyForce(f);
-      }
     }
 
     if (
@@ -579,6 +586,25 @@ function draw() {
 
     particles[i].update();
 
+    for (let a = 0; a < attractors.length; a++) {
+      let attractor = attractors[a];
+      let r = dist(
+        particles[i].pos.x,
+        particles[i].pos.y,
+        attractor.x,
+        attractor.y
+      );
+      if (random() < attractor.attractChance) {
+        let f = createVector(attractor.x, attractor.y);
+        f.sub(particles[i].pos);
+        f.setMag(attractor.forceMultiplier / (1 + r));
+        particles[i].applyForce(f);
+      }
+      if (attractor.deleteParticles && r <= 1 && random() < attractor.deleteChance) {
+        particles.splice(i, 1);
+      }
+    }
+
     if (endSim) {
       if (alpha(particles[i].color) > 0) {
         particles[i].color.setAlpha(
@@ -604,7 +630,6 @@ function toggleLoop() {
   }
 }
 
-//this will import the image used as a base to pull color from.
 function importImage() {
   let imgInput = createFileInput(handleFile);
   imgInput.elt.style.display = "none";
@@ -702,13 +727,8 @@ function generateColor() {
   return c;
 }
 
-function resetAttractors() {
-  attractors = [];
-  refreshAttractorsGUI();
-}
-
-function createParticle(origin) {
-  let particle = new Particle(origin, generateColor());
+function createParticle(origin, color) {
+  let particle = new Particle(origin, color);
   particle.applyForce(
     createVector(
       random(
@@ -789,7 +809,7 @@ function resetSketch() {
           dist(origin.x, origin.y, width / 2, height / 2)) >
           settings["originRadius"]["min"]
       ) {
-        particles[i] = createParticle(origin);
+        particles[i] = createParticle(origin, generateColor());
         break;
       }
     }
@@ -893,7 +913,7 @@ function getEncodedSettingsString() {
       otherSettings.userSetupCode = userSetupCode;
     }
     if (attractors.length > 0) {
-      otherSettings.attractors = attractors;
+      otherSettings.attractors = exportAttractors();
     }
     if (Object.keys(otherSettings).length > 0) {
       changedSettings = {
@@ -972,12 +992,53 @@ function updateSettingsFromURL() {
           toggleCodeArea();
         }
         if (URLSettings._other.attractors !== undefined) {
-          attractors = URLSettings._other.attractors;
+          attractors = [];
+          for (let i = 0; i < URLSettings._other.attractors.length; i++) {
+            attractors[i] = Object.assign({}, defaultAttractor);
+            for (let k in URLSettings._other.attractors[i]) {
+              attractors[i][k] = URLSettings._other.attractors[i][k];
+            }
+          }
           refreshAttractorsGUI();
         }
       }
     }
   }
+}
+
+function addAttractor(x, y) {
+  let newAttractor = Object.assign({}, defaultAttractor);
+  newAttractor.initX = x;
+  newAttractor.initY = y;
+  newAttractor.x = newAttractor.initX + width / 2;
+  newAttractor.y = newAttractor.initY + height / 2;
+
+  attractors.push(newAttractor);
+  refreshAttractorsGUI();
+}
+
+function resetAttractors() {
+  attractors = [];
+  refreshAttractorsGUI();
+}
+
+function exportAttractors() {
+  let attractorsExport = [];
+  for (let i = 0; i < attractors.length; i++) {
+    attractorsExport[i] = Object.assign({}, attractors[i]);
+  }
+  for (let attractor of attractorsExport) {
+    delete attractor.removeAttractor;
+    delete attractor.active;
+    delete attractor.x;
+    delete attractor.y;
+    for (let i in attractor) {
+      if (attractor[i] === defaultAttractor[i]) {
+        delete attractor[i];
+      }
+    }
+  }
+  return attractorsExport;
 }
 
 function refreshAttractorsGUI() {
@@ -996,11 +1057,6 @@ function refreshAttractorsGUI() {
       ).length
     );
 
-    attractor.removeAttractor = () => {
-      attractors.splice(attractors.indexOf(attractor), 1);
-      refreshAttractorsGUI();
-    };
-
     attractorFolder.add(attractor, "removeAttractor");
     attractorFolder.add(attractor, "attractChance", 0, 1, 0.0001);
     attractorFolder.add(attractor, "forceMultiplier", -10, 10, 0.01);
@@ -1009,6 +1065,10 @@ function refreshAttractorsGUI() {
     attractorFolder.add(attractor, "useEquations");
     attractorFolder.add(attractor, "xEquation");
     attractorFolder.add(attractor, "yEquation");
+    attractorFolder.add(attractor, "spawnParticles");
+    attractorFolder.add(attractor, "spawnChance", 0, 1, 0.001);
+    attractorFolder.add(attractor, "deleteParticles");
+    attractorFolder.add(attractor, "deleteChance", 0, 1, 0.001);
 
     for (let i in attractorFolder.__controllers) {
       addControllerKeyListenToggle(attractorFolder.__controllers[i]);
@@ -1088,23 +1148,12 @@ window.onload = () => {
     e = e || window.event;
     if (listenForMouse) {
       if (e.ctrlKey && e.button === 0) {
-        let newAttractor = {
-          attractChance: 1,
-          forceMultiplier: 0.5,
-          initX: parseInt(mouseX - width / 2),
-          initY: parseInt(mouseY - height / 2),
-          useEquations: false,
-          xEquation: "0.001 * t",
-          yEquation: "0.001 * t"
-        };
-
-        newAttractor.x = newAttractor.initX + width / 2;
-        newAttractor.y = newAttractor.initY + height / 2;
-
-        attractors.push(newAttractor);
-        refreshAttractorsGUI();
+        addAttractor(
+          parseInt(mouseX - width / 2),
+          parseInt(mouseY - height / 2)
+        );
       } else if (e.shiftKey && e.button === 0) {
-        particles.push(createParticle(createVector(mouseX, mouseY)));
+        particles.push(createParticle(createVector(mouseX, mouseY), generateColor()));
       }
     }
   };
@@ -1125,16 +1174,7 @@ window.onload = () => {
     }
 
     if (attractors.length > 0) {
-      otherSettings.attractors = [];
-      for (let i = 0; i < attractors.length; i++) {
-        otherSettings.attractors[i] = Object.assign({}, attractors[i]);
-      }
-      for (let i of otherSettings.attractors) {
-        delete i.removeAttractor;
-        delete i.active;
-        delete i.x;
-        delete i.y;
-      }
+      otherSettings.attractors = exportAttractors();
     }
 
     if (Object.keys(otherSettings).length > 0) {
@@ -1163,26 +1203,19 @@ window.onload = () => {
       gui.presets[gui.controllers.presetSelector.getValue()]._other !==
         undefined
     ) {
+      let other = gui.presets[gui.controllers.presetSelector.getValue()]._other;
       if (
-        gui.presets[gui.controllers.presetSelector.getValue()]._other
-          .userDrawCode !== undefined ||
-        gui.presets[gui.controllers.presetSelector.getValue()]._other
-          .userSetupCode !== undefined
+        other.userDrawCode !== undefined ||
+        other.userSetupCode !== undefined
       ) {
-        if (
-          gui.presets[gui.controllers.presetSelector.getValue()]._other
-            .userDrawCode !== undefined
-        ) {
+        if (other.userDrawCode !== undefined) {
           document.getElementById("draw-code-area").value =
             gui.presets[
               gui.controllers.presetSelector.getValue()
             ]._other.userDrawCode;
         }
 
-        if (
-          gui.presets[gui.controllers.presetSelector.getValue()]._other
-            .userSetupCode !== undefined
-        ) {
+        if (other.userSetupCode !== undefined) {
           document.getElementById("setup-code-area").value =
             gui.presets[
               gui.controllers.presetSelector.getValue()
@@ -1192,23 +1225,13 @@ window.onload = () => {
         document.getElementById("use-custom-code-checkbox").checked = true;
         useCustomCode = true;
       }
-      if (
-        gui.presets[gui.controllers.presetSelector.getValue()]._other
-          .attractors !== undefined
-      ) {
+      if (other.attractors !== undefined) {
         attractors = [];
-        for (
-          let i = 0;
-          i <
-          gui.presets[gui.controllers.presetSelector.getValue()]._other
-            .attractors.length;
-          i++
-        ) {
-          attractors[i] = Object.assign(
-            {},
-            gui.presets[gui.controllers.presetSelector.getValue()]._other
-              .attractors[i]
-          );
+        for (let i = 0; i < other.attractors.length; i++) {
+          attractors[i] = Object.assign({}, defaultAttractor);
+          for (let k in other.attractors[i]) {
+            attractors[i][k] = other.attractors[i][k];
+          }
         }
         refreshAttractorsGUI();
       }
