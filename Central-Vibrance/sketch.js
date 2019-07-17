@@ -73,7 +73,7 @@ let settings = {
   drawTrails: true,
   canvas: {
     resolutionScale: 1,
-    _resolutionScale: {min: 0},
+    _resolutionScale: { min: 0 },
     trueResolution: "1024 x 1024",
     width: 1024,
     _width: { min: 1, max: 8192, step: 1 },
@@ -303,8 +303,8 @@ let uiCanvas = new p5(function(p) {
     ) {
       p.push();
       p.textSize(size * 4);
-      p.text("frameCount = " + frameCount, size * 2, height - size * 8);
-      p.text("t = " + t, size * 2, height - size * 2);
+      p.text("frameCount = " + frameCount, size * 2, p.height - size * 8);
+      p.text("t = " + t, size * 2, p.height - size * 2);
       p.pop();
     }
     if (showAllGUIs || settings.attractorSettings.showAttractors) {
@@ -348,27 +348,27 @@ let uiCanvas = new p5(function(p) {
       p.push();
       p.noStroke();
       p.fill(0, 255, 255, Math.pow(s.chance, 0.25) * 204);
-      p.ellipse(width / 2, height / 2, 2 * s.radius);
+      p.ellipse(width / 2, height / 2, 2 * s.radius * settings.canvas.resolutionScale);
       p.strokeWeight(size * 0.5);
       p.stroke(255, 0, 0);
       p.line(
-        width / 2 - s.radius - s.outside.min * 10,
+        width / 2 - s.radius * settings.canvas.resolutionScale - s.outside.min * 10,
         height / 2,
-        width / 2 - s.radius - s.outside.max * 10,
+        width / 2 - s.radius * settings.canvas.resolutionScale - s.outside.max * 10,
         height / 2
       );
       p.stroke(0, 255, 0);
       p.line(
-        width / 2 + s.radius + s.inside.min * 10,
+        width / 2 + s.radius * settings.canvas.resolutionScale + s.inside.min * settings.canvas.resolutionScale * 10,
         height / 2 - size * 0.5,
-        width / 2 + s.radius + s.inside.max * 10,
+        width / 2 + s.radius * settings.canvas.resolutionScale + s.inside.max * settings.canvas.resolutionScale * 10,
         height / 2 - size * 0.5
       );
       p.stroke(255, 128, 0, Math.pow(s.extra.chance, 0.25) * 204);
       p.line(
-        width / 2 + s.radius + s.extra.min * 10,
+        width / 2 + s.radius * settings.canvas.resolutionScale + s.extra.min * settings.canvas.resolutionScale * 10,
         height / 2 + size * 0.5,
-        width / 2 + s.radius + s.extra.max * 10,
+        width / 2 + s.radius * settings.canvas.resolutionScale + s.extra.max * settings.canvas.resolutionScale * 10,
         height / 2 + size * 0.5
       );
       p.pop();
@@ -379,14 +379,14 @@ let uiCanvas = new p5(function(p) {
         p.background(255, 0, 255, 51);
       } else {
         let radiusDifference =
-          settings.originRadius.max - settings.originRadius.min;
+          settings.originRadius.max * settings.canvas.resolutionScale - settings.originRadius.min * settings.canvas.resolutionScale;
         p.noFill();
         p.stroke(255, 0, 255, 51);
         p.strokeWeight(radiusDifference);
         p.ellipse(
           width / 2,
           height / 2,
-          2 * (settings.originRadius.min + radiusDifference / 2)
+          2 * (settings.originRadius.min * settings.canvas.resolutionScale + radiusDifference / 2)
         );
       }
       p.pop();
@@ -640,8 +640,8 @@ function draw() {
         let f = createVector(attractor.x, attractor.y);
         f.sub(particles[i].pos);
         f.setMag(
-          (attractor.forceMultiplier * settings.canvas.resolutionScale) /
-            (1 + r)
+          attractor.forceMultiplier * settings.canvas.resolutionScale /
+            (1 + (r / settings.canvas.resolutionScale))
         );
         particles[i].applyForce(f);
       }
@@ -1444,7 +1444,7 @@ window.onload = () => {
     }
   });
 
-  gui.controllers["settings.canvas.trueResolution"].onChange(value => {
+  gui.controllers["settings.canvas.trueResolution"].onFinishChange(value => {
     valueArray = split(value, " ");
     if (
       gui.controllers["settings.canvas.width"].getValue() !==
@@ -1471,9 +1471,13 @@ window.onload = () => {
         parseInt(settings.canvas.height * settings.canvas.resolutionScale)
     );
   };
-  gui.controllers["settings.canvas.width"].onChange(updateTrueResolution);
-  gui.controllers["settings.canvas.height"].onChange(updateTrueResolution);
-  // gui.controllers["settings.canvas.resolutionScale"].onChange(updateTrueResolution);
+  gui.controllers["settings.canvas.width"].onFinishChange(updateTrueResolution);
+  gui.controllers["settings.canvas.height"].onFinishChange(
+    updateTrueResolution
+  );
+  gui.controllers["settings.canvas.resolutionScale"].onFinishChange(
+    updateTrueResolution
+  );
 
   document.getElementById("use-custom-code-checkbox").onchange = e => {
     useCustomCode = e.srcElement.checked;
