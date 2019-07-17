@@ -284,7 +284,7 @@ let uiCanvas = new p5(function(p) {
   };
 
   p.draw = function() {
-    size = parseInt(
+    size = Math.ceil(
       Math.pow(Math.pow(p.width, 2) + Math.pow(p.height, 2), 0.5) * 0.005
     );
     p.clear();
@@ -302,7 +302,7 @@ let uiCanvas = new p5(function(p) {
           p.noFill();
           if (attractors[a].active) {
             p.stroke(0, 255, 255);
-            p.strokeWeight(2);
+            p.strokeWeight(size * 0.2);
           }
           p.ellipse(
             attractors[a].x,
@@ -310,7 +310,7 @@ let uiCanvas = new p5(function(p) {
             20 + size * 2 * Math.abs(attractors[a].forceMultiplier)
           );
           p.stroke(0);
-          p.strokeWeight(1);
+          p.strokeWeight(size * 0.08);
         }
       }
       for (let a = 0; a < attractors.length; a++) {
