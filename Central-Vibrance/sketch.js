@@ -72,6 +72,7 @@ let settings = {
   bounceEdges: false,
   drawTrails: true,
   canvas: {
+    "Reset Canvas (r)": resetSketch,
     resolutionScale: 1,
     _resolutionScale: { min: 0 },
     trueResolution: "1024 x 1024",
@@ -348,27 +349,43 @@ let uiCanvas = new p5(function(p) {
       p.push();
       p.noStroke();
       p.fill(0, 255, 255, Math.pow(s.chance, 0.25) * 204);
-      p.ellipse(width / 2, height / 2, 2 * s.radius * settings.canvas.resolutionScale);
+      p.ellipse(
+        width / 2,
+        height / 2,
+        2 * s.radius * settings.canvas.resolutionScale
+      );
       p.strokeWeight(size * 0.5);
       p.stroke(255, 0, 0);
       p.line(
-        width / 2 - s.radius * settings.canvas.resolutionScale - s.outside.min * 10,
+        width / 2 -
+          s.radius * settings.canvas.resolutionScale -
+          s.outside.min * 10,
         height / 2,
-        width / 2 - s.radius * settings.canvas.resolutionScale - s.outside.max * 10,
+        width / 2 -
+          s.radius * settings.canvas.resolutionScale -
+          s.outside.max * 10,
         height / 2
       );
       p.stroke(0, 255, 0);
       p.line(
-        width / 2 + s.radius * settings.canvas.resolutionScale + s.inside.min * settings.canvas.resolutionScale * 10,
+        width / 2 +
+          s.radius * settings.canvas.resolutionScale +
+          s.inside.min * settings.canvas.resolutionScale * 10,
         height / 2 - size * 0.5,
-        width / 2 + s.radius * settings.canvas.resolutionScale + s.inside.max * settings.canvas.resolutionScale * 10,
+        width / 2 +
+          s.radius * settings.canvas.resolutionScale +
+          s.inside.max * settings.canvas.resolutionScale * 10,
         height / 2 - size * 0.5
       );
       p.stroke(255, 128, 0, Math.pow(s.extra.chance, 0.25) * 204);
       p.line(
-        width / 2 + s.radius * settings.canvas.resolutionScale + s.extra.min * settings.canvas.resolutionScale * 10,
+        width / 2 +
+          s.radius * settings.canvas.resolutionScale +
+          s.extra.min * settings.canvas.resolutionScale * 10,
         height / 2 + size * 0.5,
-        width / 2 + s.radius * settings.canvas.resolutionScale + s.extra.max * settings.canvas.resolutionScale * 10,
+        width / 2 +
+          s.radius * settings.canvas.resolutionScale +
+          s.extra.max * settings.canvas.resolutionScale * 10,
         height / 2 + size * 0.5
       );
       p.pop();
@@ -379,14 +396,17 @@ let uiCanvas = new p5(function(p) {
         p.background(255, 0, 255, 51);
       } else {
         let radiusDifference =
-          settings.originRadius.max * settings.canvas.resolutionScale - settings.originRadius.min * settings.canvas.resolutionScale;
+          settings.originRadius.max * settings.canvas.resolutionScale -
+          settings.originRadius.min * settings.canvas.resolutionScale;
         p.noFill();
         p.stroke(255, 0, 255, 51);
         p.strokeWeight(radiusDifference);
         p.ellipse(
           width / 2,
           height / 2,
-          2 * (settings.originRadius.min * settings.canvas.resolutionScale + radiusDifference / 2)
+          2 *
+            (settings.originRadius.min * settings.canvas.resolutionScale +
+              radiusDifference / 2)
         );
       }
       p.pop();
@@ -406,6 +426,14 @@ function setup() {
 }
 
 function draw() {
+  if (useCustomCode) {
+    try {
+      eval(userDrawCode);
+    } catch (e) {
+      console.error(e.message);
+    }
+  }
+
   if (
     settings.captureFrames.__doCapture &&
     frameCount - settings.captureFrames.__startFrame <
@@ -640,8 +668,8 @@ function draw() {
         let f = createVector(attractor.x, attractor.y);
         f.sub(particles[i].pos);
         f.setMag(
-          attractor.forceMultiplier * settings.canvas.resolutionScale /
-            (1 + (r / settings.canvas.resolutionScale))
+          (attractor.forceMultiplier * settings.canvas.resolutionScale) /
+            (1 + r / settings.canvas.resolutionScale)
         );
         particles[i].applyForce(f);
       }
@@ -667,14 +695,6 @@ function draw() {
       ) {
         particles[i].color.setAlpha(alpha - settings.particleDeathSpeed);
       }
-    }
-  }
-
-  if (useCustomCode) {
-    try {
-      eval(userDrawCode);
-    } catch (e) {
-      console.error(e.message);
     }
   }
 }
@@ -1464,19 +1484,17 @@ window.onload = () => {
     }
   });
 
-  let updateTrueResolution = () => {
+  let updateTrueRes = () => {
     gui.controllers["settings.canvas.trueResolution"].setValue(
       parseInt(settings.canvas.width * settings.canvas.resolutionScale) +
         " x " +
         parseInt(settings.canvas.height * settings.canvas.resolutionScale)
     );
   };
-  gui.controllers["settings.canvas.width"].onFinishChange(updateTrueResolution);
-  gui.controllers["settings.canvas.height"].onFinishChange(
-    updateTrueResolution
-  );
+  gui.controllers["settings.canvas.width"].onFinishChange(updateTrueRes);
+  gui.controllers["settings.canvas.height"].onFinishChange(updateTrueRes);
   gui.controllers["settings.canvas.resolutionScale"].onFinishChange(
-    updateTrueResolution
+    updateTrueRes
   );
 
   document.getElementById("use-custom-code-checkbox").onchange = e => {
