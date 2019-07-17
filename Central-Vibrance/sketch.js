@@ -72,6 +72,8 @@ let settings = {
   bounceEdges: false,
   drawTrails: true,
   canvas: {
+    resolutionScale: 1,
+    trueResolution: "1024 x 1024",
     width: 1024,
     _width: { min: 1, max: 8192, step: 1 },
     height: 1024,
@@ -420,6 +422,7 @@ function draw() {
   }
 
   t = frameCount * settings.timeScale;
+
   qtree.clear();
   for (let particle of particles) {
     qtree.insert(particle);
@@ -433,26 +436,26 @@ function draw() {
     background(bgColor);
   }
 
-  if (useCustomCode) {
-    try {
-      eval(userDrawCode);
-    } catch (e) {
-      console.error(e.message);
-    }
-  }
-
   for (let i = 0; i < attractors.length; i++) {
     let attractor = attractors[i];
     if (attractor.useEquations) {
       try {
-        attractor.x = eval(attractor.xEquation) + attractor.initX + width / 2;
-        attractor.y = eval(attractor.yEquation) + attractor.initY + height / 2;
+        attractor.x =
+          (eval(attractor.xEquation) + attractor.initX) *
+            settings.canvas.resolutionScale +
+          width / 2;
+        attractor.y =
+          (eval(attractor.yEquation) + attractor.initY) *
+            settings.canvas.resolutionScale +
+          height / 2;
       } catch (e) {
         console.error(e.message);
       }
     } else {
-      attractor.x = attractor.initX + width / 2;
-      attractor.y = attractor.initY + height / 2;
+      attractor.x =
+        attractor.initX * settings.canvas.resolutionScale + width / 2;
+      attractor.y =
+        attractor.initY * settings.canvas.resolutionScale + height / 2;
     }
     if (attractor.spawnParticles && random() < attractor.spawnChance) {
       for (let j = 0; j < 1; j++) {
@@ -473,10 +476,15 @@ function draw() {
     }
 
     if (settings["colors"]["showParticles"]) {
-      strokeWeight(settings.colors.particleSettings.strokeWeight);
+      strokeWeight(
+        settings.colors.particleSettings.strokeWeight *
+          settings.canvas.resolutionScale
+      );
       particles[i].show(
-        settings["colors"]["particleSettings"]["particleWidth"],
-        settings["colors"]["particleSettings"]["particleHeight"],
+        settings["colors"]["particleSettings"]["particleWidth"] *
+          settings.canvas.resolutionScale,
+        settings["colors"]["particleSettings"]["particleHeight"] *
+          settings.canvas.resolutionScale,
         settings["colors"]["particleSettings"]["drawOutline"],
         settings["colors"]["particleSettings"]["particleOutlineColor"],
         settings["colors"]["particleSettings"]["particleOutlineAlpha"]
@@ -488,7 +496,9 @@ function draw() {
     }
 
     if (settings["mouseAttractsParticles"]) {
-      particles[i].mouseAttract(settings["mouseAttractionRange"]);
+      particles[i].mouseAttract(
+        settings["mouseAttractionRange"] * settings.canvas.resolutionScale
+      );
     }
 
     if (
@@ -499,13 +509,16 @@ function draw() {
       attractCenterForce.sub(particles[i].pos);
       if (
         dist(particles[i].pos.x, particles[i].pos.y, width / 2, height / 2) >
-        settings["centerAttractionForce"]["radius"]
+        settings["centerAttractionForce"]["radius"] *
+          settings.canvas.resolutionScale
       ) {
         if (random() < 0.5) {
           attractCenterForce.setMag(
             random(
-              settings["centerAttractionForce"]["outside"]["min"],
-              settings["centerAttractionForce"]["outside"]["max"]
+              settings["centerAttractionForce"]["outside"]["min"] *
+                settings.canvas.resolutionScale,
+              settings["centerAttractionForce"]["outside"]["max"] *
+                settings.canvas.resolutionScale
             )
           );
         } else {
@@ -515,15 +528,19 @@ function draw() {
         if (random() < settings["centerAttractionForce"]["extra"]["chance"]) {
           attractCenterForce.setMag(
             random(
-              settings["centerAttractionForce"]["extra"]["min"],
-              settings["centerAttractionForce"]["extra"]["max"]
+              settings["centerAttractionForce"]["extra"]["min"] *
+                settings.canvas.resolutionScale,
+              settings["centerAttractionForce"]["extra"]["max"] *
+                settings.canvas.resolutionScale
             )
           );
         } else {
           attractCenterForce.setMag(
             random(
-              settings["centerAttractionForce"]["inside"]["min"],
-              settings["centerAttractionForce"]["inside"]["max"]
+              settings["centerAttractionForce"]["inside"]["min"] *
+                settings.canvas.resolutionScale,
+              settings["centerAttractionForce"]["inside"]["max"] *
+                settings.canvas.resolutionScale
             )
           );
         }
@@ -542,8 +559,10 @@ function draw() {
         particles[i].vel.setMag(
           particles[i].vel.mag() *
             random(
-              settings["velocitySettings"]["magnitudeBoundaries"]["min"],
-              settings["velocitySettings"]["magnitudeBoundaries"]["max"]
+              settings["velocitySettings"]["magnitudeBoundaries"]["min"] *
+                settings.canvas.resolutionScale,
+              settings["velocitySettings"]["magnitudeBoundaries"]["max"] *
+                settings.canvas.resolutionScale
             )
         );
       }
@@ -551,12 +570,16 @@ function draw() {
         particles[i].applyForce(
           createVector(
             random(
-              settings.velocitySettings.randomForce.minX,
-              settings.velocitySettings.randomForce.maxX
+              settings.velocitySettings.randomForce.minX *
+                settings.canvas.resolutionScale,
+              settings.velocitySettings.randomForce.maxX *
+                settings.canvas.resolutionScale
             ),
             random(
-              settings.velocitySettings.randomForce.minY,
-              settings.velocitySettings.randomForce.maxY
+              settings.velocitySettings.randomForce.minY *
+                settings.canvas.resolutionScale,
+              settings.velocitySettings.randomForce.maxY *
+                settings.canvas.resolutionScale
             )
           )
         );
@@ -568,13 +591,15 @@ function draw() {
         new Circle(
           particles[i].pos.x,
           particles[i].pos.y,
-          settings.lines.maxLineDist
+          settings.lines.maxLineDist * settings.canvas.resolutionScale
         )
       );
       for (let point of points) {
         if (particles[i] != point) {
           stroke(lerpColor(particles[i].color, point.color, 0.5));
-          strokeWeight(settings.lines.strokeWeight);
+          strokeWeight(
+            settings.lines.strokeWeight * settings.canvas.resolutionScale
+          );
           line(
             particles[i].pos.x,
             particles[i].pos.y,
@@ -582,8 +607,8 @@ function draw() {
             point.pos.y
           );
           if (
-            random() < settings.lines.changeSpeedChance &&
-            settings.lines.changeSpeedConnected
+            settings.lines.changeSpeedConnected &&
+            random() < settings.lines.changeSpeedChance
           ) {
             point.vel.mult(settings.lines.changeSpeedBy);
           }
@@ -594,7 +619,8 @@ function draw() {
     }
 
     particles[i].capVel(
-      settings["velocitySettings"]["maxVelocity"],
+      settings["velocitySettings"]["maxVelocity"] *
+        settings.canvas.resolutionScale,
       settings["velocitySettings"]["lockAxis"]["xAxis"],
       settings["velocitySettings"]["lockAxis"]["yAxis"]
     );
@@ -612,7 +638,10 @@ function draw() {
       if (attractor.attractChance > 0 && random() < attractor.attractChance) {
         let f = createVector(attractor.x, attractor.y);
         f.sub(particles[i].pos);
-        f.setMag(attractor.forceMultiplier / (1 + r));
+        f.setMag(
+          (attractor.forceMultiplier * settings.canvas.resolutionScale) /
+            (1 + r)
+        );
         particles[i].applyForce(f);
       }
       if (
@@ -637,6 +666,14 @@ function draw() {
       ) {
         particles[i].color.setAlpha(alpha - settings.particleDeathSpeed);
       }
+    }
+  }
+
+  if (useCustomCode) {
+    try {
+      eval(userDrawCode);
+    } catch (e) {
+      console.error(e.message);
     }
   }
 }
@@ -666,6 +703,7 @@ function handleFile(file) {
   setTimeout(function() {
     settings["canvas"]["height"] = sampledImg.height;
     settings["canvas"]["width"] = sampledImg.width;
+    settings.canvas.resolutionScale = 1;
     resetSketch();
   }, 500);
 }
@@ -756,12 +794,16 @@ function createParticle(origin, color, lifetime) {
   particle.applyForce(
     createVector(
       random(
-        settings["velocitySettings"]["startingVelocity"]["minX"],
-        settings["velocitySettings"]["startingVelocity"]["maxX"]
+        settings["velocitySettings"]["startingVelocity"]["minX"] *
+          settings.canvas.resolutionScale,
+        settings["velocitySettings"]["startingVelocity"]["maxX"] *
+          settings.canvas.resolutionScale
       ),
       random(
-        settings["velocitySettings"]["startingVelocity"]["minY"],
-        settings["velocitySettings"]["startingVelocity"]["maxY"]
+        settings["velocitySettings"]["startingVelocity"]["minY"] *
+          settings.canvas.resolutionScale,
+        settings["velocitySettings"]["startingVelocity"]["maxY"] *
+          settings.canvas.resolutionScale
       )
     )
   );
@@ -783,22 +825,25 @@ function resetSketch() {
   }
 
   frameCount = 0;
-  endSim = false;
   particles = [];
 
   for (let i = 0; i < attractors.length; i++) {
     let attractor = attractors[i];
-    attractor.x = attractor.initX + width / 2;
-    attractor.y = attractor.initY + height / 2;
+    attractor.x = attractor.initX * settings.canvas.resolutionScale + width / 2;
+    attractor.y =
+      attractor.initY * settings.canvas.resolutionScale + height / 2;
   }
 
   userSetupCode = document.getElementById("setup-code-area").value;
   userDrawCode = document.getElementById("draw-code-area").value;
 
-  resizeCanvas(settings["canvas"]["width"], settings["canvas"]["height"]);
+  resizeCanvas(
+    settings["canvas"]["width"] * settings.canvas.resolutionScale,
+    settings["canvas"]["height"] * settings.canvas.resolutionScale
+  );
   uiCanvas.resizeCanvas(
-    settings["canvas"]["width"],
-    settings["canvas"]["height"]
+    settings["canvas"]["width"] * settings.canvas.resolutionScale,
+    settings["canvas"]["height"] * settings.canvas.resolutionScale
   );
 
   let canvasElems = document.getElementsByClassName("p5Canvas");
@@ -831,9 +876,9 @@ function resetSketch() {
       if (
         settings.originRadius.ignoreRadius ||
         (dist(origin.x, origin.y, width / 2, height / 2) <
-          settings["originRadius"]["max"] &&
+          settings["originRadius"]["max"] * settings.canvas.resolutionScale &&
           dist(origin.x, origin.y, width / 2, height / 2)) >
-          settings["originRadius"]["min"]
+          settings["originRadius"]["min"] * settings.canvas.resolutionScale
       ) {
         particles[i] = createParticle(
           origin,
@@ -848,24 +893,28 @@ function resetSketch() {
   if (pageIsLoaded) {
     if (width > height) {
       gui.controllers["settings.originRadius.min"].__max =
-        settings.canvas.width;
+        settings.canvas.width * settings.canvas.resolutionScale;
       gui.controllers["settings.originRadius.max"].__max =
-        settings.canvas.width;
+        settings.canvas.width * settings.canvas.resolutionScale;
       gui.controllers["settings.velocitySettings.maxVelocity"].__max =
-        settings.canvas.width * 0.04;
+        settings.canvas.width * 0.04 * settings.canvas.resolutionScale;
       gui.controllers["settings.lines.maxLineDist"].__max =
-        settings.canvas.width * 0.25;
+        settings.canvas.width * 0.25 * settings.canvas.resolutionScale;
     } else {
       gui.controllers["settings.originRadius.min"].__max =
-        settings.canvas.height;
+        settings.canvas.height * settings.canvas.resolutionScale;
       gui.controllers["settings.originRadius.max"].__max =
-        settings.canvas.height;
+        settings.canvas.height * settings.canvas.resolutionScale;
       gui.controllers["settings.velocitySettings.maxVelocity"].__max =
-        settings.canvas.height * 0.04;
+        settings.canvas.height * 0.04 * settings.canvas.resolutionScale;
       gui.controllers["settings.lines.maxLineDist"].__max =
-        settings.canvas.height * 0.25;
+        settings.canvas.height * 0.25 * settings.canvas.resolutionScale;
     }
-
+    gui.controllers["settings.canvas.trueResolution"].setValue(
+      parseInt(settings.canvas.width * settings.canvas.resolutionScale) +
+        " x " +
+        parseInt(settings.canvas.height * settings.canvas.resolutionScale)
+    );
     gui.updateAllDisplays();
   }
 
@@ -1038,10 +1087,12 @@ function updateSettingsFromURL() {
 
 function addAttractor(x, y) {
   let newAttractor = Object.assign({}, defaultAttractor);
-  newAttractor.initX = x;
-  newAttractor.initY = y;
-  newAttractor.x = newAttractor.initX + width / 2;
-  newAttractor.y = newAttractor.initY + height / 2;
+  newAttractor.initX = x / settings.canvas.resolutionScale;
+  newAttractor.initY = y / settings.canvas.resolutionScale;
+  newAttractor.x =
+    newAttractor.initX * settings.canvas.resolutionScale + width / 2;
+  newAttractor.y =
+    newAttractor.initY * settings.canvas.resolutionScale + height / 2;
 
   attractors.push(newAttractor);
   refreshAttractorsGUI();
@@ -1391,6 +1442,42 @@ window.onload = () => {
       );
     }
   });
+
+  gui.controllers["settings.canvas.trueResolution"].onChange(value => {
+    valueArray = split(value, " ");
+    if (
+      gui.controllers["settings.canvas.width"].getValue() !==
+      valueArray[0] / settings.canvas.resolutionScale
+    ) {
+      gui.controllers["settings.canvas.width"].setValue(
+        valueArray[0] / settings.canvas.resolutionScale
+      );
+    }
+    if (
+      gui.controllers["settings.canvas.height"].getValue() !==
+      valueArray[2] / settings.canvas.resolutionScale
+    ) {
+      gui.controllers["settings.canvas.height"].setValue(
+        valueArray[2] / settings.canvas.resolutionScale
+      );
+    }
+  });
+
+  gui.controllers["settings.canvas.width"].onChange(() => {
+    gui.controllers["settings.canvas.trueResolution"].setValue(
+      parseInt(settings.canvas.width * settings.canvas.resolutionScale) +
+        " x " +
+        parseInt(settings.canvas.height * settings.canvas.resolutionScale)
+    );
+  })
+
+  gui.controllers["settings.canvas.height"].onChange(() => {
+    gui.controllers["settings.canvas.trueResolution"].setValue(
+      parseInt(settings.canvas.width * settings.canvas.resolutionScale) +
+        " x " +
+        parseInt(settings.canvas.height * settings.canvas.resolutionScale)
+    );
+  })
 
   document.getElementById("use-custom-code-checkbox").onchange = e => {
     useCustomCode = e.srcElement.checked;
