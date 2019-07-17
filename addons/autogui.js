@@ -13,7 +13,7 @@ class AutoGUI extends dat.GUI {
     this.presets = {};
   }
 
-  autoAdd(object, parentKey, enableListen, parent = this) {
+  autoAdd(object, parentKey, parent = this) {
     for (let key in object) {
       if (!key.startsWith("_")) {
         let controller;
@@ -29,7 +29,7 @@ class AutoGUI extends dat.GUI {
             if (s.hasOwnProperty("openFolder") && s["openFolder"]) {
               controller.open();
             }
-            this.autoAdd(value, keyPath, enableListen, controller);
+            this.autoAdd(value, keyPath, controller);
           }
         } else if (typeof value == "string") {
           if (s.hasOwnProperty("type") && s["type"] == "select") {
@@ -57,10 +57,6 @@ class AutoGUI extends dat.GUI {
           if (s.hasOwnProperty("hide") && s["hide"]) {
             controller.hide();
           }
-        }
-
-        if (enableListen && !controller.hasOwnProperty("__controllers")) {
-          controller.listen();
         }
         this.controllers[keyPath] = controller;
       }
