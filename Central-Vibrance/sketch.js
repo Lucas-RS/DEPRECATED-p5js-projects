@@ -594,7 +594,7 @@ function draw() {
         attractor.x,
         attractor.y
       );
-      if (random() < attractor.attractChance) {
+      if (attractor.attractChance > 0 && random() < attractor.attractChance) {
         let f = createVector(attractor.x, attractor.y);
         f.sub(particles[i].pos);
         f.setMag(attractor.forceMultiplier / (1 + r));
