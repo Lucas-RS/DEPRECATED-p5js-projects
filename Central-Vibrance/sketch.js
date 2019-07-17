@@ -54,6 +54,14 @@ let settings = {
   __showTimeScale: false,
   particleCount: 100,
   _particleCount: { min: 0, max: 1000, step: 1 },
+  particleLifetime: 0,
+  _particleLifetime: {
+    min: 0,
+    step: 1,
+    name: "particleLifetime (frames, 0 = \u221E)"
+  },
+  particleDeathSpeed: 0.5,
+  _particleDeathSpeed: { min: 0.1, max: 255, step: 0.1 },
   mouseAttractsParticles: false,
   mouseAttractionRange: 100,
   _mouseAttractionRange: {
@@ -61,11 +69,6 @@ let settings = {
     max: 4096,
     step: 1
   },
-  "End Simulation (e)": () => {
-    endSim = true;
-  },
-  endSpeed: 0.5,
-  _endSpeed: { min: 0.1, max: 255, step: 0.1 },
   bounceEdges: false,
   drawTrails: true,
   canvas: {
@@ -251,6 +254,12 @@ const defaultAttractor = {
   yEquation: "cos(t)",
   spawnParticles: false,
   spawnChance: 0.1,
+  particleLifetime: 0,
+  _particleLifetime: {
+    min: 0,
+    step: 1,
+    name: "particleLifetime (frames, 0 = \u221E)"
+  },
   deleteParticles: false,
   deleteChance: 1
 };
@@ -259,7 +268,6 @@ let attractors = [];
 let canvas;
 let qtree;
 let gui;
-let endSim = false;
 let pageIsLoaded = false;
 let listenForKeys = true;
 let listenForMouse = true;
@@ -446,7 +454,13 @@ function draw() {
     }
     if (attractor.spawnParticles && random() < attractor.spawnChance) {
       for (let j = 0; j < 1; j++) {
-        particles.push(createParticle(createVector(attractor.x, attractor.y), generateColor()));
+        particles.push(
+          createParticle(
+            createVector(attractor.x, attractor.y),
+            generateColor(),
+            attractor.particleLifetime
+          )
+        );
       }
     }
   }
@@ -600,18 +614,24 @@ function draw() {
         f.setMag(attractor.forceMultiplier / (1 + r));
         particles[i].applyForce(f);
       }
-      if (attractor.deleteParticles && r <= 1 && random() < attractor.deleteChance) {
+      if (
+        attractor.deleteParticles &&
+        r <= 1 &&
+        random() < attractor.deleteChance
+      ) {
         particles.splice(i, 1);
       }
     }
 
-    if (endSim) {
-      if (alpha(particles[i].color) > 0) {
-        particles[i].color.setAlpha(
-          alpha(particles[i].color) - settings["endSpeed"]
-        );
-      } else {
+    if (particles[i].lifetime !== 0) {
+      let alpha = particles[i].color._getAlpha();
+      if (frameCount - particles[i].birthFrame >= particles[i].lifetime && alpha <= 0) {
         particles.splice(i, 1);
+      } else if (
+        frameCount - particles[i].birthFrame >=
+        particles[i].lifetime - Math.floor(alpha / settings.particleDeathSpeed)
+      ) {
+        particles[i].color.setAlpha(alpha - settings.particleDeathSpeed);
       }
     }
   }
@@ -727,7 +747,7 @@ function generateColor() {
   return c;
 }
 
-function createParticle(origin, color) {
+function createParticle(origin, color, lifetime) {
   let particle = new Particle(origin, color);
   particle.applyForce(
     createVector(
@@ -744,6 +764,8 @@ function createParticle(origin, color) {
   if (settings.colors.image.updateAtStart) {
     updateParticleColorFromImage(particle);
   }
+  particle.birthFrame = frameCount;
+  particle.lifetime = lifetime;
   return particle;
 }
 
@@ -809,7 +831,11 @@ function resetSketch() {
           dist(origin.x, origin.y, width / 2, height / 2)) >
           settings["originRadius"]["min"]
       ) {
-        particles[i] = createParticle(origin, generateColor());
+        particles[i] = createParticle(
+          origin,
+          generateColor(),
+          settings.particleLifetime
+        );
         break;
       }
     }
@@ -1067,6 +1093,7 @@ function refreshAttractorsGUI() {
     attractorFolder.add(attractor, "yEquation");
     attractorFolder.add(attractor, "spawnParticles");
     attractorFolder.add(attractor, "spawnChance", 0, 1, 0.001);
+    attractorFolder.add(attractor, "particleLifetime", 0, undefined,1);
     attractorFolder.add(attractor, "deleteParticles");
     attractorFolder.add(attractor, "deleteChance", 0, 1, 0.001);
 
@@ -1153,7 +1180,13 @@ window.onload = () => {
           parseInt(mouseY - height / 2)
         );
       } else if (e.shiftKey && e.button === 0) {
-        particles.push(createParticle(createVector(mouseX, mouseY), generateColor()));
+        particles.push(
+          createParticle(
+            createVector(mouseX, mouseY),
+            generateColor(),
+            settings.particleLifetime
+          )
+        );
       }
     }
   };
