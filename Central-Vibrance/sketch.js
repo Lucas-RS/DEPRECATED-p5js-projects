@@ -52,7 +52,7 @@ let settings = {
   timeScale: 1,
   _timeScale: { step: 0.00001, name: "(timeScale) t = frameCount \u00D7" },
   __showTimeScale: false,
-  particleCount: 100,
+  particleCount: 140,
   _particleCount: { min: 0, max: 1000, step: 1 },
   particleLifetime: 0,
   _particleLifetime: {
@@ -91,6 +91,10 @@ let settings = {
     attractors: {}
   },
   velocitySettings: {
+    lockAxis: {
+      xAxis: false,
+      yAxis: false
+    },
     maxVelocity: 1,
     _maxVelocity: { min: 0, max: 100, step: 0.01 },
     startingVelocity: {
@@ -117,13 +121,9 @@ let settings = {
       _all: { min: -360, max: 360, step: 0.01 }
     },
     _rotationBoundaries: { name: "rotationBoundaries (in degrees)" },
-    lockAxis: {
-      xAxis: false,
-      yAxis: false
-    },
+    randomForceChance: 0.001,
+    _randomForceChance: { min: 0, max: 1, step: 0.0001 },
     randomForce: {
-      randomForceChance: 0.001,
-      _randomForceChance: { min: 0, max: 1, step: 0.0001 },
       minX: -1,
       maxX: 1,
       minY: -1,
@@ -132,11 +132,11 @@ let settings = {
     }
   },
   colors: {
-    showParticles: false,
+    showParticles: true,
     _showParticles: {},
     particleSettings: {
-      particleWidth: 25,
-      particleHeight: 25,
+      particleWidth: 1,
+      particleHeight: 1,
       drawOutline: false,
       strokeWeight: 1,
       _strokeWeight: { min: 0.1, max: 50, step: 0.1 },
@@ -241,10 +241,6 @@ let settings = {
 };
 const defaultAttractor = {
   active: false,
-  removeAttractor: () => {
-    attractors.splice(attractors.indexOf(attractor), 1);
-    refreshAttractorsGUI();
-  },
   attractChance: 1,
   forceMultiplier: 0.5,
   initX: 0,
@@ -323,7 +319,7 @@ let uiCanvas = new p5(function(p) {
       }
       for (let a = 0; a < attractors.length; a++) {
         if (settings.attractorSettings.__show) {
-          if (attractors[a].forceMultiplier > 0) {
+          if (attractors[a].forceMultiplier >= 0) {
             p.fill(0, 255, 0);
           } else {
             p.fill(255, 0, 0);
@@ -545,21 +541,20 @@ function draw() {
             )
         );
       }
-    }
-
-    if (random() < settings.velocitySettings.randomForce.randomForceChance) {
-      particles[i].applyForce(
-        createVector(
-          random(
-            settings.velocitySettings.randomForce.minX,
-            settings.velocitySettings.randomForce.maxX
-          ),
-          random(
-            settings.velocitySettings.randomForce.minY,
-            settings.velocitySettings.randomForce.maxY
+      if (random() < settings.velocitySettings.randomForceChance) {
+        particles[i].applyForce(
+          createVector(
+            random(
+              settings.velocitySettings.randomForce.minX,
+              settings.velocitySettings.randomForce.maxX
+            ),
+            random(
+              settings.velocitySettings.randomForce.minY,
+              settings.velocitySettings.randomForce.maxY
+            )
           )
-        )
-      );
+        );
+      }
     }
 
     if (settings["lines"]["connectPoints"]) {
@@ -1083,9 +1078,14 @@ function refreshAttractorsGUI() {
       ).length
     );
 
+    attractor.removeAttractor = () => {
+      attractors.splice(attractors.indexOf(attractor), 1);
+      refreshAttractorsGUI();
+    },
     attractorFolder.add(attractor, "removeAttractor");
+
     attractorFolder.add(attractor, "attractChance", 0, 1, 0.0001);
-    attractorFolder.add(attractor, "forceMultiplier", -10, 10, 0.01);
+    attractorFolder.add(attractor, "forceMultiplier", undefined, undefined, 0.01);
     attractorFolder.add(attractor, "initX");
     attractorFolder.add(attractor, "initY");
     attractorFolder.add(attractor, "useEquations");
@@ -1435,7 +1435,7 @@ const defaultPresets = {
     "settings.originRadius.max": 42,
     "settings.velocitySettings.maxVelocity": 2,
     "settings.velocitySettings.changeForceChance": 0,
-    "settings.velocitySettings.randomForce.randomForceChance": 0,
+    "settings.velocitySettings.randomForceChance": 0,
     "settings.colors.showParticles": true,
     "settings.colors.particleSettings.particleWidth": 2,
     "settings.colors.particleSettings.particleHeight": 2,
@@ -1465,7 +1465,7 @@ const defaultPresets = {
     "settings.velocitySettings.changeDirectionChance": 0.23,
     "settings.velocitySettings.rotationBoundaries.min": 0,
     "settings.velocitySettings.rotationBoundaries.max": 0,
-    "settings.velocitySettings.randomForce.randomForceChance": 0,
+    "settings.velocitySettings.randomForceChance": 0,
     "settings.colors.particleSettings.particleWidth": 16,
     "settings.colors.particleSettings.particleHeight": 16,
     "settings.colors.particleSettings.drawOutline": false,
