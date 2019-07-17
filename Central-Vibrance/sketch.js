@@ -267,6 +267,7 @@ let gui;
 let pageIsLoaded = false;
 let listenForKeys = true;
 let listenForMouse = true;
+let showAllGUIs = false;
 let sampledImg;
 let showCodeArea = false;
 let userDrawCode, userSetupCode;
@@ -292,16 +293,20 @@ let uiCanvas = new p5(function(p) {
       Math.pow(Math.pow(p.width, 2) + Math.pow(p.height, 2), 0.5) * 0.005
     );
     p.clear();
-    if (settings.__showTimeScale || settings.captureFrames.__doCapture) {
+    if (
+      showAllGUIs ||
+      settings.__showTimeScale ||
+      settings.captureFrames.__doCapture
+    ) {
       p.push();
       p.textSize(size * 4);
       p.text("frameCount = " + frameCount, size * 2, height - size * 8);
       p.text("t = " + t, size * 2, height - size * 2);
       p.pop();
     }
-    if (settings.attractorSettings.showAttractors) {
+    if (showAllGUIs || settings.attractorSettings.showAttractors) {
       p.push();
-      if (settings.attractorSettings.__show) {
+      if (showAllGUIs || settings.attractorSettings.__show) {
         for (let a = 0; a < attractors.length; a++) {
           p.noFill();
           if (attractors[a].active) {
@@ -332,8 +337,9 @@ let uiCanvas = new p5(function(p) {
       p.pop();
     }
     if (
-      settings.centerAttractionForce.__show &&
-      settings.centerAttractionForce.attractParticlesToCenter
+      showAllGUIs ||
+      (settings.centerAttractionForce.__show &&
+        settings.centerAttractionForce.attractParticlesToCenter)
     ) {
       let s = settings.centerAttractionForce;
       p.push();
@@ -364,7 +370,7 @@ let uiCanvas = new p5(function(p) {
       );
       p.pop();
     }
-    if (settings.originRadius.__show) {
+    if (showAllGUIs || settings.originRadius.__show) {
       p.push();
       if (settings.originRadius.ignoreRadius) {
         p.background(255, 0, 255, 51);
@@ -620,7 +626,10 @@ function draw() {
 
     if (particles[i].lifetime !== 0) {
       let alpha = particles[i].color._getAlpha();
-      if (frameCount - particles[i].birthFrame >= particles[i].lifetime && alpha <= 0) {
+      if (
+        frameCount - particles[i].birthFrame >= particles[i].lifetime &&
+        alpha <= 0
+      ) {
         particles.splice(i, 1);
       } else if (
         frameCount - particles[i].birthFrame >=
@@ -1078,14 +1087,20 @@ function refreshAttractorsGUI() {
       ).length
     );
 
-    attractor.removeAttractor = () => {
+    (attractor.removeAttractor = () => {
       attractors.splice(attractors.indexOf(attractor), 1);
       refreshAttractorsGUI();
-    },
-    attractorFolder.add(attractor, "removeAttractor");
+    }),
+      attractorFolder.add(attractor, "removeAttractor");
 
     attractorFolder.add(attractor, "attractChance", 0, 1, 0.0001);
-    attractorFolder.add(attractor, "forceMultiplier", undefined, undefined, 0.01);
+    attractorFolder.add(
+      attractor,
+      "forceMultiplier",
+      undefined,
+      undefined,
+      0.01
+    );
     attractorFolder.add(attractor, "initX");
     attractorFolder.add(attractor, "initY");
     attractorFolder.add(attractor, "useEquations");
@@ -1093,7 +1108,7 @@ function refreshAttractorsGUI() {
     attractorFolder.add(attractor, "yEquation");
     attractorFolder.add(attractor, "spawnParticles");
     attractorFolder.add(attractor, "spawnChance", 0, 1, 0.001);
-    attractorFolder.add(attractor, "particleLifetime", 0, undefined,1);
+    attractorFolder.add(attractor, "particleLifetime", 0, undefined, 1);
     attractorFolder.add(attractor, "deleteParticles");
     attractorFolder.add(attractor, "deleteChance", 0, 1, 0.001);
 
@@ -1135,6 +1150,18 @@ function addControllerKeyListenToggle(controller) {
 }
 
 window.onload = () => {
+  document.onkeydown = function(e) {
+    if (e.key === "g") {
+      showAllGUIs = true;
+    }
+  };
+
+  document.onkeyup = function(e) {
+    if (e.key === "g") {
+      showAllGUIs = false;
+    }
+  };
+
   document.onkeypress = function(e) {
     e = e || window.event;
     if (listenForKeys) {

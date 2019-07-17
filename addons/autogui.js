@@ -168,7 +168,7 @@ class AutoGUI extends dat.GUI {
               "</option>";
           }
           this.controllers.presetSelector.__select.innerHTML = newHTML;
-          this.controllers.presetSelector.__select.value = presetName
+          this.controllers.presetSelector.__select.value = presetName;
           localStorage.setItem(
             this.userPresetsStorageName,
             JSON.stringify(this.userPresets)
