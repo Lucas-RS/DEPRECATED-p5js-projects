@@ -73,6 +73,7 @@ let settings = {
   drawTrails: true,
   canvas: {
     resolutionScale: 1,
+    _resolutionScale: {min: 0},
     trueResolution: "1024 x 1024",
     width: 1024,
     _width: { min: 1, max: 8192, step: 1 },
@@ -1463,21 +1464,16 @@ window.onload = () => {
     }
   });
 
-  gui.controllers["settings.canvas.width"].onChange(() => {
+  let updateTrueResolution = () => {
     gui.controllers["settings.canvas.trueResolution"].setValue(
       parseInt(settings.canvas.width * settings.canvas.resolutionScale) +
         " x " +
         parseInt(settings.canvas.height * settings.canvas.resolutionScale)
     );
-  })
-
-  gui.controllers["settings.canvas.height"].onChange(() => {
-    gui.controllers["settings.canvas.trueResolution"].setValue(
-      parseInt(settings.canvas.width * settings.canvas.resolutionScale) +
-        " x " +
-        parseInt(settings.canvas.height * settings.canvas.resolutionScale)
-    );
-  })
+  };
+  gui.controllers["settings.canvas.width"].onChange(updateTrueResolution);
+  gui.controllers["settings.canvas.height"].onChange(updateTrueResolution);
+  // gui.controllers["settings.canvas.resolutionScale"].onChange(updateTrueResolution);
 
   document.getElementById("use-custom-code-checkbox").onchange = e => {
     useCustomCode = e.srcElement.checked;
