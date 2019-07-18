@@ -1,4 +1,32 @@
 let capturer;
+let defaultAttractor = {
+  __active: false,
+  attractChance: 1,
+  _attractChance: { min: 0, max: 1, step: 0.0001 },
+  forceMultiplier: 0.5,
+  _forceMultiplier: { step: 0.01 },
+  initX: 0,
+  _initX: { step: 1 },
+  initY: 0,
+  _initY: { step: 1 },
+  useEquations: false,
+  xEquation: "sin(t)",
+  yEquation: "cos(t)",
+  spawnParticles: false,
+  spawnChance: 0.1,
+  _spawnChance: { min: 0, max: 1, step: 0.001 },
+  particleLifetime: 0,
+  _particleLifetime: {
+    min: 0,
+    step: 1,
+    name: "particleLifetime (frames, 0 = \u221E)"
+  },
+  deleteParticles: false,
+  deleteChance: 0.5,
+  _deleteChance: { min: 0, max: 1, step: 0.001 },
+  deleteRadius: 2,
+  _deleteRadius: { min: 0, step: 1 }
+};
 let settings = {
   Share: share,
   "Shift + Click to Add Particle | Ctrl + Click to Add Attractor": {},
@@ -96,6 +124,7 @@ let settings = {
     __show: false,
     "Reset Attractors": resetAttractors,
     showAttractors: true,
+    defaultAttractor: defaultAttractor,
     attractors: {}
   },
   velocitySettings: {
@@ -253,26 +282,6 @@ let settings = {
     _extra: { openFolder: true, name: "extra (extra force in center)" }
   }
 };
-const defaultAttractor = {
-  active: false,
-  attractChance: 1,
-  forceMultiplier: 0.5,
-  initX: 0,
-  initY: 0,
-  useEquations: false,
-  xEquation: "sin(t)",
-  yEquation: "cos(t)",
-  spawnParticles: false,
-  spawnChance: 0.1,
-  particleLifetime: 0,
-  _particleLifetime: {
-    min: 0,
-    step: 1,
-    name: "particleLifetime (frames, 0 = \u221E)"
-  },
-  deleteParticles: false,
-  deleteChance: 0.5
-};
 let particles = [];
 let attractors = [];
 let canvas;
@@ -348,7 +357,7 @@ let uiCanvas = new p5(function(p) {
       if (showAllGUIs || settings.attractorSettings.__show) {
         for (let a = 0; a < attractors.length; a++) {
           p.noFill();
-          if (attractors[a].active) {
+          if (attractors[a].__active) {
             p.stroke(0, 255, 255);
             p.strokeWeight(size * 0.2);
           }
@@ -568,7 +577,7 @@ function draw() {
       }
       if (
         attractor.deleteParticles &&
-        r <= 2 * settings.canvas.resolutionScale &&
+        r <= attractor.deleteRadius * settings.canvas.resolutionScale &&
         random() < attractor.deleteChance
       ) {
         particles.splice(i, 1);
@@ -1226,7 +1235,7 @@ function exportAttractors() {
   }
   for (let attractor of attractorsExport) {
     delete attractor.removeAttractor;
-    delete attractor.active;
+    delete attractor.__active;
     delete attractor.x;
     delete attractor.y;
     for (let i in attractor) {
@@ -1254,12 +1263,13 @@ function refreshAttractorsGUI() {
       ).length
     );
 
-    (attractor.removeAttractor = () => {
+    attractor.removeAttractor = () => {
       attractors.splice(attractors.indexOf(attractor), 1);
       refreshAttractorsGUI();
-    }),
-      attractorFolder.add(attractor, "removeAttractor");
+    };
+    attractor.folder = attractorFolder;
 
+    attractorFolder.add(attractor, "removeAttractor");
     attractorFolder.add(attractor, "attractChance", 0, 1, 0.0001);
     attractorFolder.add(
       attractor,
@@ -1268,29 +1278,34 @@ function refreshAttractorsGUI() {
       undefined,
       0.01
     );
-    attractorFolder.add(attractor, "initX");
-    attractorFolder.add(attractor, "initY");
+    attractorFolder.add(attractor, "initX").step(1);
+    attractorFolder.add(attractor, "initY").step(1);
     attractorFolder.add(attractor, "useEquations");
     attractorFolder.add(attractor, "xEquation");
     attractorFolder.add(attractor, "yEquation");
     attractorFolder.add(attractor, "spawnParticles");
     attractorFolder.add(attractor, "spawnChance", 0, 1, 0.001);
-    attractorFolder.add(attractor, "particleLifetime", 0, undefined, 1);
+    attractorFolder
+      .add(attractor, "particleLifetime", 0, undefined, 1)
+      .name("particleLifetime (frames, 0 = \u221E)");
     attractorFolder.add(attractor, "deleteParticles");
     attractorFolder.add(attractor, "deleteChance", 0, 1, 0.001);
+    attractorFolder.add(attractor, "deleteRadius", 0, undefined, 1);
 
     for (let i in attractorFolder.__controllers) {
       addControllerKeyListenToggle(attractorFolder.__controllers[i]);
     }
 
-    attractorFolder.open();
+    if (attractors.indexOf(attractor) === attractors.length - 1) {
+      attractorFolder.open();
+    }
 
     attractorFolder.domElement.onmouseenter = () => {
-      attractor.active = true;
+      attractor.__active = true;
     };
 
     attractorFolder.domElement.onmouseleave = () => {
-      attractor.active = false;
+      attractor.__active = false;
     };
   }
 }
