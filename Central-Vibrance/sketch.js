@@ -122,7 +122,7 @@ let settings = {
   },
   attractorSettings: {
     __show: false,
-    "Reset Attractors": resetAttractors,
+    resetAttractors,
     showAttractors: true,
     defaultAttractor: defaultAttractor,
     attractors: {}
@@ -1010,9 +1010,11 @@ function toggleCodeArea() {
   if (showCodeArea) {
     codeAreaElement.style.display = "block";
     if (innerWidth >= 1000) {
-      codeAreaElement.children[1].cols = 60;
+      codeAreaElement.children[2].cols = 60;
+      codeAreaElement.children[5].cols = 60;
     } else {
-      codeAreaElement.children[1].cols = 20;
+      codeAreaElement.children[2].cols = 30;
+      codeAreaElement.children[5].cols = 30;
     }
   } else {
     codeAreaElement.style.display = "none";
