@@ -1,6 +1,8 @@
 let capturer;
 let settings = {
+  Share: share,
   "Shift + Click to Add Particle | Ctrl + Click to Add Attractor": {},
+  "Press (g) to show all GUIs": {},
   captureFrames: {
     __doCapture: false,
     __startFrame: 1,
@@ -26,7 +28,6 @@ let settings = {
       }
     }
   },
-  Share: share,
   "Pause (Space)": toggleLoop,
   "Step (./Period)": draw,
   "_Step (./Period)": { hide: true },
@@ -38,11 +39,7 @@ let settings = {
   "Show Code Area (c)": toggleCodeArea,
   "Collapse All Folders": () => {
     for (let c in gui.controllers) {
-      if (
-        c !== "presetSave" &&
-        c !== "presetSelector" &&
-        gui.controllers[c].hasOwnProperty("__ul")
-      ) {
+      if (gui.controllers[c].hasOwnProperty("__ul")) {
         gui.controllers[c].close();
       }
     }
@@ -108,7 +105,7 @@ let settings = {
       maxY: 1,
       _all: { min: -100, max: 100, step: 0.01 }
     },
-    changeForceChance: 0.002,
+    changeForceChance: 0.001,
     _changeForceChance: { min: 0, max: 1, step: 0.0001 },
     changeMagnitudeChance: 1,
     _changeMagnitudeChance: { min: 0, max: 1, step: 0.0001 },
@@ -212,7 +209,9 @@ let settings = {
     changeSpeedBy: 0.97,
     _changeSpeedBy: { min: -4, max: 4, step: 0.01 },
     maxLineDist: 35,
-    _maxLineDist: { min: 1, max: 512, step: 1 }
+    _maxLineDist: { min: 1, max: 512, step: 1 },
+    lerpValue: 0.5,
+    _lerpValue: { min: 0, max: 1, step: 0.01 }
   },
   centerAttractionForce: {
     __show: false,
@@ -222,12 +221,16 @@ let settings = {
     radius: 128,
     _radius: { min: 0, max: 8192, step: 1 },
     outside: {
+      chance: 0.5,
+      _chance: { min: 0, max: 1, step: 0.0001 },
       min: -1,
       max: 1,
       _all: { min: -100, max: 100, step: 0.01 }
     },
     _outside: { openFolder: true },
     inside: {
+      chance: 1,
+      _chance: { min: 0, max: 1, step: 0.0001 },
       min: -2,
       max: 2,
       _all: { min: -100, max: 100, step: 0.01 }
@@ -261,7 +264,7 @@ const defaultAttractor = {
     name: "particleLifetime (frames, 0 = \u221E)"
   },
   deleteParticles: false,
-  deleteChance: 1
+  deleteChance: 0.5
 };
 let particles = [];
 let attractors = [];
@@ -288,8 +291,6 @@ let uiCanvas = new p5(function(p) {
       settings["canvas"]["width"],
       settings["canvas"]["height"]
     ).parent("canvas-container");
-    p.stroke(0);
-    p.strokeWeight(1);
   };
 
   p.draw = function() {
@@ -303,9 +304,27 @@ let uiCanvas = new p5(function(p) {
       settings.captureFrames.__doCapture
     ) {
       p.push();
-      p.textSize(size * 4);
-      p.text("frameCount = " + frameCount, size * 2, p.height - size * 8);
+      p.strokeWeight(1);
+      p.stroke(0);
+      p.textSize(size * 3);
+      p.text(
+        "frameRate = " + Math.round(frameRate()),
+        size * 2,
+        p.height - size * 10
+      );
+      p.text("frameCount = " + frameCount, size * 2, p.height - size * 6);
       p.text("t = " + t, size * 2, p.height - size * 2);
+      p.textAlign(RIGHT);
+      p.text(
+        "Number of Attractors = " + attractors.length,
+        p.width - size * 2,
+        p.height - size * 6
+      );
+      p.text(
+        "Number of Particles = " + particles.length,
+        p.width - size * 2,
+        p.height - size * 2
+      );
       p.pop();
     }
     if (showAllGUIs || settings.attractorSettings.showAttractors) {
@@ -350,43 +369,51 @@ let uiCanvas = new p5(function(p) {
       p.noStroke();
       p.fill(0, 255, 255, Math.pow(s.chance, 0.25) * 204);
       p.ellipse(
-        width / 2,
-        height / 2,
+        p.width / 2,
+        p.height / 2,
         2 * s.radius * settings.canvas.resolutionScale
       );
-      p.strokeWeight(size * 0.5);
+      p.fill(0);
+      p.textSize(size * 2);
+      p.textAlign(CENTER);
+      p.strokeWeight(1);
+      p.stroke(0);
+      p.text(
+        "outside : chance = " + s.outside.chance,
+        p.width / 2,
+        p.height - size * 13
+      );
+      p.text(
+        "inside : chance = " + s.inside.chance,
+        p.width / 2,
+        p.height - size * 8
+      );
+      p.text(
+        "extra (inside) : chance = " + s.extra.chance,
+        p.width / 2,
+        p.height - size * 3
+      );
+      p.strokeWeight(size);
       p.stroke(255, 0, 0);
       p.line(
-        width / 2 -
-          s.radius * settings.canvas.resolutionScale -
-          s.outside.min * 10,
-        height / 2,
-        width / 2 -
-          s.radius * settings.canvas.resolutionScale -
-          s.outside.max * 10,
-        height / 2
+        p.width / 2 - s.outside.min * settings.canvas.resolutionScale * 10,
+        p.height - size * 12,
+        p.width / 2 - s.outside.max * settings.canvas.resolutionScale * 10,
+        p.height - size * 12
       );
       p.stroke(0, 255, 0);
       p.line(
-        width / 2 +
-          s.radius * settings.canvas.resolutionScale +
-          s.inside.min * settings.canvas.resolutionScale * 10,
-        height / 2 - size * 0.5,
-        width / 2 +
-          s.radius * settings.canvas.resolutionScale +
-          s.inside.max * settings.canvas.resolutionScale * 10,
-        height / 2 - size * 0.5
+        p.width / 2 + s.inside.min * settings.canvas.resolutionScale * 10,
+        p.height - size * 7,
+        p.width / 2 + s.inside.max * settings.canvas.resolutionScale * 10,
+        p.height - size * 7
       );
-      p.stroke(255, 128, 0, Math.pow(s.extra.chance, 0.25) * 204);
+      p.stroke(255, 128, 0);
       p.line(
-        width / 2 +
-          s.radius * settings.canvas.resolutionScale +
-          s.extra.min * settings.canvas.resolutionScale * 10,
-        height / 2 + size * 0.5,
-        width / 2 +
-          s.radius * settings.canvas.resolutionScale +
-          s.extra.max * settings.canvas.resolutionScale * 10,
-        height / 2 + size * 0.5
+        p.width / 2 + s.extra.min * settings.canvas.resolutionScale * 10,
+        p.height - size * 2,
+        p.width / 2 + s.extra.max * settings.canvas.resolutionScale * 10,
+        p.height - size * 2
       );
       p.pop();
     }
@@ -402,8 +429,8 @@ let uiCanvas = new p5(function(p) {
         p.stroke(255, 0, 255, 51);
         p.strokeWeight(radiusDifference);
         p.ellipse(
-          width / 2,
-          height / 2,
+          p.width / 2,
+          p.height / 2,
           2 *
             (settings.originRadius.min * settings.canvas.resolutionScale +
               radiusDifference / 2)
@@ -541,7 +568,7 @@ function draw() {
         settings["centerAttractionForce"]["radius"] *
           settings.canvas.resolutionScale
       ) {
-        if (random() < 0.5) {
+        if (random() < settings.centerAttractionForce.outside.chance) {
           attractCenterForce.setMag(
             random(
               settings["centerAttractionForce"]["outside"]["min"] *
@@ -554,24 +581,26 @@ function draw() {
           attractCenterForce.setMag(0);
         }
       } else {
-        if (random() < settings["centerAttractionForce"]["extra"]["chance"]) {
-          attractCenterForce.setMag(
-            random(
-              settings["centerAttractionForce"]["extra"]["min"] *
-                settings.canvas.resolutionScale,
-              settings["centerAttractionForce"]["extra"]["max"] *
-                settings.canvas.resolutionScale
-            )
-          );
-        } else {
-          attractCenterForce.setMag(
-            random(
-              settings["centerAttractionForce"]["inside"]["min"] *
-                settings.canvas.resolutionScale,
-              settings["centerAttractionForce"]["inside"]["max"] *
-                settings.canvas.resolutionScale
-            )
-          );
+        if (random() < settings.centerAttractionForce.inside.chance) {
+          if (random() < settings["centerAttractionForce"]["extra"]["chance"]) {
+            attractCenterForce.setMag(
+              random(
+                settings["centerAttractionForce"]["extra"]["min"] *
+                  settings.canvas.resolutionScale,
+                settings["centerAttractionForce"]["extra"]["max"] *
+                  settings.canvas.resolutionScale
+              )
+            );
+          } else {
+            attractCenterForce.setMag(
+              random(
+                settings["centerAttractionForce"]["inside"]["min"] *
+                  settings.canvas.resolutionScale,
+                settings["centerAttractionForce"]["inside"]["max"] *
+                  settings.canvas.resolutionScale
+              )
+            );
+          }
         }
       }
       particles[i].applyForce(attractCenterForce);
@@ -625,7 +654,9 @@ function draw() {
       );
       for (let point of points) {
         if (particles[i] != point) {
-          stroke(lerpColor(particles[i].color, point.color, 0.5));
+          stroke(
+            lerpColor(particles[i].color, point.color, settings.lines.lerpValue)
+          );
           strokeWeight(
             settings.lines.strokeWeight * settings.canvas.resolutionScale
           );
@@ -675,7 +706,7 @@ function draw() {
       }
       if (
         attractor.deleteParticles &&
-        r <= 1 &&
+        r <= 2 * settings.canvas.resolutionScale &&
         random() < attractor.deleteChance
       ) {
         particles.splice(i, 1);
@@ -970,28 +1001,75 @@ function getEncodedSettingsString() {
   if (
     defaultPresets.hasOwnProperty(gui.controllers.presetSelector.getValue())
   ) {
-    for (let i in gui.controllers) {
+    let preset = defaultPresets[gui.controllers.presetSelector.getValue()];
+
+    if (preset._other !== undefined) {
       if (
-        !["presetSave", "presetSelector", "settings.seed"].includes(i) &&
-        gui.controllers[i].hasOwnProperty("__li")
+        (preset._other.userDrawCode !== undefined &&
+          userDrawCode !== preset._other.userDrawCode) ||
+        (preset._other.userSetupCode !== undefined &&
+          userSetupCode !== preset._other.userSetupCode)
       ) {
-        if (
-          defaultPresets[
-            gui.controllers.presetSelector.getValue()
-          ].hasOwnProperty(i)
-        ) {
-          if (
-            gui.controllers[i].getValue() !==
-            defaultPresets[gui.controllers.presetSelector.getValue()][i]
-          ) {
-            sameAsPreset = false;
-            break;
+        sameAsPreset = false;
+      } else {
+        if (attractors.length === preset._other.attractors.length) {
+          for (let i of preset._other.attractors) {
+            for (let k in preset._other.attractors[i]) {
+              if (attractors[i][k] !== preset._other.attractors[i][k]) {
+                sameAsPreset = false;
+                break;
+              }
+            }
           }
-        } else if (
-          gui.controllers[i].getValue() !== gui.controllers[i]["initialValue"]
-        ) {
+        } else {
           sameAsPreset = false;
-          break;
+        }
+      }
+    }
+
+    if (sameAsPreset) {
+      for (let i in gui.controllers) {
+        if (
+          ![
+            "presetSave",
+            "presetSelector",
+            "settings.seed",
+            "settings.canvas.trueResolution"
+          ].includes(i) &&
+          gui.controllers[i].hasOwnProperty("__li")
+        ) {
+          let c = gui.controllers[i];
+          if (typeof c.getValue() === "number") {
+            if (
+              defaultPresets[
+                gui.controllers.presetSelector.getValue()
+              ].hasOwnProperty(i)
+            ) {
+              if (c.getValue().toFixed(6) !== preset[i].toFixed(6)) {
+                sameAsPreset = false;
+                break;
+              }
+            } else if (
+              c.getValue().toFixed(6) !== c["initialValue"].toFixed(6)
+            ) {
+              sameAsPreset = false;
+              break;
+            }
+          } else {
+            if (
+              defaultPresets[
+                gui.controllers.presetSelector.getValue()
+              ].hasOwnProperty(i)
+            ) {
+              if (c.getValue() !== preset[i]) {
+                sameAsPreset = false;
+                break;
+              }
+            } else if (c.getValue() !== c["initialValue"]) {
+              sameAsPreset = false;
+              break;
+            }
+          }
         }
       }
     }
@@ -1024,7 +1102,12 @@ function getEncodedSettingsString() {
     for (let i in gui.controllers) {
       let controller = gui.controllers[i];
       if (
-        !["presetSelector", "presetSave", "settings.seed"].includes(i) &&
+        ![
+          "presetSelector",
+          "presetSave",
+          "settings.seed",
+          "settings.canvas.trueResolution"
+        ].includes(i) &&
         controller.hasOwnProperty("__li") &&
         controller.getValue() !== controller["initialValue"]
       ) {
@@ -1044,11 +1127,7 @@ function getEncodedSettingsString() {
 
 function share() {
   let textArea = document.createElement("textarea");
-  let URL =
-    window.location.origin +
-    window.location.pathname +
-    "#!" +
-    getEncodedSettingsString();
+  let URL = window.location.origin + window.location.pathname + "#!" + getEncodedSettingsString();
   textArea.value = URL;
   document.body.appendChild(textArea);
   textArea.focus();
@@ -1059,7 +1138,7 @@ function share() {
 }
 
 function updateSettingsFromURL() {
-  if (window.location.hash !== "") {
+  if (window.location.hash.length > 2) {
     let URLSettings = JSON.parse(atob(window.location.hash.substr(2)));
     if (URLSettings.hasOwnProperty("presetSelector")) {
       gui.controllers.presetSelector.setValue(URLSettings.presetSelector);
@@ -1370,6 +1449,12 @@ window.onload = () => {
     }
     loop();
     resetSketch();
+    let fragment = getEncodedSettingsString();
+    if (fragment.length > 2 && JSON.parse(atob(fragment)).hasOwnProperty("presetSelector")) {
+      window.location.replace("#!" + fragment)
+    } else {
+      window.location.replace("#!")
+    }
   };
 
   if (windowWidth < 700) {
