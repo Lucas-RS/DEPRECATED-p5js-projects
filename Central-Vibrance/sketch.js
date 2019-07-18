@@ -2,7 +2,6 @@ let capturer;
 let settings = {
   Share: share,
   "Shift + Click to Add Particle | Ctrl + Click to Add Attractor": {},
-  "Press (g) to show all GUIs": {},
   captureFrames: {
     __doCapture: false,
     __startFrame: 1,
@@ -37,6 +36,9 @@ let settings = {
     saveCanvas(canvas, "central-vibrance", "png");
   },
   "Show Code Area (c)": toggleCodeArea,
+  "Show uiCanvas (g)": () => {
+    showAllGUIs = !showAllGUIs;
+  },
   "Collapse All Folders": () => {
     for (let c in gui.controllers) {
       if (gui.controllers[c].hasOwnProperty("__ul")) {
@@ -59,6 +61,9 @@ let settings = {
   },
   particleDeathSpeed: 0.5,
   _particleDeathSpeed: { min: 0.1, max: 255, step: 0.1 },
+  "end (e)": () => {
+    end = true;
+  },
   mouseAttractsParticles: false,
   mouseAttractionRange: 100,
   _mouseAttractionRange: {
@@ -76,7 +81,9 @@ let settings = {
     width: 1024,
     _width: { min: 1, max: 8192, step: 1 },
     height: 1024,
-    _height: { min: 1, max: 8192, step: 1 }
+    _height: { min: 1, max: 8192, step: 1 },
+    translateCenterX: 0,
+    translateCenterY: 0
   },
   originRadius: {
     __show: false,
@@ -282,6 +289,7 @@ let useCustomCode = false;
 let t = 0;
 const e = Math.E;
 let doLoop = true;
+let end = false;
 
 let uiCanvas = new p5(function(p) {
   let size;
@@ -294,6 +302,10 @@ let uiCanvas = new p5(function(p) {
   };
 
   p.draw = function() {
+    p.translate(
+      settings.canvas.translateCenterX,
+      -settings.canvas.translateCenterY
+    );
     size = Math.ceil(
       Math.pow(Math.pow(p.width, 2) + Math.pow(p.height, 2), 0.5) * 0.005
     );
@@ -304,6 +316,10 @@ let uiCanvas = new p5(function(p) {
       settings.captureFrames.__doCapture
     ) {
       p.push();
+      p.translate(
+        -settings.canvas.translateCenterX,
+        settings.canvas.translateCenterY
+      );
       p.strokeWeight(1);
       p.stroke(0);
       p.textSize(size * 3);
@@ -372,6 +388,10 @@ let uiCanvas = new p5(function(p) {
         p.width / 2,
         p.height / 2,
         2 * s.radius * settings.canvas.resolutionScale
+      );
+      p.translate(
+        -settings.canvas.translateCenterX,
+        settings.canvas.translateCenterY
       );
       p.fill(0);
       p.textSize(size * 2);
@@ -453,6 +473,11 @@ function setup() {
 }
 
 function draw() {
+  translate(
+    settings.canvas.translateCenterX,
+    -settings.canvas.translateCenterY
+  );
+
   if (useCustomCode) {
     try {
       eval(userDrawCode);
@@ -501,7 +526,7 @@ function draw() {
             settings.canvas.resolutionScale +
           width / 2;
         attractor.y =
-          (eval(attractor.yEquation) + attractor.initY) *
+          (-eval(attractor.yEquation) - attractor.initY) *
             settings.canvas.resolutionScale +
           height / 2;
       } catch (e) {
@@ -511,7 +536,7 @@ function draw() {
       attractor.x =
         attractor.initX * settings.canvas.resolutionScale + width / 2;
       attractor.y =
-        attractor.initY * settings.canvas.resolutionScale + height / 2;
+        -attractor.initY * settings.canvas.resolutionScale + height / 2;
     }
     if (attractor.spawnParticles && random() < attractor.spawnChance) {
       for (let j = 0; j < 1; j++) {
@@ -522,6 +547,31 @@ function draw() {
             attractor.particleLifetime
           )
         );
+      }
+    }
+
+    for (let i = 0; i < particles.length; i++) {
+      let r = dist(
+        particles[i].pos.x,
+        particles[i].pos.y,
+        attractor.x,
+        attractor.y
+      );
+      if (attractor.attractChance > 0 && random() < attractor.attractChance) {
+        let f = createVector(attractor.x, attractor.y);
+        f.sub(particles[i].pos);
+        f.setMag(
+          (attractor.forceMultiplier * settings.canvas.resolutionScale) /
+            (1 + r / settings.canvas.resolutionScale)
+        );
+        particles[i].applyForce(f);
+      }
+      if (
+        attractor.deleteParticles &&
+        r <= 2 * settings.canvas.resolutionScale &&
+        random() < attractor.deleteChance
+      ) {
+        particles.splice(i, 1);
       }
     }
   }
@@ -687,42 +737,14 @@ function draw() {
 
     particles[i].update();
 
-    for (let a = 0; a < attractors.length; a++) {
-      let attractor = attractors[a];
-      let r = dist(
-        particles[i].pos.x,
-        particles[i].pos.y,
-        attractor.x,
-        attractor.y
-      );
-      if (attractor.attractChance > 0 && random() < attractor.attractChance) {
-        let f = createVector(attractor.x, attractor.y);
-        f.sub(particles[i].pos);
-        f.setMag(
-          (attractor.forceMultiplier * settings.canvas.resolutionScale) /
-            (1 + r / settings.canvas.resolutionScale)
-        );
-        particles[i].applyForce(f);
-      }
-      if (
-        attractor.deleteParticles &&
-        r <= 2 * settings.canvas.resolutionScale &&
-        random() < attractor.deleteChance
-      ) {
-        particles.splice(i, 1);
-      }
-    }
-
-    if (particles[i].lifetime !== 0) {
+    if (particles[i].lifetime !== 0 || end) {
+      particles[i].age += 1;
       let alpha = particles[i].color._getAlpha();
-      if (
-        frameCount - particles[i].birthFrame >= particles[i].lifetime &&
-        alpha <= 0
-      ) {
+      if ((particles[i].age >= particles[i].lifetime && !end) || alpha <= 0) {
         particles.splice(i, 1);
       } else if (
-        frameCount - particles[i].birthFrame >=
-        particles[i].lifetime - Math.floor(alpha / settings.particleDeathSpeed)
+        particles[i].age >=
+        particles[i].lifetime - alpha / settings.particleDeathSpeed
       ) {
         particles[i].color.setAlpha(alpha - settings.particleDeathSpeed);
       }
@@ -862,7 +884,7 @@ function createParticle(origin, color, lifetime) {
   if (settings.colors.image.updateAtStart) {
     updateParticleColorFromImage(particle);
   }
-  particle.birthFrame = frameCount;
+  particle.age = 0;
   particle.lifetime = lifetime;
   return particle;
 }
@@ -876,15 +898,9 @@ function resetSketch() {
     settings.seed = newSeed;
   }
 
+  end = false;
   frameCount = 0;
   particles = [];
-
-  for (let i = 0; i < attractors.length; i++) {
-    let attractor = attractors[i];
-    attractor.x = attractor.initX * settings.canvas.resolutionScale + width / 2;
-    attractor.y =
-      attractor.initY * settings.canvas.resolutionScale + height / 2;
-  }
 
   userSetupCode = document.getElementById("setup-code-area").value;
   userDrawCode = document.getElementById("draw-code-area").value;
@@ -1127,7 +1143,11 @@ function getEncodedSettingsString() {
 
 function share() {
   let textArea = document.createElement("textarea");
-  let URL = window.location.origin + window.location.pathname + "#!" + getEncodedSettingsString();
+  let URL =
+    window.location.origin +
+    window.location.pathname +
+    "#!" +
+    getEncodedSettingsString();
   textArea.value = URL;
   document.body.appendChild(textArea);
   textArea.focus();
@@ -1188,11 +1208,7 @@ function updateSettingsFromURL() {
 function addAttractor(x, y) {
   let newAttractor = Object.assign({}, defaultAttractor);
   newAttractor.initX = x / settings.canvas.resolutionScale;
-  newAttractor.initY = y / settings.canvas.resolutionScale;
-  newAttractor.x =
-    newAttractor.initX * settings.canvas.resolutionScale + width / 2;
-  newAttractor.y =
-    newAttractor.initY * settings.canvas.resolutionScale + height / 2;
+  newAttractor.initY = -y / settings.canvas.resolutionScale;
 
   attractors.push(newAttractor);
   refreshAttractorsGUI();
@@ -1301,18 +1317,6 @@ function addControllerKeyListenToggle(controller) {
 }
 
 window.onload = () => {
-  document.onkeydown = function(e) {
-    if (e.key === "g") {
-      showAllGUIs = true;
-    }
-  };
-
-  document.onkeyup = function(e) {
-    if (e.key === "g") {
-      showAllGUIs = false;
-    }
-  };
-
   document.onkeypress = function(e) {
     e = e || window.event;
     if (listenForKeys) {
@@ -1321,9 +1325,11 @@ window.onload = () => {
       } else if (e.key === "s") {
         saveCanvas(canvas, "central-vibrance", "png");
       } else if (e.key === "e") {
-        endSim = true;
+        end = true;
       } else if (e.key === "c") {
         toggleCodeArea();
+      } else if (e.key === "g") {
+        showAllGUIs = !showAllGUIs;
       } else if (e.key === "h") {
         gui.isHidden = !gui.isHidden;
         document.getElementById("canvas-container").style.width =
@@ -1354,13 +1360,16 @@ window.onload = () => {
     if (listenForMouse) {
       if (e.ctrlKey && e.button === 0) {
         addAttractor(
-          parseInt(mouseX - width / 2),
-          parseInt(mouseY - height / 2)
+          parseInt(mouseX - width / 2 - settings.canvas.translateCenterX),
+          parseInt(mouseY - height / 2 + settings.canvas.translateCenterY)
         );
       } else if (e.shiftKey && e.button === 0) {
         particles.push(
           createParticle(
-            createVector(mouseX, mouseY),
+            createVector(
+              mouseX - settings.canvas.translateCenterX,
+              mouseY + settings.canvas.translateCenterY
+            ),
             generateColor(),
             settings.particleLifetime
           )
@@ -1450,10 +1459,13 @@ window.onload = () => {
     loop();
     resetSketch();
     let fragment = getEncodedSettingsString();
-    if (fragment.length > 2 && JSON.parse(atob(fragment)).hasOwnProperty("presetSelector")) {
-      window.location.replace("#!" + fragment)
+    if (
+      fragment.length > 2 &&
+      JSON.parse(atob(fragment)).hasOwnProperty("presetSelector")
+    ) {
+      window.location.replace("#!" + fragment);
     } else {
-      window.location.replace("#!")
+      window.location.replace("#!");
     }
   };
 
@@ -1532,6 +1544,14 @@ window.onload = () => {
   gui.controllers["settings.originRadius"].domElement.onmouseleave = () => {
     settings.originRadius.__show = false;
   };
+
+  gui.controllers["settings.particleDeathSpeed"].onFinishChange(value => {
+    gui.controllers["settings.particleLifetime"].min(255 / value);
+    currentLifetime = gui.controllers["settings.particleLifetime"].getValue();
+    if (currentLifetime > 0 && currentLifetime < 255 / value) {
+      gui.controllers["settings.particleLifetime"].setValue(255 / value);
+    }
+  });
 
   gui.controllers["settings.originRadius.min"].onChange(value => {
     if (value >= gui.controllers["settings.originRadius.max"].getValue()) {
