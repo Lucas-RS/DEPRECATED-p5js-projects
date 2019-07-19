@@ -113,15 +113,6 @@ let settings = {
     translateCenterY: 0,
     rotateCanvas: "0"
   },
-  nodeSettings: {
-    __show: false,
-    resetNodes,
-    showNodes: true,
-    overallChance: 1,
-    _overallChance: { min: 0, max: 1, step: 0.001 },
-    nodes: {},
-    _nodes: { openFolder: true }
-  },
   velocitySettings: {
     lockAxis: {
       xAxis: false,
@@ -243,7 +234,17 @@ let settings = {
     _maxLineDist: { min: 1, max: 512, step: 1 },
     lerpValue: 0.5,
     _lerpValue: { min: 0, max: 1, step: 0.01 }
-  }
+  },
+  nodeSettings: {
+    __show: false,
+    resetNodes,
+    showNodes: false,
+    overallChance: 1,
+    _overallChance: { min: 0, max: 1, step: 0.001 },
+    nodes: {},
+    _nodes: { openFolder: true }
+  },
+  _nodeSettings: { openFolder: true }
 };
 let particles = [];
 let nodes = [];
@@ -324,7 +325,11 @@ let uiCanvas = new p5(function(p) {
       );
       p.pop();
     }
-    if (showAllGUIs || settings.nodeSettings.showNodes) {
+    if (
+      showAllGUIs ||
+      settings.nodeSettings.showNodes ||
+      settings.nodeSettings.__show
+    ) {
       p.push();
       for (let a = 0; a < nodes.length; a++) {
         if (settings.nodeSettings.__show) {
@@ -1562,7 +1567,7 @@ window.onload = () => {
   startCodeArea.onblur = () => {
     listenForKeys = true;
   };
-  
+
   addNode(0, 0);
   updateSettingsFromURL();
   resetSketch();
