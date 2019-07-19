@@ -80,8 +80,6 @@ let settings = {
   timeScale: 1,
   _timeScale: { step: 0.00001, name: "(timeScale) t = frameCount \u00D7" },
   __showTimeScale: false,
-  particleCount: 140,
-  _particleCount: { min: 0, max: 1000, step: 1 },
   particleLifetime: 0,
   _particleLifetime: {
     min: 0,
@@ -114,13 +112,6 @@ let settings = {
     translateCenterX: 0,
     translateCenterY: 0,
     rotateCanvas: "0"
-  },
-  originRadius: {
-    __show: false,
-    ignoreRadius: false,
-    min: 0,
-    max: 192,
-    _all: { min: 0, max: 8192, step: 1 }
   },
   nodeSettings: {
     __show: false,
@@ -252,38 +243,6 @@ let settings = {
     _maxLineDist: { min: 1, max: 512, step: 1 },
     lerpValue: 0.5,
     _lerpValue: { min: 0, max: 1, step: 0.01 }
-  },
-  centerAttractionForce: {
-    __show: false,
-    attractParticlesToCenter: true,
-    chance: 0.1,
-    _chance: { min: 0, max: 1, step: 0.0001 },
-    radius: 128,
-    _radius: { min: 0, max: 8192, step: 1 },
-    outside: {
-      chance: 0.5,
-      _chance: { min: 0, max: 1, step: 0.0001 },
-      min: -1,
-      max: 1,
-      _all: { min: -100, max: 100, step: 0.01 }
-    },
-    _outside: { openFolder: true },
-    inside: {
-      chance: 1,
-      _chance: { min: 0, max: 1, step: 0.0001 },
-      min: -2,
-      max: 2,
-      _all: { min: -100, max: 100, step: 0.01 }
-    },
-    _inside: { openFolder: true },
-    extra: {
-      chance: 0.005,
-      _chance: { min: 0, max: 1, step: 0.0001 },
-      min: -5,
-      max: 5,
-      _all: { min: -100, max: 100, step: 0.01 }
-    },
-    _extra: { openFolder: true, name: "extra (extra force in center)" }
   }
 };
 let particles = [];
@@ -653,53 +612,7 @@ function draw() {
       );
     }
 
-    if (
-      random() <= settings.centerAttractionForce.chance &&
-      settings.centerAttractionForce.attractParticlesToCenter
-    ) {
-      let attractCenterForce = createVector(0, 0);
-      attractCenterForce.sub(particles[i].pos);
-      if (
-        dist(particles[i].pos.x, particles[i].pos.y, 0, 0) >
-        settings.centerAttractionForce.radius * settings.canvas.resolutionScale
-      ) {
-        if (random() < settings.centerAttractionForce.outside.chance) {
-          attractCenterForce.setMag(
-            random(
-              settings.centerAttractionForce.outside.min *
-                settings.canvas.resolutionScale,
-              settings.centerAttractionForce.outside.max *
-                settings.canvas.resolutionScale
-            )
-          );
-        } else {
-          attractCenterForce.setMag(0);
-        }
-      } else {
-        if (random() < settings.centerAttractionForce.inside.chance) {
-          if (random() < settings.centerAttractionForce.extra.chance) {
-            attractCenterForce.setMag(
-              random(
-                settings.centerAttractionForce.extra.min *
-                  settings.canvas.resolutionScale,
-                settings.centerAttractionForce.extra.max *
-                  settings.canvas.resolutionScale
-              )
-            );
-          } else {
-            attractCenterForce.setMag(
-              random(
-                settings.centerAttractionForce.inside.min *
-                  settings.canvas.resolutionScale,
-                settings.centerAttractionForce.inside.max *
-                  settings.canvas.resolutionScale
-              )
-            );
-          }
-        }
-      }
-      particles[i].applyForce(attractCenterForce);
-    } else if (random() < settings.velocitySettings.changeForceChance) {
+    if (random() < settings.velocitySettings.changeForceChance) {
       if (random() < settings.velocitySettings.changeDirectionChance) {
         particles[i].vel.rotate(
           random(
@@ -977,50 +890,13 @@ function resetSketch() {
 
   qtree = new QuadTree(new Rectangle(0, 0, width / 2, height / 2), 1);
 
-  for (let i = 0; i < settings.particleCount; i++) {
-    while (true) {
-      let origin = createVector(
-        random(
-          -settings.originRadius.max * settings.canvas.resolutionScale,
-          settings.originRadius.max * settings.canvas.resolutionScale
-        ),
-        random(
-          -settings.originRadius.max * settings.canvas.resolutionScale,
-          settings.originRadius.max * settings.canvas.resolutionScale
-        )
-      );
-      if (
-        settings.originRadius.ignoreRadius ||
-        (dist(origin.x, origin.y, 0, 0) <
-          settings.originRadius.max * settings.canvas.resolutionScale &&
-          dist(origin.x, origin.y, 0, 0)) >
-          settings.originRadius.min * settings.canvas.resolutionScale
-      ) {
-        particles[i] = createParticle(
-          origin,
-          generateColor(),
-          settings.particleLifetime
-        );
-        break;
-      }
-    }
-  }
-
   if (pageIsLoaded) {
     if (width > height) {
-      gui.controllers["settings.originRadius.min"].__max =
-        settings.canvas.width * settings.canvas.resolutionScale;
-      gui.controllers["settings.originRadius.max"].__max =
-        settings.canvas.width * settings.canvas.resolutionScale;
       gui.controllers["settings.velocitySettings.maxVelocity"].__max =
         settings.canvas.width * 0.04 * settings.canvas.resolutionScale;
       gui.controllers["settings.lines.maxLineDist"].__max =
         settings.canvas.width * 0.25 * settings.canvas.resolutionScale;
     } else {
-      gui.controllers["settings.originRadius.min"].__max =
-        settings.canvas.height * settings.canvas.resolutionScale;
-      gui.controllers["settings.originRadius.max"].__max =
-        settings.canvas.height * settings.canvas.resolutionScale;
       gui.controllers["settings.velocitySettings.maxVelocity"].__max =
         settings.canvas.height * 0.04 * settings.canvas.resolutionScale;
       gui.controllers["settings.lines.maxLineDist"].__max =
@@ -1613,47 +1489,11 @@ window.onload = () => {
     settings.nodeSettings.__show = false;
   };
 
-  gui.controllers[
-    "settings.centerAttractionForce"
-  ].domElement.onmouseenter = () => {
-    settings.centerAttractionForce.__show = true;
-  };
-
-  gui.controllers[
-    "settings.centerAttractionForce"
-  ].domElement.onmouseleave = () => {
-    settings.centerAttractionForce.__show = false;
-  };
-
-  gui.controllers["settings.originRadius"].domElement.onmouseenter = () => {
-    settings.originRadius.__show = true;
-  };
-
-  gui.controllers["settings.originRadius"].domElement.onmouseleave = () => {
-    settings.originRadius.__show = false;
-  };
-
   gui.controllers["settings.particleDeathSpeed"].onFinishChange(value => {
     gui.controllers["settings.particleLifetime"].min(255 / value);
     currentLifetime = gui.controllers["settings.particleLifetime"].getValue();
     if (currentLifetime > 0 && currentLifetime < 255 / value) {
       gui.controllers["settings.particleLifetime"].setValue(255 / value);
-    }
-  });
-
-  gui.controllers["settings.originRadius.min"].onChange(value => {
-    if (value >= gui.controllers["settings.originRadius.max"].getValue()) {
-      gui.controllers["settings.originRadius.min"].setValue(
-        gui.controllers["settings.originRadius.max"].getValue() - 1
-      );
-    }
-  });
-
-  gui.controllers["settings.originRadius.max"].onChange(value => {
-    if (value <= gui.controllers["settings.originRadius.min"].getValue()) {
-      gui.controllers["settings.originRadius.max"].setValue(
-        gui.controllers["settings.originRadius.min"].getValue() + 1
-      );
     }
   });
 
@@ -1722,9 +1562,9 @@ window.onload = () => {
   startCodeArea.onblur = () => {
     listenForKeys = true;
   };
-
+  
+  addNode(0, 0);
   updateSettingsFromURL();
-
   resetSketch();
 };
 
