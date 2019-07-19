@@ -1,21 +1,30 @@
 let capturer;
-let defaultAttractor = {
+let defaultNode = {
   __active: false,
   gravityChance: 1,
-  forceMultiplier: 0.5,
-  constantForceChance: 0,
-  constantForceRadius: 100,
-  insideMin: -1,
-  insideMax: 1,
+  forceMultiplier: -0.5,
+  constantForceChance: 0.1,
+  constantForceRadius: 128,
+  insideChance: 1,
+  insideMin: -2,
+  insideMax: 2,
+  outsideChance: 0.5,
   outsideMin: -1,
   outsideMax: 1,
+  extraChance: 0.005,
+  extraMin: -5,
+  extraMax: 5,
   initX: 0,
   initY: 0,
   useEquations: false,
   xEquation: "sin(t)",
   yEquation: "cos(t)",
-  spawnParticles: false,
-  spawnChance: 0.1,
+  spawnParticles: true,
+  spawnOnlyAtStart: true,
+  spawnChance: 1,
+  spawnCount: 140,
+  spawnRadiusMin: 0,
+  spawnRadiusMax: 192,
   particleLifetime: 0,
   deleteParticles: false,
   deleteChance: 0.5,
@@ -23,7 +32,7 @@ let defaultAttractor = {
 };
 let settings = {
   Share: share,
-  "Shift + Click to Add Particle | Ctrl + Click to Add Attractor": {},
+  "Shift + Click to Add Particle | Ctrl + Click to Add Node": {},
   captureFrames: {
     __doCapture: false,
     __startFrame: 1,
@@ -50,10 +59,8 @@ let settings = {
     }
   },
   "Pause (Space)": toggleLoop,
-  "Step (./Period)": draw,
-  "_Step (./Period)": { hide: true },
   "Reset Canvas (r)": resetSketch,
-  resetAttractors,
+  resetNodes,
   "Save As PNG (s)": () => {
     saveCanvas(canvas, "central-vibrance", "png");
   },
@@ -115,11 +122,14 @@ let settings = {
     max: 192,
     _all: { min: 0, max: 8192, step: 1 }
   },
-  attractorSettings: {
+  nodeSettings: {
     __show: false,
-    resetAttractors,
-    showAttractors: true,
-    attractors: {}
+    resetNodes,
+    showNodes: true,
+    overallChance: 1,
+    _overallChance: { min: 0, max: 1, step: 0.001 },
+    nodes: {},
+    _nodes: { openFolder: true }
   },
   velocitySettings: {
     lockAxis: {
@@ -277,7 +287,7 @@ let settings = {
   }
 };
 let particles = [];
-let attractors = [];
+let nodes = [];
 let canvas;
 let qtree;
 let gui;
@@ -299,10 +309,9 @@ let uiCanvas = new p5(function(p) {
 
   p.setup = function() {
     p.angleMode(DEGREES);
-    p.createCanvas(
-      settings["canvas"]["width"],
-      settings["canvas"]["height"]
-    ).parent("canvas-container");
+    p.createCanvas(settings.canvas.width, settings.canvas.height).parent(
+      "canvas-container"
+    );
   };
 
   p.draw = function() {
@@ -345,7 +354,7 @@ let uiCanvas = new p5(function(p) {
       );
       p.textAlign(RIGHT);
       p.text(
-        "Number of Attractors = " + attractors.length,
+        "Number of Nodes = " + nodes.length,
         p.width / 2 - size * 2,
         p.height / 2 - size * 6
       );
@@ -356,28 +365,23 @@ let uiCanvas = new p5(function(p) {
       );
       p.pop();
     }
-    if (showAllGUIs || settings.attractorSettings.showAttractors) {
+    if (showAllGUIs || settings.nodeSettings.showNodes) {
       p.push();
-      if (showAllGUIs || settings.attractorSettings.__show) {
-        for (let a = 0; a < attractors.length; a++) {
+      for (let a = 0; a < nodes.length; a++) {
+        if (settings.nodeSettings.__show) {
           p.noFill();
-          if (attractors[a].__active) {
+          if (nodes[a].__active) {
             p.stroke(0, 255, 255);
-            p.strokeWeight(size * 0.2);
           } else {
             p.stroke(0);
           }
           p.strokeWeight(size * 0.2);
           p.ellipse(
-            attractors[a].x,
-            attractors[a].y,
-            size * 5 * Math.abs(attractors[a].forceMultiplier)
+            nodes[a].x,
+            nodes[a].y,
+            size * 5 * Math.abs(nodes[a].forceMultiplier)
           );
-        }
-      }
-      for (let a = 0; a < attractors.length; a++) {
-        if (settings.attractorSettings.__show) {
-          if (attractors[a].forceMultiplier >= 0) {
+          if (nodes[a].forceMultiplier >= 0) {
             p.fill(0, 255, 0);
           } else {
             p.fill(255, 0, 0);
@@ -385,82 +389,75 @@ let uiCanvas = new p5(function(p) {
         } else {
           p.fill(0);
         }
-        p.ellipse(attractors[a].x, attractors[a].y, size);
-      }
-      p.pop();
-    }
-    if (
-      showAllGUIs ||
-      (settings.centerAttractionForce.__show &&
-        settings.centerAttractionForce.attractParticlesToCenter)
-    ) {
-      let s = settings.centerAttractionForce;
-      p.push();
-      p.noStroke();
-      p.fill(0, 255, 255, Math.pow(s.chance, 0.25) * 204);
-      p.ellipse(0, 0, 2 * s.radius * settings.canvas.resolutionScale);
-      p.fill(0);
-      p.textSize(size * 2);
-      p.textAlign(CENTER);
-      p.strokeWeight(1);
-      p.stroke(0);
-      p.text(
-        "outside : chance = " + s.outside.chance,
-        0,
-        p.height / 2 - size * 13
-      );
-      p.text(
-        "inside : chance = " + s.inside.chance,
-        0,
-        p.height / 2 - size * 8
-      );
-      p.text(
-        "extra (inside) : chance = " + s.extra.chance,
-        0,
-        p.height / 2 - size * 3
-      );
-      p.strokeWeight(size);
-      p.stroke(255, 0, 0);
-      p.line(
-        -s.outside.min * settings.canvas.resolutionScale * 10,
-        p.height / 2 - size * 12,
-        -s.outside.max * settings.canvas.resolutionScale * 10,
-        p.height / 2 - size * 12
-      );
-      p.stroke(0, 255, 0);
-      p.line(
-        s.inside.min * settings.canvas.resolutionScale * 10,
-        p.height / 2 - size * 7,
-        s.inside.max * settings.canvas.resolutionScale * 10,
-        p.height / 2 - size * 7
-      );
-      p.stroke(255, 128, 0);
-      p.line(
-        s.extra.min * settings.canvas.resolutionScale * 10,
-        p.height / 2 - size * 2,
-        s.extra.max * settings.canvas.resolutionScale * 10,
-        p.height / 2 - size * 2
-      );
-      p.pop();
-    }
-    if (showAllGUIs || settings.originRadius.__show) {
-      p.push();
-      if (settings.originRadius.ignoreRadius) {
-        p.background(255, 0, 255, 51);
-      } else {
-        let radiusDifference =
-          settings.originRadius.max * settings.canvas.resolutionScale -
-          settings.originRadius.min * settings.canvas.resolutionScale;
-        p.noFill();
-        p.stroke(255, 0, 255, 51);
-        p.strokeWeight(radiusDifference);
-        p.ellipse(
-          0,
-          0,
-          2 *
-            (settings.originRadius.min * settings.canvas.resolutionScale +
-              radiusDifference / 2)
-        );
+        p.noStroke();
+        p.ellipse(nodes[a].x, nodes[a].y, size);
+        if (nodes[a].__active) {
+          if (nodes[a].constantForceChance > 0) {
+            p.fill(0, 255, 255, nodes[a].constantForceChance * 204);
+            p.ellipse(
+              nodes[a].x,
+              nodes[a].y,
+              2 * nodes[a].constantForceRadius * settings.canvas.resolutionScale
+            );
+            p.fill(0);
+            p.textSize(size * 2);
+            p.textAlign(CENTER);
+            p.strokeWeight(1);
+            p.stroke(0);
+            p.text(
+              "inside : chance = " + nodes[a].insideChance,
+              0,
+              p.height / 2 - size * 12.5
+            );
+            p.text(
+              "extra (inside) : chance = " + nodes[a].extraChance,
+              0,
+              p.height / 2 - size * 7.5
+            );
+            p.text(
+              "outside : chance = " + nodes[a].outsideChance,
+              0,
+              p.height / 2 - size * 2.5
+            );
+            p.strokeWeight(size);
+            p.stroke(0, 255, 0);
+            p.line(
+              nodes[a].insideMin * settings.canvas.resolutionScale * 10,
+              p.height / 2 - size * 11,
+              nodes[a].insideMax * settings.canvas.resolutionScale * 10,
+              p.height / 2 - size * 11
+            );
+            p.stroke(255, 128, 0);
+            p.line(
+              nodes[a].extraMin * settings.canvas.resolutionScale * 10,
+              p.height / 2 - size * 6,
+              nodes[a].extraMax * settings.canvas.resolutionScale * 10,
+              p.height / 2 - size * 6
+            );
+            p.stroke(255, 0, 0);
+            p.line(
+              nodes[a].outsideMin * settings.canvas.resolutionScale * 10,
+              p.height / 2 - size * 1,
+              nodes[a].outsideMax * settings.canvas.resolutionScale * 10,
+              p.height / 2 - size * 1
+            );
+          }
+          if (nodes[a].spawnParticles) {
+            let radiusDifference =
+              nodes[a].spawnRadiusMax * settings.canvas.resolutionScale -
+              nodes[a].spawnRadiusMin * settings.canvas.resolutionScale;
+            p.noFill();
+            p.stroke(255, 0, 255, 51);
+            p.strokeWeight(radiusDifference);
+            p.ellipse(
+              nodes[a].x,
+              nodes[a].y,
+              2 *
+                (nodes[a].spawnRadiusMin * settings.canvas.resolutionScale +
+                  radiusDifference / 2)
+            );
+          }
+        }
       }
       p.pop();
     }
@@ -469,12 +466,11 @@ let uiCanvas = new p5(function(p) {
 
 function setup() {
   angleMode(DEGREES);
-  settings["canvas"]["width"] = screen.width;
-  settings["canvas"]["height"] = screen.height;
-  canvas = createCanvas(
-    settings["canvas"]["width"],
-    settings["canvas"]["height"]
-  ).parent("canvas-container");
+  settings.canvas.width = screen.width;
+  settings.canvas.height = screen.height;
+  canvas = createCanvas(settings.canvas.width, settings.canvas.height).parent(
+    "canvas-container"
+  );
   resetSketch();
 }
 
@@ -521,145 +517,158 @@ function draw() {
     particle.checked = false;
   }
 
-  if (!settings["drawTrails"]) {
+  if (!settings.drawTrails) {
     colorMode(RGB, 255);
-    let bgColor = color(settings["colors"]["backgroundColor"]);
-    bgColor.setAlpha(settings["colors"]["backgroundAlpha"]);
+    let bgColor = color(settings.colors.backgroundColor);
+    bgColor.setAlpha(settings.colors.backgroundAlpha);
     background(bgColor);
   }
 
-  for (let i = 0; i < attractors.length; i++) {
-    let attractor = attractors[i];
-    if (attractor.useEquations) {
-      try {
-        attractor.x =
-          (eval(attractor.xEquation) + attractor.initX) *
-          settings.canvas.resolutionScale;
-        attractor.y =
-          (-eval(attractor.yEquation) + attractor.initY) *
-          settings.canvas.resolutionScale;
-      } catch (e) {
-        console.error(e.message);
-      }
-    } else {
-      attractor.x = attractor.initX * settings.canvas.resolutionScale;
-      attractor.y = attractor.initY * settings.canvas.resolutionScale;
-    }
-    if (attractor.spawnParticles && random() < attractor.spawnChance) {
-      for (let j = 0; j < 1; j++) {
-        particles.push(
-          createParticle(
-            createVector(attractor.x, attractor.y),
-            generateColor(),
-            attractor.particleLifetime
-          )
-        );
-      }
-    }
-
-    for (let i = 0; i < particles.length; i++) {
-      let r = dist(
-        particles[i].pos.x,
-        particles[i].pos.y,
-        attractor.x,
-        attractor.y
-      );
-
-      if (attractor.gravityChance > 0 && random() < attractor.gravityChance) {
-        let f = createVector(attractor.x, attractor.y);
-        f.sub(particles[i].pos);
-        f.setMag(
-          (attractor.forceMultiplier * settings.canvas.resolutionScale) /
-            (1 + r / settings.canvas.resolutionScale)
-        );
-        particles[i].applyForce(f);
-      }
-
-      if (
-        attractor.constantForceChance > 0 &&
-        random() < attractor.constantForceChance
-      ) {
-        let f = createVector(attractor.x, attractor.y);
-        f.sub(particles[i].pos);
-        if (
-          r <=
-          attractor.constantForceRadius * settings.canvas.resolutionScale
-        ) {
-          f.setMag(
-            random(
-              attractor.insideMin * settings.canvas.resolutionScale,
-              attractor.insideMax * settings.canvas.resolutionScale
-            )
-          );
-        } else {
-          f.setMag(
-            random(
-              attractor.outsideMin * settings.canvas.resolutionScale,
-              attractor.outsideMax * settings.canvas.resolutionScale
-            )
-          );
+  if (
+    nodes.length > 0 &&
+    (settings.nodeSettings.overallChance === 1 ||
+      random() < settings.nodeSettings.overallChance)
+  ) {
+    for (let i = 0; i < nodes.length; i++) {
+      let node = nodes[i];
+      if (node.useEquations) {
+        try {
+          let x = node.x;
+          let y = node.y;
+          node.x =
+            (eval(node.xEquation) + node.initX) *
+            settings.canvas.resolutionScale;
+          node.y =
+            (-eval(node.yEquation) + node.initY) *
+            settings.canvas.resolutionScale;
+        } catch (e) {
+          console.error(e.message);
         }
-        particles[i].applyForce(f);
+      } else {
+        node.x = node.initX * settings.canvas.resolutionScale;
+        node.y = node.initY * settings.canvas.resolutionScale;
+      }
+      if (
+        (node.spawnParticles && !node.spawnOnlyAtStart) ||
+        (node.spawnOnlyAtStart && frameCount === 1)
+      ) {
+        if (random() < node.spawnChance) {
+          for (let j = 0; j < 1; j++) {
+            for (let c = 0; c < node.spawnCount; c++) {
+              let r =
+                Math.pow(random(), 0.5) *
+                  (node.spawnRadiusMax - node.spawnRadiusMin) +
+                node.spawnRadiusMin;
+              let a = random(360);
+              let x = r * Math.sin(a) + node.x;
+              let y = r * Math.cos(a) + node.y;
+              particles.push(
+                createParticle(
+                  createVector(x, y),
+                  generateColor(),
+                  node.particleLifetime
+                )
+              );
+            }
+          }
+        }
       }
 
-      if (
-        attractor.deleteParticles &&
-        r <= attractor.deleteRadius * settings.canvas.resolutionScale &&
-        random() < attractor.deleteChance
-      ) {
-        particles.splice(i, 1);
+      for (let i = 0; i < particles.length; i++) {
+        let r = dist(particles[i].pos.x, particles[i].pos.y, node.x, node.y);
+
+        if (node.gravityChance > 0 && random() < node.gravityChance) {
+          let f = createVector(node.x, node.y);
+          f.sub(particles[i].pos);
+          f.setMag(
+            (node.forceMultiplier * settings.canvas.resolutionScale) /
+              (1 + r / settings.canvas.resolutionScale)
+          );
+          particles[i].applyForce(f);
+        }
+
+        if (
+          node.constantForceChance > 0 &&
+          random() < node.constantForceChance
+        ) {
+          let f = createVector(node.x, node.y);
+          f.sub(particles[i].pos);
+          if (r <= node.constantForceRadius * settings.canvas.resolutionScale) {
+            f.setMag(
+              random(
+                node.insideMin * settings.canvas.resolutionScale,
+                node.insideMax * settings.canvas.resolutionScale
+              )
+            );
+          } else {
+            f.setMag(
+              random(
+                node.outsideMin * settings.canvas.resolutionScale,
+                node.outsideMax * settings.canvas.resolutionScale
+              )
+            );
+          }
+          particles[i].applyForce(f);
+        }
+
+        if (
+          node.deleteParticles &&
+          r <= node.deleteRadius * settings.canvas.resolutionScale &&
+          random() < node.deleteChance
+        ) {
+          particles.splice(i, 1);
+        }
       }
     }
   }
 
   for (let i = 0; i < particles.length; i++) {
-    if (random() <= settings["colors"]["image"]["updateColorChance"]) {
+    if (random() <= settings.colors.image.updateColorChance) {
       updateParticleColorFromImage(particles[i]);
     }
 
-    if (settings["colors"]["showParticles"]) {
+    if (settings.colors.showParticles) {
       strokeWeight(
         settings.colors.particleSettings.strokeWeight *
           settings.canvas.resolutionScale
       );
       particles[i].show(
-        settings["colors"]["particleSettings"]["particleWidth"] *
+        settings.colors.particleSettings.particleWidth *
           settings.canvas.resolutionScale,
-        settings["colors"]["particleSettings"]["particleHeight"] *
+        settings.colors.particleSettings.particleHeight *
           settings.canvas.resolutionScale,
-        settings["colors"]["particleSettings"]["drawOutline"],
-        settings["colors"]["particleSettings"]["particleOutlineColor"],
-        settings["colors"]["particleSettings"]["particleOutlineAlpha"]
+        settings.colors.particleSettings.drawOutline,
+        settings.colors.particleSettings.particleOutlineColor,
+        settings.colors.particleSettings.particleOutlineAlpha
       );
     }
 
-    if (settings["bounceEdges"]) {
+    if (settings.bounceEdges) {
       particles[i].bounceCanvasEdge();
     }
 
-    if (settings["mouseAttractsParticles"]) {
+    if (settings.mouseAttractsParticles) {
       particles[i].mouseAttract(
-        settings["mouseAttractionRange"] * settings.canvas.resolutionScale
+        settings.mouseAttractionRange * settings.canvas.resolutionScale
       );
     }
 
     if (
-      random() <= settings["centerAttractionForce"]["chance"] &&
+      random() <= settings.centerAttractionForce.chance &&
       settings.centerAttractionForce.attractParticlesToCenter
     ) {
       let attractCenterForce = createVector(0, 0);
       attractCenterForce.sub(particles[i].pos);
       if (
         dist(particles[i].pos.x, particles[i].pos.y, 0, 0) >
-        settings["centerAttractionForce"]["radius"] *
-          settings.canvas.resolutionScale
+        settings.centerAttractionForce.radius * settings.canvas.resolutionScale
       ) {
         if (random() < settings.centerAttractionForce.outside.chance) {
           attractCenterForce.setMag(
             random(
-              settings["centerAttractionForce"]["outside"]["min"] *
+              settings.centerAttractionForce.outside.min *
                 settings.canvas.resolutionScale,
-              settings["centerAttractionForce"]["outside"]["max"] *
+              settings.centerAttractionForce.outside.max *
                 settings.canvas.resolutionScale
             )
           );
@@ -668,21 +677,21 @@ function draw() {
         }
       } else {
         if (random() < settings.centerAttractionForce.inside.chance) {
-          if (random() < settings["centerAttractionForce"]["extra"]["chance"]) {
+          if (random() < settings.centerAttractionForce.extra.chance) {
             attractCenterForce.setMag(
               random(
-                settings["centerAttractionForce"]["extra"]["min"] *
+                settings.centerAttractionForce.extra.min *
                   settings.canvas.resolutionScale,
-                settings["centerAttractionForce"]["extra"]["max"] *
+                settings.centerAttractionForce.extra.max *
                   settings.canvas.resolutionScale
               )
             );
           } else {
             attractCenterForce.setMag(
               random(
-                settings["centerAttractionForce"]["inside"]["min"] *
+                settings.centerAttractionForce.inside.min *
                   settings.canvas.resolutionScale,
-                settings["centerAttractionForce"]["inside"]["max"] *
+                settings.centerAttractionForce.inside.max *
                   settings.canvas.resolutionScale
               )
             );
@@ -690,22 +699,22 @@ function draw() {
         }
       }
       particles[i].applyForce(attractCenterForce);
-    } else if (random() < settings["velocitySettings"]["changeForceChance"]) {
-      if (random() < settings["velocitySettings"]["changeDirectionChance"]) {
+    } else if (random() < settings.velocitySettings.changeForceChance) {
+      if (random() < settings.velocitySettings.changeDirectionChance) {
         particles[i].vel.rotate(
           random(
-            settings["velocitySettings"]["rotationBoundaries"]["min"],
-            settings["velocitySettings"]["rotationBoundaries"]["max"]
+            settings.velocitySettings.rotationBoundaries.min,
+            settings.velocitySettings.rotationBoundaries.max
           )
         );
       }
-      if (random() < settings["velocitySettings"]["changeMagnitudeChance"]) {
+      if (random() < settings.velocitySettings.changeMagnitudeChance) {
         particles[i].vel.setMag(
           particles[i].vel.mag() *
             random(
-              settings["velocitySettings"]["magnitudeBoundaries"]["min"] *
+              settings.velocitySettings.magnitudeBoundaries.min *
                 settings.canvas.resolutionScale,
-              settings["velocitySettings"]["magnitudeBoundaries"]["max"] *
+              settings.velocitySettings.magnitudeBoundaries.max *
                 settings.canvas.resolutionScale
             )
         );
@@ -730,7 +739,7 @@ function draw() {
       }
     }
 
-    if (settings["lines"]["connectPoints"]) {
+    if (settings.lines.connectPoints) {
       let points = qtree.query(
         new Circle(
           particles[i].pos.x,
@@ -765,10 +774,9 @@ function draw() {
     }
 
     particles[i].capVel(
-      settings["velocitySettings"]["maxVelocity"] *
-        settings.canvas.resolutionScale,
-      settings["velocitySettings"]["lockAxis"]["xAxis"],
-      settings["velocitySettings"]["lockAxis"]["yAxis"]
+      settings.velocitySettings.maxVelocity * settings.canvas.resolutionScale,
+      settings.velocitySettings.lockAxis.xAxis,
+      settings.velocitySettings.lockAxis.yAxis
     );
 
     particles[i].update();
@@ -793,11 +801,9 @@ function toggleLoop() {
   if (doLoop) {
     loop();
     gui.controllers["settings.Pause (Space)"].name("Pause (Space)");
-    gui.controllers["settings.Step (./Period)"].__li.style.display = "none";
   } else {
     noLoop();
     gui.controllers["settings.Pause (Space)"].name("Play (Space)");
-    gui.controllers["settings.Step (./Period)"].__li.style.display = "";
   }
 }
 
@@ -811,8 +817,8 @@ function handleFile(file) {
   sampledImg = loadImage(file.data);
   //real good solution to the image load time here.
   setTimeout(function() {
-    settings["canvas"]["height"] = sampledImg.height;
-    settings["canvas"]["width"] = sampledImg.width;
+    settings.canvas.height = sampledImg.height;
+    settings.canvas.width = sampledImg.width;
     settings.canvas.resolutionScale = 1;
     resetSketch();
   }, 500);
@@ -821,7 +827,7 @@ function handleFile(file) {
 function updateParticleColorFromImage(particle) {
   if (
     sampledImg !== undefined &&
-    settings["colors"]["particleColorType"] === "image"
+    settings.colors.particleColorType === "image"
   ) {
     let c = sampledImg.get(particle.pos.x, particle.pos.y);
     c[3] = alpha(particle.color);
@@ -830,33 +836,33 @@ function updateParticleColorFromImage(particle) {
 }
 
 function generateColor() {
-  let colorType = settings["colors"]["particleColorType"];
+  let colorType = settings.colors.particleColorType;
   let c;
   if (colorType === "randomRGBA") {
     colorMode(RGB, 255);
     c = color(
       random(
-        settings["colors"]["randomRGBA"]["redMin"],
-        settings["colors"]["randomRGBA"]["redMax"]
+        settings.colors.randomRGBA.redMin,
+        settings.colors.randomRGBA.redMax
       ),
       random(
-        settings["colors"]["randomRGBA"]["greenMin"],
-        settings["colors"]["randomRGBA"]["greenMax"]
+        settings.colors.randomRGBA.greenMin,
+        settings.colors.randomRGBA.greenMax
       ),
       random(
-        settings["colors"]["randomRGBA"]["blueMin"],
-        settings["colors"]["randomRGBA"]["blueMax"]
+        settings.colors.randomRGBA.blueMin,
+        settings.colors.randomRGBA.blueMax
       ),
       random(
-        settings["colors"]["randomRGBA"]["alphaMin"],
-        settings["colors"]["randomRGBA"]["alphaMax"]
+        settings.colors.randomRGBA.alphaMin,
+        settings.colors.randomRGBA.alphaMax
       )
     );
   } else if (colorType === "randomHSLA") {
     colorMode(HSL, 255);
     let hue = random(
-      settings["colors"]["randomHSLA"]["hueMin"],
-      settings["colors"]["randomHSLA"]["hueMax"]
+      settings.colors.randomHSLA.hueMin,
+      settings.colors.randomHSLA.hueMax
     );
     if (settings.colors.randomHSLA.boostRed) {
       hue = Math.pow(hue, 2) / 255;
@@ -864,29 +870,29 @@ function generateColor() {
     c = color(
       hue,
       random(
-        settings["colors"]["randomHSLA"]["saturationMin"],
-        settings["colors"]["randomHSLA"]["saturationMax"]
+        settings.colors.randomHSLA.saturationMin,
+        settings.colors.randomHSLA.saturationMax
       ),
       random(
-        settings["colors"]["randomHSLA"]["lightnessMin"],
-        settings["colors"]["randomHSLA"]["lightnessMax"]
+        settings.colors.randomHSLA.lightnessMin,
+        settings.colors.randomHSLA.lightnessMax
       ),
       random(
-        settings["colors"]["randomHSLA"]["alphaMin"],
-        settings["colors"]["randomHSLA"]["alphaMax"]
+        settings.colors.randomHSLA.alphaMin,
+        settings.colors.randomHSLA.alphaMax
       )
     );
   } else if (colorType === "gradient") {
     colorMode(RGB, 255);
     c = lerpColor(
-      color(settings["colors"]["gradient"]["firstColor"]),
-      color(settings["colors"]["gradient"]["secondColor"]),
+      color(settings.colors.gradient.firstColor),
+      color(settings.colors.gradient.secondColor),
       random()
     );
     c.setAlpha(
       random(
-        settings["colors"]["gradient"]["alphaMin"],
-        settings["colors"]["gradient"]["alphaMax"]
+        settings.colors.gradient.alphaMin,
+        settings.colors.gradient.alphaMax
       )
     );
   } else {
@@ -904,15 +910,15 @@ function createParticle(origin, color, lifetime) {
   particle.applyForce(
     createVector(
       random(
-        settings["velocitySettings"]["startingVelocity"]["minX"] *
+        settings.velocitySettings.startingVelocity.minX *
           settings.canvas.resolutionScale,
-        settings["velocitySettings"]["startingVelocity"]["maxX"] *
+        settings.velocitySettings.startingVelocity.maxX *
           settings.canvas.resolutionScale
       ),
       random(
-        settings["velocitySettings"]["startingVelocity"]["minY"] *
+        settings.velocitySettings.startingVelocity.minY *
           settings.canvas.resolutionScale,
-        settings["velocitySettings"]["startingVelocity"]["maxY"] *
+        settings.velocitySettings.startingVelocity.maxY *
           settings.canvas.resolutionScale
       )
     )
@@ -935,19 +941,19 @@ function resetSketch() {
   }
 
   end = false;
-  frameCount = 0;
+  frameCount = -1;
   particles = [];
 
   userSetupCode = document.getElementById("setup-code-area").value;
   userDrawCode = document.getElementById("draw-code-area").value;
 
   resizeCanvas(
-    settings["canvas"]["width"] * settings.canvas.resolutionScale,
-    settings["canvas"]["height"] * settings.canvas.resolutionScale
+    settings.canvas.width * settings.canvas.resolutionScale,
+    settings.canvas.height * settings.canvas.resolutionScale
   );
   uiCanvas.resizeCanvas(
-    settings["canvas"]["width"] * settings.canvas.resolutionScale,
-    settings["canvas"]["height"] * settings.canvas.resolutionScale
+    settings.canvas.width * settings.canvas.resolutionScale,
+    settings.canvas.height * settings.canvas.resolutionScale
   );
 
   let canvasElems = document.getElementsByClassName("p5Canvas");
@@ -957,13 +963,13 @@ function resetSketch() {
   }
 
   colorMode(RGB, 255);
-  let bgColor = color(settings["colors"]["backgroundColor"]);
-  bgColor.setAlpha(settings["colors"]["backgroundAlpha"]);
+  let bgColor = color(settings.colors.backgroundColor);
+  bgColor.setAlpha(settings.colors.backgroundAlpha);
   background(bgColor);
 
   if (
     sampledImg === undefined &&
-    settings["colors"]["particleColorType"] === "image"
+    settings.colors.particleColorType === "image"
   ) {
     alert("Please select an image.");
     importImage();
@@ -971,24 +977,24 @@ function resetSketch() {
 
   qtree = new QuadTree(new Rectangle(0, 0, width / 2, height / 2), 1);
 
-  for (var i = 0; i < settings["particleCount"]; i++) {
+  for (let i = 0; i < settings.particleCount; i++) {
     while (true) {
       let origin = createVector(
         random(
-          -settings["originRadius"]["max"] * settings.canvas.resolutionScale,
-          settings["originRadius"]["max"] * settings.canvas.resolutionScale
+          -settings.originRadius.max * settings.canvas.resolutionScale,
+          settings.originRadius.max * settings.canvas.resolutionScale
         ),
         random(
-          -settings["originRadius"]["max"] * settings.canvas.resolutionScale,
-          settings["originRadius"]["max"] * settings.canvas.resolutionScale
+          -settings.originRadius.max * settings.canvas.resolutionScale,
+          settings.originRadius.max * settings.canvas.resolutionScale
         )
       );
       if (
         settings.originRadius.ignoreRadius ||
         (dist(origin.x, origin.y, 0, 0) <
-          settings["originRadius"]["max"] * settings.canvas.resolutionScale &&
+          settings.originRadius.max * settings.canvas.resolutionScale &&
           dist(origin.x, origin.y, 0, 0)) >
-          settings["originRadius"]["min"] * settings.canvas.resolutionScale
+          settings.originRadius.min * settings.canvas.resolutionScale
       ) {
         particles[i] = createParticle(
           origin,
@@ -1072,10 +1078,10 @@ function getEncodedSettingsString() {
       ) {
         sameAsPreset = false;
       } else {
-        if (attractors.length === preset._other.attractors.length) {
-          for (let i of preset._other.attractors) {
-            for (let k in preset._other.attractors[i]) {
-              if (attractors[i][k] !== preset._other.attractors[i][k]) {
+        if (nodes.length === preset._other.nodes.length) {
+          for (let i of preset._other.nodes) {
+            for (let k in preset._other.nodes[i]) {
+              if (nodes[i][k] !== preset._other.nodes[i][k]) {
                 sameAsPreset = false;
                 break;
               }
@@ -1109,9 +1115,7 @@ function getEncodedSettingsString() {
                 sameAsPreset = false;
                 break;
               }
-            } else if (
-              c.getValue().toFixed(6) !== c["initialValue"].toFixed(6)
-            ) {
+            } else if (c.getValue().toFixed(6) !== c.initialValue.toFixed(6)) {
               sameAsPreset = false;
               break;
             }
@@ -1125,7 +1129,7 @@ function getEncodedSettingsString() {
                 sameAsPreset = false;
                 break;
               }
-            } else if (c.getValue() !== c["initialValue"]) {
+            } else if (c.getValue() !== c.initialValue) {
               sameAsPreset = false;
               break;
             }
@@ -1150,8 +1154,8 @@ function getEncodedSettingsString() {
     if (userSetupCode !== "") {
       otherSettings.userSetupCode = userSetupCode;
     }
-    if (attractors.length > 0) {
-      otherSettings.attractors = exportAttractors();
+    if (nodes.length > 0) {
+      otherSettings.nodes = exportNodes();
     }
     if (Object.keys(otherSettings).length > 0) {
       changedSettings = {
@@ -1169,7 +1173,7 @@ function getEncodedSettingsString() {
           "settings.canvas.trueResolution"
         ].includes(i) &&
         controller.hasOwnProperty("__li") &&
-        controller.getValue() !== controller["initialValue"]
+        controller.getValue() !== controller.initialValue
       ) {
         changedSettings[i] = controller.getValue();
       } else if (i === "settings.seed" && settings.useCustomSeed) {
@@ -1234,150 +1238,149 @@ function updateSettingsFromURL() {
           showCodeArea = false;
           toggleCodeArea();
         }
-        if (URLSettings._other.attractors !== undefined) {
-          attractors = [];
-          for (let i = 0; i < URLSettings._other.attractors.length; i++) {
-            attractors[i] = Object.assign({}, defaultAttractor);
-            for (let k in URLSettings._other.attractors[i]) {
-              attractors[i][k] = URLSettings._other.attractors[i][k];
+        if (URLSettings._other.nodes !== undefined) {
+          nodes = [];
+          for (let i = 0; i < URLSettings._other.nodes.length; i++) {
+            nodes[i] = Object.assign({}, defaultNode);
+            for (let k in URLSettings._other.nodes[i]) {
+              nodes[i][k] = URLSettings._other.nodes[i][k];
             }
           }
-          refreshAttractorsGUI();
+          refreshNodesGUI();
         }
       }
     }
   }
 }
 
-function addAttractor(x, y) {
-  let newAttractor = Object.assign({}, defaultAttractor);
-  newAttractor.removeAttractor = () => {
-    attractors.splice(attractors.indexOf(newAttractor), 1);
-    refreshAttractorsGUI();
+function addNode(x, y) {
+  let newNode = Object.assign({}, defaultNode);
+  newNode.removeNode = () => {
+    nodes.splice(nodes.length, 1);
+    refreshNodesGUI();
   };
-  newAttractor.initX = x / settings.canvas.resolutionScale;
-  newAttractor.initY = y / settings.canvas.resolutionScale;
+  newNode.duplicateNode = () => {
+    nodes.splice(nodes.length, 0, Object.assign({}, newNode));
+    refreshNodesGUI();
+  };
+  newNode.initX = x / settings.canvas.resolutionScale;
+  newNode.initY = y / settings.canvas.resolutionScale;
 
-  attractors.push(newAttractor);
-  refreshAttractorsGUI();
+  nodes.push(newNode);
+  refreshNodesGUI();
 }
 
-function resetAttractors() {
-  attractors = [];
-  refreshAttractorsGUI();
+function resetNodes() {
+  nodes = [];
+  refreshNodesGUI();
 }
 
-function exportAttractors() {
-  let attractorsExport = [];
-  for (let i = 0; i < attractors.length; i++) {
-    attractorsExport[i] = Object.assign({}, attractors[i]);
+function exportNodes() {
+  let nodesExport = [];
+  for (let i = 0; i < nodes.length; i++) {
+    nodesExport[i] = Object.assign({}, nodes[i]);
   }
-  for (let attractor of attractorsExport) {
-    delete attractor.removeAttractor;
-    delete attractor.__active;
-    delete attractor.x;
-    delete attractor.y;
-    for (let i in attractor) {
-      if (attractor[i] === defaultAttractor[i]) {
-        delete attractor[i];
+  for (let node of nodesExport) {
+    delete node.removeNode;
+    delete node.__active;
+    delete node.x;
+    delete node.y;
+    for (let i in node) {
+      if (node[i] === defaultNode[i]) {
+        delete node[i];
       }
     }
   }
-  return attractorsExport;
+  return nodesExport;
 }
 
-function refreshAttractorsGUI() {
-  for (let folder in gui.controllers["settings.attractorSettings.attractors"]
-    .__folders) {
-    gui.controllers["settings.attractorSettings.attractors"].removeFolder(
-      gui.controllers["settings.attractorSettings.attractors"].__folders[folder]
+function refreshNodesGUI() {
+  for (let folder in gui.controllers["settings.nodeSettings.nodes"].__folders) {
+    gui.controllers["settings.nodeSettings.nodes"].removeFolder(
+      gui.controllers["settings.nodeSettings.nodes"].__folders[folder]
     );
   }
-  for (let attractor of attractors) {
-    let attractorFolder = gui.controllers[
-      "settings.attractorSettings.attractors"
-    ].addFolder(
-      Object.keys(
-        gui.controllers["settings.attractorSettings.attractors"].__folders
-      ).length
+  for (let node of nodes) {
+    let nodeFolder = gui.controllers["settings.nodeSettings.nodes"].addFolder(
+      Object.keys(gui.controllers["settings.nodeSettings.nodes"].__folders)
+        .length
     );
-    attractor.folder = attractorFolder;
+    node.folder = nodeFolder;
 
-    attractorFolder.add(attractor, "removeAttractor");
+    nodeFolder.add(node, "removeNode");
+    nodeFolder.add(node, "duplicateNode");
 
-    let gravityForceFolder = attractorFolder.addFolder("force / distance");
+    let gravityForceFolder = nodeFolder.addFolder("force / distance");
     gravityForceFolder.open();
-    gravityForceFolder.add(attractor, "gravityChance", 0, 1, 0.0001);
-    gravityForceFolder.add(
-      attractor,
-      "forceMultiplier",
-      undefined,
-      undefined,
-      0.01
-    );
+    gravityForceFolder.add(node, "gravityChance", 0, 1, 0.0001);
+    gravityForceFolder.add(node, "forceMultiplier", undefined, undefined, 0.01);
 
-    let constantForceFolder = attractorFolder.addFolder(
+    let constantForceFolder = nodeFolder.addFolder(
       "Inside/Outside Radius, Random Constant Force"
     );
-    constantForceFolder.add(attractor, "constantForceChance", 0, 1, 0.0001);
-    constantForceFolder.add(attractor, "constantForceRadius", 0);
-    constantForceFolder.add(
-      attractor,
-      "insideMin",
-      undefined,
-      undefined,
-      0.001
-    );
-    constantForceFolder.add(
-      attractor,
-      "insideMax",
-      undefined,
-      undefined,
-      0.001
-    );
-    constantForceFolder.add(
-      attractor,
-      "outsideMin",
-      undefined,
-      undefined,
-      0.001
-    );
-    constantForceFolder.add(
-      attractor,
-      "outsideMax",
-      undefined,
-      undefined,
-      0.001
-    );
+    constantForceFolder.add(node, "constantForceChance", 0, 1, 0.0001);
+    constantForceFolder.add(node, "constantForceRadius", 0);
+    let inside = constantForceFolder.addFolder("inside");
+    inside.open();
+    inside.add(node, "insideChance", 0, 1, 0.001);
+    inside.add(node, "insideMin", undefined, undefined, 0.001);
+    inside.add(node, "insideMax", undefined, undefined, 0.001);
+    let extra = inside.addFolder("extra");
+    extra.add(node, "extraChance", 0, 1, 0.001);
+    extra.add(node, "extraMin", undefined, undefined, 0.001);
+    extra.add(node, "extraMax", undefined, undefined, 0.001);
+    let outside = constantForceFolder.addFolder("outside");
+    outside.open();
+    outside.add(node, "outsideChance", 0, 1, 0.001);
+    outside.add(node, "outsideMin", undefined, undefined, 0.001);
+    outside.add(node, "outsideMax", undefined, undefined, 0.001);
 
-    attractorFolder.add(attractor, "initX").step(1);
-    attractorFolder.add(attractor, "initY").step(1);
-    attractorFolder.add(attractor, "useEquations");
-    attractorFolder.add(attractor, "xEquation");
-    attractorFolder.add(attractor, "yEquation");
-    attractorFolder.add(attractor, "spawnParticles");
-    attractorFolder.add(attractor, "spawnChance", 0, 1, 0.001);
-    attractorFolder
-      .add(attractor, "particleLifetime", 0, undefined, 1)
+    let positioning = nodeFolder.addFolder("positioning");
+    positioning.open();
+    positioning.add(node, "initX").step(1);
+    positioning.add(node, "initY").step(1);
+    positioning.add(node, "useEquations");
+    positioning
+      .add(node, "xEquation")
+      .name(
+        "(xEquation) <span style='float:right;transform:translateX(-2ch);'>x =</span>"
+      );
+    positioning
+      .add(node, "yEquation")
+      .name(
+        "(yEquation) <span style='float:right;transform:translateX(-2ch);'>y =</span>"
+      );
+
+    let spawning = nodeFolder.addFolder("spawning");
+    spawning.add(node, "spawnParticles");
+    spawning.add(node, "spawnOnlyAtStart");
+    spawning.add(node, "spawnChance", 0, 1, 0.001);
+    spawning.add(node, "spawnCount", 0, undefined, 1);
+    spawning.add(node, "spawnRadiusMin", 0, undefined, 1);
+    spawning.add(node, "spawnRadiusMax", 0, undefined, 1);
+    spawning
+      .add(node, "particleLifetime", 0, undefined, 1)
       .name("particleLifetime (frames, 0 = \u221E)");
-    attractorFolder.add(attractor, "deleteParticles");
-    attractorFolder.add(attractor, "deleteChance", 0, 1, 0.001);
-    attractorFolder.add(attractor, "deleteRadius", 0, undefined, 1);
 
-    for (let i in attractorFolder.__controllers) {
-      addControllerKeyListenToggle(attractorFolder.__controllers[i]);
+    let deleting = nodeFolder.addFolder("deleting");
+    deleting.add(node, "deleteParticles");
+    deleting.add(node, "deleteChance", 0, 1, 0.001);
+    deleting.add(node, "deleteRadius", 0, undefined, 1);
+
+    for (let i in nodeFolder.__controllers) {
+      addControllerKeyListenToggle(nodeFolder.__controllers[i]);
     }
 
-    if (attractors.indexOf(attractor) === attractors.length - 1) {
-      attractorFolder.open();
+    if (nodes.indexOf(node) === nodes.length - 1) {
+      nodeFolder.open();
     }
 
-    attractorFolder.domElement.onmouseenter = () => {
-      attractor.__active = true;
+    nodeFolder.domElement.onmouseenter = () => {
+      node.__active = true;
     };
 
-    attractorFolder.domElement.onmouseleave = () => {
-      attractor.__active = false;
+    nodeFolder.domElement.onmouseleave = () => {
+      node.__active = false;
     };
   }
 }
@@ -1446,7 +1449,7 @@ window.onload = () => {
     e = e || window.event;
     if (listenForMouse) {
       if (e.ctrlKey && e.button === 0) {
-        addAttractor(
+        addNode(
           parseInt(mouseX - width / 2 - settings.canvas.translateCenterX),
           parseInt(mouseY - height / 2 - settings.canvas.translateCenterY)
         );
@@ -1480,8 +1483,8 @@ window.onload = () => {
       otherSettings.userSetupCode = userSetupCode;
     }
 
-    if (attractors.length > 0) {
-      otherSettings.attractors = exportAttractors();
+    if (nodes.length > 0) {
+      otherSettings.nodes = exportNodes();
     }
 
     if (Object.keys(otherSettings).length > 0) {
@@ -1504,7 +1507,7 @@ window.onload = () => {
     sampledImg = undefined;
     document.getElementById("draw-code-area").value = "";
     document.getElementById("setup-code-area").value = "";
-    resetAttractors();
+    resetNodes();
     if (
       value !== "Default" &&
       gui.presets[gui.controllers.presetSelector.getValue()]._other !==
@@ -1532,15 +1535,15 @@ window.onload = () => {
         document.getElementById("use-custom-code-checkbox").checked = true;
         useCustomCode = true;
       }
-      if (other.attractors !== undefined) {
-        attractors = [];
-        for (let i = 0; i < other.attractors.length; i++) {
-          attractors[i] = Object.assign({}, defaultAttractor);
-          for (let k in other.attractors[i]) {
-            attractors[i][k] = other.attractors[i][k];
+      if (other.nodes !== undefined) {
+        nodes = [];
+        for (let i = 0; i < other.nodes.length; i++) {
+          nodes[i] = Object.assign({}, defaultNode);
+          for (let k in other.nodes[i]) {
+            nodes[i][k] = other.nodes[i][k];
           }
         }
-        refreshAttractorsGUI();
+        refreshNodesGUI();
       }
     }
     loop();
@@ -1602,16 +1605,12 @@ window.onload = () => {
     settings.__showTimeScale = false;
   };
 
-  gui.controllers[
-    "settings.attractorSettings"
-  ].domElement.onmouseenter = () => {
-    settings.attractorSettings.__show = true;
+  gui.controllers["settings.nodeSettings"].domElement.onmouseenter = () => {
+    settings.nodeSettings.__show = true;
   };
 
-  gui.controllers[
-    "settings.attractorSettings"
-  ].domElement.onmouseleave = () => {
-    settings.attractorSettings.__show = false;
+  gui.controllers["settings.nodeSettings"].domElement.onmouseleave = () => {
+    settings.nodeSettings.__show = false;
   };
 
   gui.controllers[
@@ -1732,7 +1731,7 @@ window.onload = () => {
 const defaultPresets = {
   Butterfly: {
     _other: {
-      attractors: [
+      nodes: [
         {
           gravityChance: 1,
           forceMultiplier: 2,
