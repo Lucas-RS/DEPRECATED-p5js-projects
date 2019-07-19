@@ -1,31 +1,25 @@
 let capturer;
 let defaultAttractor = {
   __active: false,
-  attractChance: 1,
-  _attractChance: { min: 0, max: 1, step: 0.0001 },
+  gravityChance: 1,
   forceMultiplier: 0.5,
-  _forceMultiplier: { step: 0.01 },
+  constantForceChance: 0,
+  constantForceRadius: 100,
+  insideMin: -1,
+  insideMax: 1,
+  outsideMin: -1,
+  outsideMax: 1,
   initX: 0,
-  _initX: { step: 1 },
   initY: 0,
-  _initY: { step: 1 },
   useEquations: false,
   xEquation: "sin(t)",
   yEquation: "cos(t)",
   spawnParticles: false,
   spawnChance: 0.1,
-  _spawnChance: { min: 0, max: 1, step: 0.001 },
   particleLifetime: 0,
-  _particleLifetime: {
-    min: 0,
-    step: 1,
-    name: "particleLifetime (frames, 0 = \u221E)"
-  },
   deleteParticles: false,
   deleteChance: 0.5,
-  _deleteChance: { min: 0, max: 1, step: 0.001 },
-  deleteRadius: 2,
-  _deleteRadius: { min: 0, step: 1 }
+  deleteRadius: 2
 };
 let settings = {
   Share: share,
@@ -59,7 +53,7 @@ let settings = {
   "Step (./Period)": draw,
   "_Step (./Period)": { hide: true },
   "Reset Canvas (r)": resetSketch,
-  "Reset Attractors": resetAttractors,
+  resetAttractors,
   "Save As PNG (s)": () => {
     saveCanvas(canvas, "central-vibrance", "png");
   },
@@ -124,7 +118,6 @@ let settings = {
     __show: false,
     resetAttractors,
     showAttractors: true,
-    defaultAttractor: defaultAttractor,
     attractors: {}
   },
   velocitySettings: {
@@ -566,7 +559,8 @@ function draw() {
         attractor.x,
         attractor.y
       );
-      if (attractor.attractChance > 0 && random() < attractor.attractChance) {
+
+      if (attractor.gravityChance > 0 && random() < attractor.gravityChance) {
         let f = createVector(attractor.x, attractor.y);
         f.sub(particles[i].pos);
         f.setMag(
@@ -575,6 +569,34 @@ function draw() {
         );
         particles[i].applyForce(f);
       }
+
+      if (
+        attractor.constantForceChance > 0 &&
+        random() < attractor.constantForceChance
+      ) {
+        let f = createVector(attractor.x, attractor.y);
+        f.sub(particles[i].pos);
+        if (
+          r <=
+          attractor.constantForceRadius * settings.canvas.resolutionScale
+        ) {
+          f.setMag(
+            random(
+              attractor.insideMin * settings.canvas.resolutionScale,
+              attractor.insideMax * settings.canvas.resolutionScale
+            )
+          );
+        } else {
+          f.setMag(
+            random(
+              attractor.outsideMin * settings.canvas.resolutionScale,
+              attractor.outsideMax * settings.canvas.resolutionScale
+            )
+          );
+        }
+        particles[i].applyForce(f);
+      }
+
       if (
         attractor.deleteParticles &&
         r <= attractor.deleteRadius * settings.canvas.resolutionScale &&
@@ -1218,9 +1240,12 @@ function updateSettingsFromURL() {
 
 function addAttractor(x, y) {
   let newAttractor = Object.assign({}, defaultAttractor);
+  newAttractor.removeAttractor = () => {
+    attractors.splice(attractors.indexOf(newAttractor), 1);
+    refreshAttractorsGUI();
+  };
   newAttractor.initX = x / settings.canvas.resolutionScale;
   newAttractor.initY = -y / settings.canvas.resolutionScale;
-
   attractors.push(newAttractor);
   refreshAttractorsGUI();
 }
@@ -1264,22 +1289,55 @@ function refreshAttractorsGUI() {
         gui.controllers["settings.attractorSettings.attractors"].__folders
       ).length
     );
-
-    attractor.removeAttractor = () => {
-      attractors.splice(attractors.indexOf(attractor), 1);
-      refreshAttractorsGUI();
-    };
     attractor.folder = attractorFolder;
 
     attractorFolder.add(attractor, "removeAttractor");
-    attractorFolder.add(attractor, "attractChance", 0, 1, 0.0001);
-    attractorFolder.add(
+
+    let gravityForceFolder = attractorFolder.addFolder("force / distance");
+    gravityForceFolder.open();
+    gravityForceFolder.add(attractor, "gravityChance", 0, 1, 0.0001);
+    gravityForceFolder.add(
       attractor,
       "forceMultiplier",
       undefined,
       undefined,
       0.01
     );
+
+    let constantForceFolder = attractorFolder.addFolder(
+      "Inside/Outside Radius, Random Constant Force"
+    );
+    constantForceFolder.add(attractor, "constantForceChance", 0, 1, 0.0001);
+    constantForceFolder.add(attractor, "constantForceRadius", 0);
+    constantForceFolder.add(
+      attractor,
+      "insideMin",
+      undefined,
+      undefined,
+      0.001
+    );
+    constantForceFolder.add(
+      attractor,
+      "insideMax",
+      undefined,
+      undefined,
+      0.001
+    );
+    constantForceFolder.add(
+      attractor,
+      "outsideMin",
+      undefined,
+      undefined,
+      0.001
+    );
+    constantForceFolder.add(
+      attractor,
+      "outsideMax",
+      undefined,
+      undefined,
+      0.001
+    );
+
     attractorFolder.add(attractor, "initX").step(1);
     attractorFolder.add(attractor, "initY").step(1);
     attractorFolder.add(attractor, "useEquations");
@@ -1488,7 +1546,9 @@ window.onload = () => {
 
   if (windowWidth < 700) {
     gui.width = windowWidth;
-    gui.close();
+    gui.__closeButton.click();
+  } else {
+    gui.width = 350;
   }
 
   for (let i in gui.controllers) {
@@ -1661,7 +1721,7 @@ const defaultPresets = {
     _other: {
       attractors: [
         {
-          attractChance: 1,
+          gravityChance: 1,
           forceMultiplier: 2,
           initX: 0,
           initY: 0,
@@ -1672,7 +1732,7 @@ const defaultPresets = {
             "-50 + 100 * cos(t) * (pow(e,cos(t)) - 2 * cos (4 * t) - pow(sin (t / 12),5))"
         },
         {
-          attractChance: 1,
+          gravityChance: 1,
           forceMultiplier: 2,
           initX: 0,
           initY: 0,
