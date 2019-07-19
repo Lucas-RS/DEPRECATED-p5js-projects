@@ -111,7 +111,8 @@ let settings = {
     height: 1024,
     _height: { min: 1, max: 8192, step: 1 },
     translateCenterX: 0,
-    translateCenterY: 0
+    translateCenterY: 0,
+    rotateCanvas: "0"
   },
   originRadius: {
     __show: false,
@@ -304,6 +305,7 @@ let uiCanvas = new p5(function(p) {
   let size;
 
   p.setup = function() {
+    p.angleMode(DEGREES);
     p.createCanvas(
       settings["canvas"]["width"],
       settings["canvas"]["height"]
@@ -312,9 +314,14 @@ let uiCanvas = new p5(function(p) {
 
   p.draw = function() {
     p.translate(
-      settings.canvas.translateCenterX,
-      -settings.canvas.translateCenterY
+      p.width / 2 + settings.canvas.translateCenterX,
+      p.height / 2 + settings.canvas.translateCenterY
     );
+    try {
+      p.rotate(eval(settings.canvas.rotateCanvas));
+    } catch (e) {
+      console.error(e.message);
+    }
     size = Math.ceil(
       Math.pow(Math.pow(p.width, 2) + Math.pow(p.height, 2), 0.5) * 0.005
     );
@@ -325,30 +332,34 @@ let uiCanvas = new p5(function(p) {
       settings.captureFrames.__doCapture
     ) {
       p.push();
-      p.translate(
-        -settings.canvas.translateCenterX,
-        settings.canvas.translateCenterY
-      );
       p.strokeWeight(1);
       p.stroke(0);
       p.textSize(size * 3);
       p.text(
         "frameRate = " + Math.round(frameRate()),
-        size * 2,
-        p.height - size * 10
+        size * 2 - p.width / 2,
+        p.height / 2 - size * 10
       );
-      p.text("frameCount = " + frameCount, size * 2, p.height - size * 6);
-      p.text("t = " + t, size * 2, p.height - size * 2);
+      p.text(
+        "frameCount = " + frameCount,
+        size * 2 - p.width / 2,
+        p.height / 2 - size * 6
+      );
+      p.text(
+        "t = " + t.toFixed(1),
+        size * 2 - p.width / 2,
+        p.height / 2 - size * 2
+      );
       p.textAlign(RIGHT);
       p.text(
         "Number of Attractors = " + attractors.length,
-        p.width - size * 2,
-        p.height - size * 6
+        p.width / 2 - size * 2,
+        p.height / 2 - size * 6
       );
       p.text(
         "Number of Particles = " + particles.length,
-        p.width - size * 2,
-        p.height - size * 2
+        p.width / 2 - size * 2,
+        p.height / 2 - size * 2
       );
       p.pop();
     }
@@ -360,14 +371,15 @@ let uiCanvas = new p5(function(p) {
           if (attractors[a].__active) {
             p.stroke(0, 255, 255);
             p.strokeWeight(size * 0.2);
+          } else {
+            p.stroke(0);
           }
+          p.strokeWeight(size * 0.2);
           p.ellipse(
             attractors[a].x,
             attractors[a].y,
-            20 + size * 2 * Math.abs(attractors[a].forceMultiplier)
+            size * 5 * Math.abs(attractors[a].forceMultiplier)
           );
-          p.stroke(0);
-          p.strokeWeight(size * 0.08);
         }
       }
       for (let a = 0; a < attractors.length; a++) {
@@ -393,15 +405,7 @@ let uiCanvas = new p5(function(p) {
       p.push();
       p.noStroke();
       p.fill(0, 255, 255, Math.pow(s.chance, 0.25) * 204);
-      p.ellipse(
-        p.width / 2,
-        p.height / 2,
-        2 * s.radius * settings.canvas.resolutionScale
-      );
-      p.translate(
-        -settings.canvas.translateCenterX,
-        settings.canvas.translateCenterY
-      );
+      p.ellipse(0, 0, 2 * s.radius * settings.canvas.resolutionScale);
       p.fill(0);
       p.textSize(size * 2);
       p.textAlign(CENTER);
@@ -409,40 +413,40 @@ let uiCanvas = new p5(function(p) {
       p.stroke(0);
       p.text(
         "outside : chance = " + s.outside.chance,
-        p.width / 2,
-        p.height - size * 13
+        0,
+        p.height / 2 - size * 13
       );
       p.text(
         "inside : chance = " + s.inside.chance,
-        p.width / 2,
-        p.height - size * 8
+        0,
+        p.height / 2 - size * 8
       );
       p.text(
         "extra (inside) : chance = " + s.extra.chance,
-        p.width / 2,
-        p.height - size * 3
+        0,
+        p.height / 2 - size * 3
       );
       p.strokeWeight(size);
       p.stroke(255, 0, 0);
       p.line(
-        p.width / 2 - s.outside.min * settings.canvas.resolutionScale * 10,
-        p.height - size * 12,
-        p.width / 2 - s.outside.max * settings.canvas.resolutionScale * 10,
-        p.height - size * 12
+        -s.outside.min * settings.canvas.resolutionScale * 10,
+        p.height / 2 - size * 12,
+        -s.outside.max * settings.canvas.resolutionScale * 10,
+        p.height / 2 - size * 12
       );
       p.stroke(0, 255, 0);
       p.line(
-        p.width / 2 + s.inside.min * settings.canvas.resolutionScale * 10,
-        p.height - size * 7,
-        p.width / 2 + s.inside.max * settings.canvas.resolutionScale * 10,
-        p.height - size * 7
+        s.inside.min * settings.canvas.resolutionScale * 10,
+        p.height / 2 - size * 7,
+        s.inside.max * settings.canvas.resolutionScale * 10,
+        p.height / 2 - size * 7
       );
       p.stroke(255, 128, 0);
       p.line(
-        p.width / 2 + s.extra.min * settings.canvas.resolutionScale * 10,
-        p.height - size * 2,
-        p.width / 2 + s.extra.max * settings.canvas.resolutionScale * 10,
-        p.height - size * 2
+        s.extra.min * settings.canvas.resolutionScale * 10,
+        p.height / 2 - size * 2,
+        s.extra.max * settings.canvas.resolutionScale * 10,
+        p.height / 2 - size * 2
       );
       p.pop();
     }
@@ -458,8 +462,8 @@ let uiCanvas = new p5(function(p) {
         p.stroke(255, 0, 255, 51);
         p.strokeWeight(radiusDifference);
         p.ellipse(
-          p.width / 2,
-          p.height / 2,
+          0,
+          0,
           2 *
             (settings.originRadius.min * settings.canvas.resolutionScale +
               radiusDifference / 2)
@@ -483,9 +487,14 @@ function setup() {
 
 function draw() {
   translate(
-    settings.canvas.translateCenterX,
-    -settings.canvas.translateCenterY
+    width / 2 + settings.canvas.translateCenterX,
+    height / 2 + settings.canvas.translateCenterY
   );
+  try {
+    rotate(eval(settings.canvas.rotateCanvas));
+  } catch (e) {
+    console.error(e.message);
+  }
 
   if (useCustomCode) {
     try {
@@ -532,20 +541,16 @@ function draw() {
       try {
         attractor.x =
           (eval(attractor.xEquation) + attractor.initX) *
-            settings.canvas.resolutionScale +
-          width / 2;
+          settings.canvas.resolutionScale;
         attractor.y =
-          (-eval(attractor.yEquation) - attractor.initY) *
-            settings.canvas.resolutionScale +
-          height / 2;
+          (-eval(attractor.yEquation) + attractor.initY) *
+          settings.canvas.resolutionScale;
       } catch (e) {
         console.error(e.message);
       }
     } else {
-      attractor.x =
-        attractor.initX * settings.canvas.resolutionScale + width / 2;
-      attractor.y =
-        -attractor.initY * settings.canvas.resolutionScale + height / 2;
+      attractor.x = attractor.initX * settings.canvas.resolutionScale;
+      attractor.y = attractor.initY * settings.canvas.resolutionScale;
     }
     if (attractor.spawnParticles && random() < attractor.spawnChance) {
       for (let j = 0; j < 1; j++) {
@@ -620,10 +625,10 @@ function draw() {
       random() <= settings["centerAttractionForce"]["chance"] &&
       settings.centerAttractionForce.attractParticlesToCenter
     ) {
-      let attractCenterForce = createVector(width / 2, height / 2);
+      let attractCenterForce = createVector(0, 0);
       attractCenterForce.sub(particles[i].pos);
       if (
-        dist(particles[i].pos.x, particles[i].pos.y, width / 2, height / 2) >
+        dist(particles[i].pos.x, particles[i].pos.y, 0, 0) >
         settings["centerAttractionForce"]["radius"] *
           settings.canvas.resolutionScale
       ) {
@@ -942,19 +947,25 @@ function resetSketch() {
     importImage();
   }
 
-  qtree = new QuadTree(
-    new Rectangle(width / 2, height / 2, width / 2, height / 2),
-    1
-  );
+  qtree = new QuadTree(new Rectangle(0, 0, width / 2, height / 2), 1);
 
   for (var i = 0; i < settings["particleCount"]; i++) {
     while (true) {
-      let origin = createVector(random(width), random(height));
+      let origin = createVector(
+        random(
+          -settings["originRadius"]["max"] * settings.canvas.resolutionScale,
+          settings["originRadius"]["max"] * settings.canvas.resolutionScale
+        ),
+        random(
+          -settings["originRadius"]["max"] * settings.canvas.resolutionScale,
+          settings["originRadius"]["max"] * settings.canvas.resolutionScale
+        )
+      );
       if (
         settings.originRadius.ignoreRadius ||
-        (dist(origin.x, origin.y, width / 2, height / 2) <
+        (dist(origin.x, origin.y, 0, 0) <
           settings["originRadius"]["max"] * settings.canvas.resolutionScale &&
-          dist(origin.x, origin.y, width / 2, height / 2)) >
+          dist(origin.x, origin.y, 0, 0)) >
           settings["originRadius"]["min"] * settings.canvas.resolutionScale
       ) {
         particles[i] = createParticle(
@@ -1219,7 +1230,7 @@ function updateSettingsFromURL() {
 function addAttractor(x, y) {
   let newAttractor = Object.assign({}, defaultAttractor);
   newAttractor.initX = x / settings.canvas.resolutionScale;
-  newAttractor.initY = -y / settings.canvas.resolutionScale;
+  newAttractor.initY = y / settings.canvas.resolutionScale;
 
   attractors.push(newAttractor);
   refreshAttractorsGUI();
@@ -1378,14 +1389,14 @@ window.onload = () => {
       if (e.ctrlKey && e.button === 0) {
         addAttractor(
           parseInt(mouseX - width / 2 - settings.canvas.translateCenterX),
-          parseInt(mouseY - height / 2 + settings.canvas.translateCenterY)
+          parseInt(mouseY - height / 2 - settings.canvas.translateCenterY)
         );
       } else if (e.shiftKey && e.button === 0) {
         particles.push(
           createParticle(
             createVector(
-              mouseX - settings.canvas.translateCenterX,
-              mouseY + settings.canvas.translateCenterY
+              mouseX - width / 2 - settings.canvas.translateCenterX,
+              mouseY - height / 2 - settings.canvas.translateCenterY
             ),
             generateColor(),
             settings.particleLifetime
@@ -1615,9 +1626,10 @@ window.onload = () => {
   };
   gui.controllers["settings.canvas.width"].onFinishChange(updateTrueRes);
   gui.controllers["settings.canvas.height"].onFinishChange(updateTrueRes);
-  gui.controllers["settings.canvas.resolutionScale"].onFinishChange(
-    updateTrueRes
-  );
+  gui.controllers["settings.canvas.resolutionScale"].onFinishChange(() => {
+    updateTrueRes();
+    resetSketch();
+  });
 
   document.getElementById("use-custom-code-checkbox").onchange = e => {
     useCustomCode = e.srcElement.checked;
