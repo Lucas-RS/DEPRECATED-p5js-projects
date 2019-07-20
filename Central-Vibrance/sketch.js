@@ -563,8 +563,6 @@ let mainSketch = function(s) {
   };
 };
 
-let mainCanvas = new p5(mainSketch);
-
 let uiSketch = function(s) {
   let size;
 
@@ -726,6 +724,8 @@ let uiSketch = function(s) {
     }
   };
 };
+
+let mainCanvas = new p5(mainSketch);
 
 let uiCanvas = new p5(uiSketch);
 
@@ -1159,7 +1159,7 @@ function updateSettingsFromURL() {
   }
 }
 
-function addNode(x, y) {
+function createNode(x, y) {
   let newNode = Object.assign({}, defaultNode);
   newNode.removeNode = () => {
     nodes.splice(nodes.length, 1);
@@ -1356,7 +1356,7 @@ window.onload = () => {
     e = e || window.event;
     if (listenForMouse) {
       if (e.ctrlKey && e.button === 0) {
-        addNode(
+        createNode(
           parseInt(
             mainCanvas.mouseX -
               mainCanvas.width / 2 -
@@ -1603,7 +1603,7 @@ window.onload = () => {
     listenForKeys = true;
   };
 
-  addNode(0, 0);
+  createNode(0, 0);
   updateSettingsFromURL();
   resetSketch();
 };
