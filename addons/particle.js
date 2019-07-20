@@ -1,12 +1,12 @@
-//Add scale, so larger display resolutions function the sane
 class Particle {
 
-    constructor(origin, c = color(0)){
+    constructor(s, origin, c = color(0)){
+        this.s = s
         this.pos = origin
         this.x = this.pos.x
         this.y = this.pos.y
-        this.vel = createVector(0,0)
-        this.acc = createVector(0,0)
+        this.vel = this.s.createVector(0,0)
+        this.acc = this.s.createVector(0,0)
         this.color = c
         this.checked = false
     }
@@ -24,27 +24,27 @@ class Particle {
     }
 
     show(sizeX = 10, sizeY = sizeX, showStroke = false, strokeColor = color(0), strokeAlpha = 255) {
-        fill(this.color)
+        this.s.fill(this.color)
         if(showStroke){
-            colorMode(RGB,255)
-            stroke(red(strokeColor),green(strokeColor),blue(strokeColor),strokeAlpha)
+            this.s.colorMode(this.s.RGB,255)
+            this.s.stroke(red(strokeColor),this.s.green(strokeColor),this.s.blue(strokeColor),strokeAlpha)
         } else {
-            noStroke()
+            this.s.noStroke()
         }
-        ellipse(this.pos.x, this.pos.y, sizeX, sizeY)
+        this.s.ellipse(this.pos.x, this.pos.y, sizeX, sizeY)
     }
 
     wrap() {
-        if(this.pos.x > width) this.pos.x = 0
-        if(this.pos.x < 0) this.pos.x = width
-        if(this.pos.y > height) this.pos.y = 0
-        if(this.pos.y < 0) this.pos.y = height
+        if(this.pos.x > this.s.width) this.pos.x = 0
+        if(this.pos.x < 0) this.pos.x = this.s.width
+        if(this.pos.y > this.s.height) this.pos.y = 0
+        if(this.pos.y < 0) this.pos.y = this.s.height
     }
 
     bounceCanvasEdge() {
-        if(this.pos.x > width) this.vel.mult(-1)
+        if(this.pos.x > this.s.width) this.vel.mult(-1)
         if(this.pos.x < 0) this.vel.mult(-1)
-        if(this.pos.y > height) this.vel.mult(-1)
+        if(this.pos.y > this.s.height) this.vel.mult(-1)
         if(this.pos.y < 0) this.vel.mult(-1)
     }
 
@@ -61,11 +61,11 @@ class Particle {
 
     }
 
-    mouseAttract(trackDist = width * 0.1) {
-        if(dist(this.pos.x, this.pos.y, mouseX, mouseY) < trackDist) {
-            let f = createVector(mouseX, mouseY)
+    mouseAttract(trackDist = this.s.width * 0.1) {
+        if(this.s.dist(this.pos.x, this.pos.y, this.s.mouseX, this.s.mouseY) < trackDist) {
+            let f = this.s.createVector(this.s.mouseX, this.s.mouseY)
             f.sub(this.pos)
-            f.setMag(dist(this.pos.x, this.pos.y, mouseX, mouseY) / (width * 0.1))
+            f.setMag(this.s.dist(this.pos.x, this.pos.y, this.s.mouseX, this.s.mouseY) / (this.s.width * 0.1))
             this.applyForce(f)
         }
     }
