@@ -24,12 +24,12 @@ const defaultPresets = {
           initX: 0,
           initY: 0,
           useEquations: true,
-          xEquation: "300 * sin(3 * t)",
-          yEquation: "300 * cos(3 * t)"
+          xEquation: "300 * sin(t)",
+          yEquation: "300 * cos(t)"
         }
       ]
     },
-    "settings.timeScale": 0.3,
+    "settings.timeScale": 0.01,
     "settings.particleCount": 173,
     "settings.canvas.width": 1000,
     "settings.canvas.height": 1000,
@@ -46,67 +46,35 @@ const defaultPresets = {
     "settings.lines.changeSpeedBy": 1.61,
     "settings.centerAttractionForce.attractParticlesToCenter": false
   },
-  "Line Dot Turn": {
-    _other: {
-      userDrawCode:
-        "if (random() < 0.4) {\n  for (let i = 0; i < particles.length; i++) {\n    particles[i].color = generateColor()\n  }\n}\n\nif (frameCount == 20) {\n  settings.colors.showParticles = false\n  settings.lines.connectPoints = false\n}\n\nif (frameCount == 60) {\n  settings.seed += 1\n  settings.velocitySettings.rotationBoundaries.min = Math.sin(settings.seed * 0.19625 + 1.57) * 90\n  settings.velocitySettings.rotationBoundaries.max = Math.sin(settings.seed * 0.19625 + 1.57) * 90\n  resetSketch()\n}",
-      userSetupCode:
-        "setFrameRate(60)\nsettings.colors.showParticles = true\nsettings.lines.connectPoints = true"
-    },
-    "settings.seed": -1,
-    "settings.useCustomSeed": true,
-    "settings.canvas.width": 1080,
-    "settings.canvas.height": 1080,
-    "settings.originRadius.max": 400,
-    "settings.particleCount": 40,
-    "settings.velocitySettings.maxVelocity": 20,
-    "settings.velocitySettings.changeVelocityChance": 1,
-    "settings.velocitySettings.magnitudeBoundaries.min": 10,
-    "settings.velocitySettings.magnitudeBoundaries.max": 10,
-    "settings.velocitySettings.changeDirectionChance": 0.23,
-    "settings.velocitySettings.rotationBoundaries.min": 0,
-    "settings.velocitySettings.rotationBoundaries.max": 0,
-    "settings.velocitySettings.randomForceChance": 0,
-    "settings.colors.particleSettings.particleWidth": 16,
-    "settings.colors.particleSettings.particleHeight": 16,
-    "settings.colors.particleSettings.drawOutline": false,
-    "settings.colors.particleColorType": "randomHSLA",
-    "settings.colors.randomHSLA.hueMin": 109,
-    "settings.colors.randomHSLA.hueMax": 226,
-    "settings.colors.randomHSLA.saturationMin": 109,
-    "settings.colors.randomHSLA.saturationMax": 123,
-    "settings.colors.randomHSLA.lightnessMin": 55,
-    "settings.lines.strokeWeight": 4,
-    "settings.lines.changeSpeedConnected": false,
-    "settings.lines.maxLineDist": 70,
-    "settings.centerAttractionForce.attractParticlesToCenter": false,
-    "settings.centerAttractionForce.chance": 0.05
-  },
   Smoke: {
-    "settings.originRadius.max": 300,
-    "settings.bounceEdges": true,
+    _other: {
+      nodes: [
+        {
+          gravityChance: 0,
+          forceMultiplier: 0,
+          constantForceRadius: 250,
+          insideMin: 0,
+          insideMax: 5,
+          outsideMin: -5,
+          outsideMax: 10,
+          extraChance: 0.6,
+          extraMax: 0,
+          spawnRadiusMax: 300
+        }
+      ]
+    },
+    "settings.velocitySettings.maxVelocity": 2.3000000000000003,
     "settings.velocitySettings.startingVelocity.minX": -2,
-    "settings.velocitySettings.startingVelocity.minY": -2,
     "settings.velocitySettings.startingVelocity.maxX": 2,
+    "settings.velocitySettings.startingVelocity.minY": -2,
     "settings.velocitySettings.startingVelocity.maxY": 2,
-    "settings.velocitySettings.maxVelocity": 2.3,
-    "settings.mouseAttractsParticles": true,
-    "settings.colors.showParticles": true,
     "settings.colors.particleSettings.particleWidth": 2,
     "settings.colors.particleSettings.particleHeight": 2,
-    "settings.colors.particleSettings.drawOutline": false,
     "settings.colors.particleSettings.particleOutlineColor": "#000000",
     "settings.colors.backgroundColor": "#81848a",
     "settings.colors.particleColorType": "gradient",
     "settings.colors.gradient.alphaMin": 5,
-    "settings.colors.gradient.alphaMax": 45,
-    "settings.lines.slowWhenConnected": false,
-    "settings.centerAttractionForce.radius": 250,
-    "settings.centerAttractionForce.outside.max": 10,
-    "settings.centerAttractionForce.inside.min": 0,
-    "settings.centerAttractionForce.inside.max": 5,
-    "settings.centerAttractionForce.extra.chance": 0.6,
-    "settings.centerAttractionForce.extra.max": 0
+    "settings.colors.gradient.alphaMax": 45
   },
   Monochrome: {
     "settings.originRadius.max": 400,
@@ -603,13 +571,13 @@ let mainSketch = function(s) {
 
     if (
       settings.captureFrames.__doCapture &&
-      frameCount - settings.captureFrames.__startFrame <
+      s.frameCount - settings.captureFrames.__startFrame <
         settings.captureFrames.captureLength
     ) {
       capturer.capture(canvas.canvas);
     } else if (
       settings.captureFrames.__doCapture &&
-      frameCount - settings.captureFrames.__startFrame ===
+      s.frameCount - settings.captureFrames.__startFrame ===
         settings.captureFrames.captureLength
     ) {
       settings.captureFrames.__doCapture = false;
@@ -708,22 +676,33 @@ let mainSketch = function(s) {
             let f = s.createVector(node.x, node.y);
             f.sub(particles[i].pos);
             if (
-              r <=
-              node.constantForceRadius * settings.canvas.resolutionScale
+              r <= node.constantForceRadius * settings.canvas.resolutionScale &&
+              s.random() < node.insideChance
             ) {
-              f.setMag(
-                s.random(
-                  node.insideMin * settings.canvas.resolutionScale,
-                  node.insideMax * settings.canvas.resolutionScale
-                )
-              );
+              if (s.random() < node.extraChance) {
+                f.setMag(
+                  s.random(
+                    node.extraMin * settings.canvas.resolutionScale,
+                    node.extraMax * settings.canvas.resolutionScale
+                  )
+                );
+              } else {
+                f.setMag(
+                  s.random(
+                    node.insideMin * settings.canvas.resolutionScale,
+                    node.insideMax * settings.canvas.resolutionScale
+                  )
+                );
+              }
             } else {
-              f.setMag(
-                s.random(
-                  node.outsideMin * settings.canvas.resolutionScale,
-                  node.outsideMax * settings.canvas.resolutionScale
-                )
-              );
+              if (s.random() < node.outsideChance) {
+                f.setMag(
+                  s.random(
+                    node.outsideMin * settings.canvas.resolutionScale,
+                    node.outsideMax * settings.canvas.resolutionScale
+                  )
+                );
+              }
             }
             particles[i].applyForce(f);
           }
@@ -1015,9 +994,9 @@ let uiSketch = function(s) {
             nodes[a].y,
             size * 5 * Math.abs(nodes[a].forceMultiplier)
           );
-          if (nodes[a].forceMultiplier >= 0) {
+          if (nodes[a].forceMultiplier > 0) {
             s.fill(0, 255, 0);
-          } else {
+          } else if (nodes[a].forceMultiplier < 0) {
             s.fill(255, 0, 0);
           }
         } else {
@@ -1470,6 +1449,7 @@ function exportNodes() {
     delete node.__active;
     delete node.x;
     delete node.y;
+    delete node.folder;
     for (let i in node) {
       if (node[i] === defaultNode[i]) {
         delete node[i];
@@ -1494,7 +1474,7 @@ function refreshNodesGUI() {
       nodes.splice(nodes.indexOf(node), 0, Object.assign({}, node));
       refreshNodesGUI();
     };
-    
+
     let nodeFolder = gui.controllers["settings.nodeSettings.nodes"].addFolder(
       Object.keys(gui.controllers["settings.nodeSettings.nodes"].__folders)
         .length
@@ -1636,10 +1616,6 @@ window.onload = () => {
       } else if (e.key === " ") {
         e.preventDefault();
         toggleLoop();
-      } else if (e.key === ".") {
-        if (!doLoop) {
-          draw();
-        }
       }
     }
   };
