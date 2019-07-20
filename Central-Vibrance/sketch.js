@@ -17,8 +17,8 @@ let defaultNode = {
   initX: 0,
   initY: 0,
   useEquations: false,
-  xEquation: "sin(t)",
-  yEquation: "cos(t)",
+  xEquation: "sin(t) * 100",
+  yEquation: "cos(t) * 100",
   spawnParticles: true,
   spawnOnlyAtStart: true,
   spawnChance: 1,
@@ -26,6 +26,7 @@ let defaultNode = {
   spawnRadiusMin: 0,
   spawnRadiusMax: 192,
   particleLifetime: 0,
+  particleDeathSpeed: 0.5,
   deleteParticles: false,
   deleteChance: 0.5,
   deleteRadius: 2
@@ -61,6 +62,9 @@ let settings = {
   "Pause (Space)": toggleLoop,
   "Reset Canvas (r)": resetSketch,
   resetNodes,
+  "end (e)": () => {
+    end = true;
+  },
   "Save As PNG (s)": () => {
     saveCanvas(canvas, "central-vibrance", "png");
   },
@@ -88,9 +92,6 @@ let settings = {
   },
   particleDeathSpeed: 0.5,
   _particleDeathSpeed: { min: 0.1, max: 255, step: 0.1 },
-  "end (e)": () => {
-    end = true;
-  },
   mouseAttractsParticles: false,
   mouseAttractionRange: 100,
   _mouseAttractionRange: {
@@ -127,8 +128,8 @@ let settings = {
       maxY: 1,
       _all: { min: -100, max: 100, step: 0.01 }
     },
-    changeForceChance: 0.001,
-    _changeForceChance: { min: 0, max: 1, step: 0.0001 },
+    changeVelocityChance: 0.002,
+    _changeVelocityChance: { min: 0, max: 1, step: 0.0001 },
     changeMagnitudeChance: 1,
     _changeMagnitudeChance: { min: 0, max: 1, step: 0.0001 },
     magnitudeBoundaries: {
@@ -259,480 +260,494 @@ let sampledImg;
 let showCodeArea = false;
 let userDrawCode, userSetupCode;
 let useCustomCode = false;
-let t = 0;
-const e = Math.E;
 let doLoop = true;
 let end = false;
+let t = 0;
+const e = Math.E;
 
-let uiCanvas = new p5(function(p) {
+let mainSketch = function(s) {
+  s.setup = function() {
+    s.angleMode(s.DEGREES);
+    settings.canvas.width = screen.width;
+    settings.canvas.height = screen.height;
+    canvas = s
+      .createCanvas(settings.canvas.width, settings.canvas.height)
+      .parent("canvas-container");
+    resetSketch();
+  };
+
+  s.draw = function() {
+    s.translate(
+      s.width / 2 + settings.canvas.translateCenterX,
+      s.height / 2 + settings.canvas.translateCenterY
+    );
+    try {
+      s.rotate(eval(settings.canvas.rotateCanvas));
+    } catch (e) {
+      console.error(e.message);
+    }
+
+    if (useCustomCode) {
+      try {
+        eval(userDrawCode);
+      } catch (e) {
+        console.error(e.message);
+      }
+    }
+
+    if (
+      settings.captureFrames.__doCapture &&
+      frameCount - settings.captureFrames.__startFrame <
+        settings.captureFrames.captureLength
+    ) {
+      capturer.capture(canvas.canvas);
+    } else if (
+      settings.captureFrames.__doCapture &&
+      frameCount - settings.captureFrames.__startFrame ===
+        settings.captureFrames.captureLength
+    ) {
+      settings.captureFrames.__doCapture = false;
+      capturer.stop();
+      capturer.save();
+    }
+
+    t = s.frameCount * settings.timeScale;
+
+    qtree.clear();
+    for (let particle of particles) {
+      qtree.insert(particle);
+      particle.checked = false;
+    }
+
+    if (!settings.drawTrails) {
+      s.colorMode(s.RGB, 255);
+      let bgColor = s.color(settings.colors.backgroundColor);
+      bgColor.setAlpha(settings.colors.backgroundAlpha);
+      s.background(bgColor);
+    }
+
+    if (
+      nodes.length > 0 &&
+      (settings.nodeSettings.overallChance === 1 ||
+        s.random() < settings.nodeSettings.overallChance)
+    ) {
+      for (let i = 0; i < nodes.length; i++) {
+        let node = nodes[i];
+        if (node.useEquations) {
+          try {
+            let x = node.x;
+            let y = node.y;
+            node.x =
+              (eval(node.xEquation) + node.initX) *
+              settings.canvas.resolutionScale;
+            node.y =
+              (-eval(node.yEquation) + node.initY) *
+              settings.canvas.resolutionScale;
+          } catch (e) {
+            console.error(e.message);
+          }
+        } else {
+          node.x = node.initX * settings.canvas.resolutionScale;
+          node.y = node.initY * settings.canvas.resolutionScale;
+        }
+        if (
+          (node.spawnParticles && !node.spawnOnlyAtStart) ||
+          (node.spawnOnlyAtStart && s.frameCount === 1)
+        ) {
+          if (s.random() < node.spawnChance) {
+            for (let j = 0; j < 1; j++) {
+              for (let c = 0; c < node.spawnCount; c++) {
+                let r =
+                  Math.pow(s.random(), 0.5) *
+                    (node.spawnRadiusMax - node.spawnRadiusMin) +
+                  node.spawnRadiusMin;
+                let a = s.random(360);
+                let x = r * Math.sin(a) + node.x;
+                let y = r * Math.cos(a) + node.y;
+                particles.push(
+                  createParticle(
+                    s.createVector(x, y),
+                    generateColor(),
+                    node.particleLifetime,
+                    node.particleDeathSpeed
+                  )
+                );
+              }
+            }
+          }
+        }
+
+        for (let i = 0; i < particles.length; i++) {
+          let r = s.dist(
+            particles[i].pos.x,
+            particles[i].pos.y,
+            node.x,
+            node.y
+          );
+
+          if (node.gravityChance > 0 && s.random() < node.gravityChance) {
+            let f = s.createVector(node.x, node.y);
+            f.sub(particles[i].pos);
+            f.setMag(
+              (node.forceMultiplier * settings.canvas.resolutionScale) /
+                (1 + r / settings.canvas.resolutionScale)
+            );
+            particles[i].applyForce(f);
+          }
+
+          if (
+            node.constantForceChance > 0 &&
+            s.random() < node.constantForceChance
+          ) {
+            let f = s.createVector(node.x, node.y);
+            f.sub(particles[i].pos);
+            if (
+              r <=
+              node.constantForceRadius * settings.canvas.resolutionScale
+            ) {
+              f.setMag(
+                s.random(
+                  node.insideMin * settings.canvas.resolutionScale,
+                  node.insideMax * settings.canvas.resolutionScale
+                )
+              );
+            } else {
+              f.setMag(
+                s.random(
+                  node.outsideMin * settings.canvas.resolutionScale,
+                  node.outsideMax * settings.canvas.resolutionScale
+                )
+              );
+            }
+            particles[i].applyForce(f);
+          }
+
+          if (
+            node.deleteParticles &&
+            r <= node.deleteRadius * settings.canvas.resolutionScale &&
+            s.random() < node.deleteChance
+          ) {
+            particles.splice(i, 1);
+          }
+        }
+      }
+    }
+
+    for (let i = 0; i < particles.length; i++) {
+      if (s.random() <= settings.colors.image.updateColorChance) {
+        updateParticleColorFromImage(particles[i]);
+      }
+
+      if (settings.colors.showParticles) {
+        s.strokeWeight(
+          settings.colors.particleSettings.strokeWeight *
+            settings.canvas.resolutionScale
+        );
+        particles[i].show(
+          settings.colors.particleSettings.particleWidth *
+            settings.canvas.resolutionScale,
+          settings.colors.particleSettings.particleHeight *
+            settings.canvas.resolutionScale,
+          settings.colors.particleSettings.drawOutline,
+          settings.colors.particleSettings.particleOutlineColor,
+          settings.colors.particleSettings.particleOutlineAlpha
+        );
+      }
+
+      if (settings.bounceEdges) {
+        particles[i].bounceCanvasEdge();
+      }
+
+      if (settings.mouseAttractsParticles) {
+        particles[i].mouseAttract(
+          settings.mouseAttractionRange * settings.canvas.resolutionScale
+        );
+      }
+
+      if (s.random() < settings.velocitySettings.changeVelocityChance) {
+        if (s.random() < settings.velocitySettings.changeDirectionChance) {
+          particles[i].vel.rotate(
+            s.random(
+              settings.velocitySettings.rotationBoundaries.min,
+              settings.velocitySettings.rotationBoundaries.max
+            )
+          );
+        }
+        if (s.random() < settings.velocitySettings.changeMagnitudeChance) {
+          particles[i].vel.setMag(
+            particles[i].vel.mag() *
+              s.random(
+                settings.velocitySettings.magnitudeBoundaries.min *
+                  settings.canvas.resolutionScale,
+                settings.velocitySettings.magnitudeBoundaries.max *
+                  settings.canvas.resolutionScale
+              )
+          );
+        }
+        if (s.random() < settings.velocitySettings.randomForceChance) {
+          particles[i].applyForce(
+            s.createVector(
+              s.random(
+                settings.velocitySettings.randomForce.minX *
+                  settings.canvas.resolutionScale,
+                settings.velocitySettings.randomForce.maxX *
+                  settings.canvas.resolutionScale
+              ),
+              s.random(
+                settings.velocitySettings.randomForce.minY *
+                  settings.canvas.resolutionScale,
+                settings.velocitySettings.randomForce.maxY *
+                  settings.canvas.resolutionScale
+              )
+            )
+          );
+        }
+      }
+
+      if (settings.lines.connectPoints) {
+        let points = qtree.query(
+          new Circle(
+            particles[i].pos.x,
+            particles[i].pos.y,
+            settings.lines.maxLineDist * settings.canvas.resolutionScale
+          )
+        );
+        for (let point of points) {
+          if (particles[i] != point) {
+            s.stroke(
+              s.lerpColor(
+                particles[i].color,
+                point.color,
+                settings.lines.lerpValue
+              )
+            );
+            s.strokeWeight(
+              settings.lines.strokeWeight * settings.canvas.resolutionScale
+            );
+            s.line(
+              particles[i].pos.x,
+              particles[i].pos.y,
+              point.pos.x,
+              point.pos.y
+            );
+            if (
+              settings.lines.changeSpeedConnected &&
+              s.random() < settings.lines.changeSpeedChance
+            ) {
+              point.vel.mult(settings.lines.changeSpeedBy);
+            }
+          } else {
+            point.checked = true;
+          }
+        }
+      }
+
+      particles[i].capVel(
+        settings.velocitySettings.maxVelocity * settings.canvas.resolutionScale,
+        settings.velocitySettings.lockAxis.xAxis,
+        settings.velocitySettings.lockAxis.yAxis
+      );
+
+      particles[i].update();
+
+      if (particles[i].lifetime !== 0 || end) {
+        particles[i].age += 1;
+        let alpha = particles[i].color._getAlpha();
+        if (alpha <= 0) {
+          particles.splice(i, 1);
+        } else if (particles[i].age >= particles[i].lifetime) {
+          particles[i].color.setAlpha(alpha - particles[i].deathSpeed);
+        }
+      }
+    }
+  };
+};
+
+let mainCanvas = new p5(mainSketch);
+
+let uiSketch = function(s) {
   let size;
 
-  p.setup = function() {
-    p.angleMode(DEGREES);
-    p.createCanvas(settings.canvas.width, settings.canvas.height).parent(
+  s.setup = function() {
+    s.angleMode(s.DEGREES);
+    s.createCanvas(settings.canvas.width, settings.canvas.height).parent(
       "canvas-container"
     );
   };
 
-  p.draw = function() {
-    p.translate(
-      p.width / 2 + settings.canvas.translateCenterX,
-      p.height / 2 + settings.canvas.translateCenterY
+  s.draw = function() {
+    s.translate(
+      s.width / 2 + settings.canvas.translateCenterX,
+      s.height / 2 + settings.canvas.translateCenterY
     );
     try {
-      p.rotate(eval(settings.canvas.rotateCanvas));
+      s.rotate(eval(settings.canvas.rotateCanvas));
     } catch (e) {
       console.error(e.message);
     }
     size = Math.ceil(
-      Math.pow(Math.pow(p.width, 2) + Math.pow(p.height, 2), 0.5) * 0.005
+      Math.pow(Math.pow(s.width, 2) + Math.pow(s.height, 2), 0.5) * 0.005
     );
-    p.clear();
+    s.clear();
     if (
       showAllGUIs ||
       settings.__showTimeScale ||
       settings.captureFrames.__doCapture
     ) {
-      p.push();
-      p.strokeWeight(1);
-      p.stroke(0);
-      p.textSize(size * 3);
-      p.text(
-        "frameRate = " + Math.round(frameRate()),
-        size * 2 - p.width / 2,
-        p.height / 2 - size * 10
+      s.push();
+      s.strokeWeight(1);
+      s.stroke(0);
+      s.textSize(size * 3);
+      s.text(
+        "frameRate = " + Math.round(mainCanvas.frameRate()),
+        size * 2 - s.width / 2,
+        s.height / 2 - size * 10
       );
-      p.text(
-        "frameCount = " + frameCount,
-        size * 2 - p.width / 2,
-        p.height / 2 - size * 6
+      s.text(
+        "frameCount = " + mainCanvas.frameCount,
+        size * 2 - s.width / 2,
+        s.height / 2 - size * 6
       );
-      p.text(
+      s.text(
         "t = " + t.toFixed(1),
-        size * 2 - p.width / 2,
-        p.height / 2 - size * 2
+        size * 2 - s.width / 2,
+        s.height / 2 - size * 2
       );
-      p.textAlign(RIGHT);
-      p.text(
+      s.textAlign(s.RIGHT);
+      s.text(
         "Number of Nodes = " + nodes.length,
-        p.width / 2 - size * 2,
-        p.height / 2 - size * 6
+        s.width / 2 - size * 2,
+        s.height / 2 - size * 6
       );
-      p.text(
+      s.text(
         "Number of Particles = " + particles.length,
-        p.width / 2 - size * 2,
-        p.height / 2 - size * 2
+        s.width / 2 - size * 2,
+        s.height / 2 - size * 2
       );
-      p.pop();
+      s.pop();
     }
     if (
       showAllGUIs ||
       settings.nodeSettings.showNodes ||
       settings.nodeSettings.__show
     ) {
-      p.push();
+      s.push();
       for (let a = 0; a < nodes.length; a++) {
-        if (settings.nodeSettings.__show) {
-          p.noFill();
-          if (nodes[a].__active) {
-            p.stroke(0, 255, 255);
-          } else {
-            p.stroke(0);
+        if (nodes[a].__active) {
+          if (nodes[a].constantForceChance > 0) {
+            s.noFill();
+            s.stroke(0, 255, 255);
+            s.strokeWeight(nodes[a].constantForceChance * size);
+            s.ellipse(
+              nodes[a].x,
+              nodes[a].y,
+              2 * nodes[a].constantForceRadius * settings.canvas.resolutionScale
+            );
+            s.fill(0);
+            s.textSize(size * 2);
+            s.textAlign(s.CENTER);
+            s.strokeWeight(1);
+            s.stroke(0);
+            s.text(
+              "inside : chance = " + nodes[a].insideChance,
+              0,
+              s.height / 2 - size * 12.5
+            );
+            s.text(
+              "extra (inside) : chance = " + nodes[a].extraChance,
+              0,
+              s.height / 2 - size * 7.5
+            );
+            s.text(
+              "outside : chance = " + nodes[a].outsideChance,
+              0,
+              s.height / 2 - size * 2.5
+            );
+            s.strokeWeight(size);
+            s.stroke(0, 255, 0);
+            s.line(
+              nodes[a].insideMin * settings.canvas.resolutionScale * 10,
+              s.height / 2 - size * 11,
+              nodes[a].insideMax * settings.canvas.resolutionScale * 10,
+              s.height / 2 - size * 11
+            );
+            s.stroke(255, 128, 0);
+            s.line(
+              nodes[a].extraMin * settings.canvas.resolutionScale * 10,
+              s.height / 2 - size * 6,
+              nodes[a].extraMax * settings.canvas.resolutionScale * 10,
+              s.height / 2 - size * 6
+            );
+            s.stroke(255, 0, 0);
+            s.line(
+              nodes[a].outsideMin * settings.canvas.resolutionScale * 10,
+              s.height / 2 - size * 1,
+              nodes[a].outsideMax * settings.canvas.resolutionScale * 10,
+              s.height / 2 - size * 1
+            );
           }
-          p.strokeWeight(size * 0.2);
-          p.ellipse(
+          if (nodes[a].spawnParticles) {
+            s.noFill();
+            s.stroke(255, 0, 255);
+            s.strokeWeight(nodes[a].spawnChance * size);
+            s.ellipse(nodes[a].x, nodes[a].y, 2 * nodes[a].spawnRadiusMin);
+            s.ellipse(nodes[a].x, nodes[a].y, 2 * nodes[a].spawnRadiusMax);
+          }
+          if (nodes[a].deleteParticles) {
+            s.stroke(255, 0, 0);
+            s.ellipse(nodes[a].x, nodes[a].y, nodes[a].deleteRadius);
+          }
+        }
+        if (settings.nodeSettings.__show) {
+          s.noFill();
+          if (nodes[a].__active) {
+            s.stroke(0, 255, 255);
+          } else {
+            s.stroke(0);
+          }
+          s.strokeWeight(nodes[a].gravityChance * 0.5 * size);
+          s.ellipse(
             nodes[a].x,
             nodes[a].y,
             size * 5 * Math.abs(nodes[a].forceMultiplier)
           );
           if (nodes[a].forceMultiplier >= 0) {
-            p.fill(0, 255, 0);
+            s.fill(0, 255, 0);
           } else {
-            p.fill(255, 0, 0);
+            s.fill(255, 0, 0);
           }
         } else {
-          p.fill(0);
+          s.fill(0);
         }
-        p.noStroke();
-        p.ellipse(nodes[a].x, nodes[a].y, size);
-        if (nodes[a].__active) {
-          if (nodes[a].constantForceChance > 0) {
-            p.fill(0, 255, 255, nodes[a].constantForceChance * 204);
-            p.ellipse(
-              nodes[a].x,
-              nodes[a].y,
-              2 * nodes[a].constantForceRadius * settings.canvas.resolutionScale
-            );
-            p.fill(0);
-            p.textSize(size * 2);
-            p.textAlign(CENTER);
-            p.strokeWeight(1);
-            p.stroke(0);
-            p.text(
-              "inside : chance = " + nodes[a].insideChance,
-              0,
-              p.height / 2 - size * 12.5
-            );
-            p.text(
-              "extra (inside) : chance = " + nodes[a].extraChance,
-              0,
-              p.height / 2 - size * 7.5
-            );
-            p.text(
-              "outside : chance = " + nodes[a].outsideChance,
-              0,
-              p.height / 2 - size * 2.5
-            );
-            p.strokeWeight(size);
-            p.stroke(0, 255, 0);
-            p.line(
-              nodes[a].insideMin * settings.canvas.resolutionScale * 10,
-              p.height / 2 - size * 11,
-              nodes[a].insideMax * settings.canvas.resolutionScale * 10,
-              p.height / 2 - size * 11
-            );
-            p.stroke(255, 128, 0);
-            p.line(
-              nodes[a].extraMin * settings.canvas.resolutionScale * 10,
-              p.height / 2 - size * 6,
-              nodes[a].extraMax * settings.canvas.resolutionScale * 10,
-              p.height / 2 - size * 6
-            );
-            p.stroke(255, 0, 0);
-            p.line(
-              nodes[a].outsideMin * settings.canvas.resolutionScale * 10,
-              p.height / 2 - size * 1,
-              nodes[a].outsideMax * settings.canvas.resolutionScale * 10,
-              p.height / 2 - size * 1
-            );
-          }
-          if (nodes[a].spawnParticles) {
-            let radiusDifference =
-              nodes[a].spawnRadiusMax * settings.canvas.resolutionScale -
-              nodes[a].spawnRadiusMin * settings.canvas.resolutionScale;
-            p.noFill();
-            p.stroke(255, 0, 255, 51);
-            p.strokeWeight(radiusDifference);
-            p.ellipse(
-              nodes[a].x,
-              nodes[a].y,
-              2 *
-                (nodes[a].spawnRadiusMin * settings.canvas.resolutionScale +
-                  radiusDifference / 2)
-            );
-          }
-        }
+        s.noStroke();
+        s.ellipse(nodes[a].x, nodes[a].y, size);
       }
-      p.pop();
+      s.pop();
     }
   };
-});
+};
 
-function setup() {
-  angleMode(DEGREES);
-  settings.canvas.width = screen.width;
-  settings.canvas.height = screen.height;
-  canvas = createCanvas(settings.canvas.width, settings.canvas.height).parent(
-    "canvas-container"
-  );
-  resetSketch();
-}
-
-function draw() {
-  translate(
-    width / 2 + settings.canvas.translateCenterX,
-    height / 2 + settings.canvas.translateCenterY
-  );
-  try {
-    rotate(eval(settings.canvas.rotateCanvas));
-  } catch (e) {
-    console.error(e.message);
-  }
-
-  if (useCustomCode) {
-    try {
-      eval(userDrawCode);
-    } catch (e) {
-      console.error(e.message);
-    }
-  }
-
-  if (
-    settings.captureFrames.__doCapture &&
-    frameCount - settings.captureFrames.__startFrame <
-      settings.captureFrames.captureLength
-  ) {
-    capturer.capture(canvas.canvas);
-  } else if (
-    settings.captureFrames.__doCapture &&
-    frameCount - settings.captureFrames.__startFrame ===
-      settings.captureFrames.captureLength
-  ) {
-    settings.captureFrames.__doCapture = false;
-    capturer.stop();
-    capturer.save();
-  }
-
-  t = frameCount * settings.timeScale;
-
-  qtree.clear();
-  for (let particle of particles) {
-    qtree.insert(particle);
-    particle.checked = false;
-  }
-
-  if (!settings.drawTrails) {
-    colorMode(RGB, 255);
-    let bgColor = color(settings.colors.backgroundColor);
-    bgColor.setAlpha(settings.colors.backgroundAlpha);
-    background(bgColor);
-  }
-
-  if (
-    nodes.length > 0 &&
-    (settings.nodeSettings.overallChance === 1 ||
-      random() < settings.nodeSettings.overallChance)
-  ) {
-    for (let i = 0; i < nodes.length; i++) {
-      let node = nodes[i];
-      if (node.useEquations) {
-        try {
-          let x = node.x;
-          let y = node.y;
-          node.x =
-            (eval(node.xEquation) + node.initX) *
-            settings.canvas.resolutionScale;
-          node.y =
-            (-eval(node.yEquation) + node.initY) *
-            settings.canvas.resolutionScale;
-        } catch (e) {
-          console.error(e.message);
-        }
-      } else {
-        node.x = node.initX * settings.canvas.resolutionScale;
-        node.y = node.initY * settings.canvas.resolutionScale;
-      }
-      if (
-        (node.spawnParticles && !node.spawnOnlyAtStart) ||
-        (node.spawnOnlyAtStart && frameCount === 1)
-      ) {
-        if (random() < node.spawnChance) {
-          for (let j = 0; j < 1; j++) {
-            for (let c = 0; c < node.spawnCount; c++) {
-              let r =
-                Math.pow(random(), 0.5) *
-                  (node.spawnRadiusMax - node.spawnRadiusMin) +
-                node.spawnRadiusMin;
-              let a = random(360);
-              let x = r * Math.sin(a) + node.x;
-              let y = r * Math.cos(a) + node.y;
-              particles.push(
-                createParticle(
-                  createVector(x, y),
-                  generateColor(),
-                  node.particleLifetime
-                )
-              );
-            }
-          }
-        }
-      }
-
-      for (let i = 0; i < particles.length; i++) {
-        let r = dist(particles[i].pos.x, particles[i].pos.y, node.x, node.y);
-
-        if (node.gravityChance > 0 && random() < node.gravityChance) {
-          let f = createVector(node.x, node.y);
-          f.sub(particles[i].pos);
-          f.setMag(
-            (node.forceMultiplier * settings.canvas.resolutionScale) /
-              (1 + r / settings.canvas.resolutionScale)
-          );
-          particles[i].applyForce(f);
-        }
-
-        if (
-          node.constantForceChance > 0 &&
-          random() < node.constantForceChance
-        ) {
-          let f = createVector(node.x, node.y);
-          f.sub(particles[i].pos);
-          if (r <= node.constantForceRadius * settings.canvas.resolutionScale) {
-            f.setMag(
-              random(
-                node.insideMin * settings.canvas.resolutionScale,
-                node.insideMax * settings.canvas.resolutionScale
-              )
-            );
-          } else {
-            f.setMag(
-              random(
-                node.outsideMin * settings.canvas.resolutionScale,
-                node.outsideMax * settings.canvas.resolutionScale
-              )
-            );
-          }
-          particles[i].applyForce(f);
-        }
-
-        if (
-          node.deleteParticles &&
-          r <= node.deleteRadius * settings.canvas.resolutionScale &&
-          random() < node.deleteChance
-        ) {
-          particles.splice(i, 1);
-        }
-      }
-    }
-  }
-
-  for (let i = 0; i < particles.length; i++) {
-    if (random() <= settings.colors.image.updateColorChance) {
-      updateParticleColorFromImage(particles[i]);
-    }
-
-    if (settings.colors.showParticles) {
-      strokeWeight(
-        settings.colors.particleSettings.strokeWeight *
-          settings.canvas.resolutionScale
-      );
-      particles[i].show(
-        settings.colors.particleSettings.particleWidth *
-          settings.canvas.resolutionScale,
-        settings.colors.particleSettings.particleHeight *
-          settings.canvas.resolutionScale,
-        settings.colors.particleSettings.drawOutline,
-        settings.colors.particleSettings.particleOutlineColor,
-        settings.colors.particleSettings.particleOutlineAlpha
-      );
-    }
-
-    if (settings.bounceEdges) {
-      particles[i].bounceCanvasEdge();
-    }
-
-    if (settings.mouseAttractsParticles) {
-      particles[i].mouseAttract(
-        settings.mouseAttractionRange * settings.canvas.resolutionScale
-      );
-    }
-
-    if (random() < settings.velocitySettings.changeForceChance) {
-      if (random() < settings.velocitySettings.changeDirectionChance) {
-        particles[i].vel.rotate(
-          random(
-            settings.velocitySettings.rotationBoundaries.min,
-            settings.velocitySettings.rotationBoundaries.max
-          )
-        );
-      }
-      if (random() < settings.velocitySettings.changeMagnitudeChance) {
-        particles[i].vel.setMag(
-          particles[i].vel.mag() *
-            random(
-              settings.velocitySettings.magnitudeBoundaries.min *
-                settings.canvas.resolutionScale,
-              settings.velocitySettings.magnitudeBoundaries.max *
-                settings.canvas.resolutionScale
-            )
-        );
-      }
-      if (random() < settings.velocitySettings.randomForceChance) {
-        particles[i].applyForce(
-          createVector(
-            random(
-              settings.velocitySettings.randomForce.minX *
-                settings.canvas.resolutionScale,
-              settings.velocitySettings.randomForce.maxX *
-                settings.canvas.resolutionScale
-            ),
-            random(
-              settings.velocitySettings.randomForce.minY *
-                settings.canvas.resolutionScale,
-              settings.velocitySettings.randomForce.maxY *
-                settings.canvas.resolutionScale
-            )
-          )
-        );
-      }
-    }
-
-    if (settings.lines.connectPoints) {
-      let points = qtree.query(
-        new Circle(
-          particles[i].pos.x,
-          particles[i].pos.y,
-          settings.lines.maxLineDist * settings.canvas.resolutionScale
-        )
-      );
-      for (let point of points) {
-        if (particles[i] != point) {
-          stroke(
-            lerpColor(particles[i].color, point.color, settings.lines.lerpValue)
-          );
-          strokeWeight(
-            settings.lines.strokeWeight * settings.canvas.resolutionScale
-          );
-          line(
-            particles[i].pos.x,
-            particles[i].pos.y,
-            point.pos.x,
-            point.pos.y
-          );
-          if (
-            settings.lines.changeSpeedConnected &&
-            random() < settings.lines.changeSpeedChance
-          ) {
-            point.vel.mult(settings.lines.changeSpeedBy);
-          }
-        } else {
-          point.checked = true;
-        }
-      }
-    }
-
-    particles[i].capVel(
-      settings.velocitySettings.maxVelocity * settings.canvas.resolutionScale,
-      settings.velocitySettings.lockAxis.xAxis,
-      settings.velocitySettings.lockAxis.yAxis
-    );
-
-    particles[i].update();
-
-    if (particles[i].lifetime !== 0 || end) {
-      particles[i].age += 1;
-      let alpha = particles[i].color._getAlpha();
-      if ((particles[i].age >= particles[i].lifetime && !end) || alpha <= 0) {
-        particles.splice(i, 1);
-      } else if (
-        particles[i].age >=
-        particles[i].lifetime - alpha / settings.particleDeathSpeed
-      ) {
-        particles[i].color.setAlpha(alpha - settings.particleDeathSpeed);
-      }
-    }
-  }
-}
+let uiCanvas = new p5(uiSketch);
 
 function toggleLoop() {
   doLoop = !doLoop;
   if (doLoop) {
-    loop();
+    mainCanvas.loop();
     gui.controllers["settings.Pause (Space)"].name("Pause (Space)");
   } else {
-    noLoop();
+    mainCanvas.noLoop();
     gui.controllers["settings.Pause (Space)"].name("Play (Space)");
   }
 }
 
 function importImage() {
-  let imgInput = createFileInput(handleFile);
+  let imgInput = mainCanvas.createFileInput(handleFile);
   imgInput.elt.style.display = "none";
   imgInput.elt.click();
 }
 
 function handleFile(file) {
-  sampledImg = loadImage(file.data);
+  sampledImg = mainCanvas.loadImage(file.data);
   //real good solution to the image load time here.
   setTimeout(function() {
     settings.canvas.height = sampledImg.height;
@@ -747,9 +762,12 @@ function updateParticleColorFromImage(particle) {
     sampledImg !== undefined &&
     settings.colors.particleColorType === "image"
   ) {
-    let c = sampledImg.get(particle.pos.x, particle.pos.y);
-    c[3] = alpha(particle.color);
-    particle.color = color(...c);
+    let c = sampledImg.get(
+      particle.pos.x + mainCanvas.width / 2,
+      particle.pos.y + mainCanvas.height / 2
+    );
+    c[3] = mainCanvas.alpha(particle.color);
+    particle.color = mainCanvas.color(...c);
   }
 }
 
@@ -757,83 +775,86 @@ function generateColor() {
   let colorType = settings.colors.particleColorType;
   let c;
   if (colorType === "randomRGBA") {
-    colorMode(RGB, 255);
-    c = color(
-      random(
+    mainCanvas.colorMode(mainCanvas.RGB, 255);
+    c = mainCanvas.color(
+      mainCanvas.random(
         settings.colors.randomRGBA.redMin,
         settings.colors.randomRGBA.redMax
       ),
-      random(
+      mainCanvas.random(
         settings.colors.randomRGBA.greenMin,
         settings.colors.randomRGBA.greenMax
       ),
-      random(
+      mainCanvas.random(
         settings.colors.randomRGBA.blueMin,
         settings.colors.randomRGBA.blueMax
       ),
-      random(
+      mainCanvas.random(
         settings.colors.randomRGBA.alphaMin,
         settings.colors.randomRGBA.alphaMax
       )
     );
   } else if (colorType === "randomHSLA") {
-    colorMode(HSL, 255);
-    let hue = random(
+    mainCanvas.colorMode(mainCanvas.HSL, 255);
+    let hue = mainCanvas.random(
       settings.colors.randomHSLA.hueMin,
       settings.colors.randomHSLA.hueMax
     );
     if (settings.colors.randomHSLA.boostRed) {
       hue = Math.pow(hue, 2) / 255;
     }
-    c = color(
+    c = mainCanvas.color(
       hue,
-      random(
+      mainCanvas.random(
         settings.colors.randomHSLA.saturationMin,
         settings.colors.randomHSLA.saturationMax
       ),
-      random(
+      mainCanvas.random(
         settings.colors.randomHSLA.lightnessMin,
         settings.colors.randomHSLA.lightnessMax
       ),
-      random(
+      mainCanvas.random(
         settings.colors.randomHSLA.alphaMin,
         settings.colors.randomHSLA.alphaMax
       )
     );
   } else if (colorType === "gradient") {
-    colorMode(RGB, 255);
-    c = lerpColor(
-      color(settings.colors.gradient.firstColor),
-      color(settings.colors.gradient.secondColor),
-      random()
+    mainCanvas.colorMode(mainCanvas.RGB, 255);
+    c = mainCanvas.lerpColor(
+      mainCanvas.color(settings.colors.gradient.firstColor),
+      mainCanvas.color(settings.colors.gradient.secondColor),
+      mainCanvas.random()
     );
     c.setAlpha(
-      random(
+      mainCanvas.random(
         settings.colors.gradient.alphaMin,
         settings.colors.gradient.alphaMax
       )
     );
   } else {
-    colorMode(RGB, 255);
-    c = color(settings.colors.image.initColor);
+    mainCanvas.colorMode(mainCanvas.RGB, 255);
+    c = mainCanvas.color(settings.colors.image.initColor);
     c.setAlpha(
-      random(settings.colors.image.alphaMin, settings.colors.image.alphaMax)
+      mainCanvas.random(
+        settings.colors.image.alphaMin,
+        settings.colors.image.alphaMax
+      )
     );
   }
   return c;
 }
 
-function createParticle(origin, color, lifetime) {
-  let particle = new Particle(origin, color);
+function createParticle(origin, color, lifetime, deathSpeed) {
+  let particle = new Particle(mainCanvas, origin, color);
   particle.applyForce(
-    createVector(
-      random(
+    mainCanvas.createVector(
+      mainCanvas.random(
         settings.velocitySettings.startingVelocity.minX *
           settings.canvas.resolutionScale,
         settings.velocitySettings.startingVelocity.maxX *
           settings.canvas.resolutionScale
       ),
-      random(
+      mainCanvas.random(
         settings.velocitySettings.startingVelocity.minY *
           settings.canvas.resolutionScale,
         settings.velocitySettings.startingVelocity.maxY *
@@ -846,26 +867,27 @@ function createParticle(origin, color, lifetime) {
   }
   particle.age = 0;
   particle.lifetime = lifetime;
+  particle.deathSpeed = deathSpeed;
   return particle;
 }
 
 function resetSketch() {
   if (settings.useCustomSeed) {
-    randomSeed(settings.seed);
+    mainCanvas.randomSeed(settings.seed);
   } else {
     const newSeed = parseInt(Math.random() * 1000000000000000);
-    randomSeed(newSeed);
+    mainCanvas.randomSeed(newSeed);
     settings.seed = newSeed;
   }
 
   end = false;
-  frameCount = -1;
+  mainCanvas.frameCount = -1;
   particles = [];
 
   userSetupCode = document.getElementById("setup-code-area").value;
   userDrawCode = document.getElementById("draw-code-area").value;
 
-  resizeCanvas(
+  mainCanvas.resizeCanvas(
     settings.canvas.width * settings.canvas.resolutionScale,
     settings.canvas.height * settings.canvas.resolutionScale
   );
@@ -880,10 +902,10 @@ function resetSketch() {
     elem.style.height = "";
   }
 
-  colorMode(RGB, 255);
-  let bgColor = color(settings.colors.backgroundColor);
+  mainCanvas.colorMode(mainCanvas.RGB, 255);
+  let bgColor = mainCanvas.color(settings.colors.backgroundColor);
   bgColor.setAlpha(settings.colors.backgroundAlpha);
-  background(bgColor);
+  mainCanvas.background(bgColor);
 
   if (
     sampledImg === undefined &&
@@ -893,10 +915,13 @@ function resetSketch() {
     importImage();
   }
 
-  qtree = new QuadTree(new Rectangle(0, 0, width / 2, height / 2), 1);
+  qtree = new QuadTree(
+    new Rectangle(0, 0, mainCanvas.width / 2, mainCanvas.height / 2),
+    1
+  );
 
   if (pageIsLoaded) {
-    if (width > height) {
+    if (mainCanvas.width > mainCanvas.height) {
       gui.controllers["settings.velocitySettings.maxVelocity"].__max =
         settings.canvas.width * 0.04 * settings.canvas.resolutionScale;
       gui.controllers["settings.lines.maxLineDist"].__max =
@@ -1242,7 +1267,7 @@ function refreshNodesGUI() {
     spawning
       .add(node, "particleLifetime", 0, undefined, 1)
       .name("particleLifetime (frames, 0 = \u221E)");
-
+    spawning.add(node, "particleDeathSpeed", 0.1, 255, 0.1);
     let deleting = nodeFolder.addFolder("deleting");
     deleting.add(node, "deleteParticles");
     deleting.add(node, "deleteChance", 0, 1, 0.001);
@@ -1317,6 +1342,7 @@ window.onload = () => {
           uiCanvas.loop();
         }
       } else if (e.key === " ") {
+        e.preventDefault();
         toggleLoop();
       } else if (e.key === ".") {
         if (!doLoop) {
@@ -1331,18 +1357,31 @@ window.onload = () => {
     if (listenForMouse) {
       if (e.ctrlKey && e.button === 0) {
         addNode(
-          parseInt(mouseX - width / 2 - settings.canvas.translateCenterX),
-          parseInt(mouseY - height / 2 - settings.canvas.translateCenterY)
+          parseInt(
+            mainCanvas.mouseX -
+              mainCanvas.width / 2 -
+              settings.canvas.translateCenterX
+          ),
+          parseInt(
+            mainCanvas.mouseY -
+              mainCanvas.height / 2 -
+              settings.canvas.translateCenterY
+          )
         );
       } else if (e.shiftKey && e.button === 0) {
         particles.push(
           createParticle(
-            createVector(
-              mouseX - width / 2 - settings.canvas.translateCenterX,
-              mouseY - height / 2 - settings.canvas.translateCenterY
+            mainCanvas.createVector(
+              mainCanvas.mouseX -
+                mainCanvas.width / 2 -
+                settings.canvas.translateCenterX,
+              mainCanvas.mouseY -
+                mainCanvas.height / 2 -
+                settings.canvas.translateCenterY
             ),
             generateColor(),
-            settings.particleLifetime
+            settings.particleLifetime,
+            settings.particleDeathSpeed
           )
         );
       }
@@ -1440,8 +1479,8 @@ window.onload = () => {
     }
   };
 
-  if (windowWidth < 700) {
-    gui.width = windowWidth;
+  if (innerWidth < 700) {
+    gui.width = innerWidth;
     gui.__closeButton.click();
   } else {
     gui.width = 350;
@@ -1494,12 +1533,8 @@ window.onload = () => {
     settings.nodeSettings.__show = false;
   };
 
-  gui.controllers["settings.particleDeathSpeed"].onFinishChange(value => {
-    gui.controllers["settings.particleLifetime"].min(255 / value);
-    currentLifetime = gui.controllers["settings.particleLifetime"].getValue();
-    if (currentLifetime > 0 && currentLifetime < 255 / value) {
-      gui.controllers["settings.particleLifetime"].setValue(255 / value);
-    }
+  gui.controllers["settings.particleLifetime"].onFinishChange(value => {
+    defaultNode.particleLifetime = value;
   });
 
   gui.controllers["settings.canvas.trueResolution"].onFinishChange(value => {
@@ -1605,7 +1640,7 @@ const defaultPresets = {
     "settings.canvas.height": 1000,
     "settings.originRadius.max": 42,
     "settings.velocitySettings.maxVelocity": 2,
-    "settings.velocitySettings.changeForceChance": 0,
+    "settings.velocitySettings.changeVelocityChance": 0,
     "settings.velocitySettings.randomForceChance": 0,
     "settings.colors.showParticles": true,
     "settings.colors.particleSettings.particleWidth": 2,
@@ -1630,7 +1665,7 @@ const defaultPresets = {
     "settings.originRadius.max": 400,
     "settings.particleCount": 40,
     "settings.velocitySettings.maxVelocity": 20,
-    "settings.velocitySettings.changeForceChance": 1,
+    "settings.velocitySettings.changeVelocityChance": 1,
     "settings.velocitySettings.magnitudeBoundaries.min": 10,
     "settings.velocitySettings.magnitudeBoundaries.max": 10,
     "settings.velocitySettings.changeDirectionChance": 0.23,
