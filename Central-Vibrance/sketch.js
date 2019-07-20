@@ -1,4 +1,8 @@
 const e = Math.E;
+const sin = Math.sin;
+const cos = Math.cos;
+const tan = Math.tan;
+const pow = Math.pow;
 const defaultPresets = {
   Butterfly: {
     _other: {
@@ -299,9 +303,7 @@ const defaultPresets = {
     "settings.centerAttractionForce.radius": 1472
   }
 };
-
-let capturer;
-let defaultNode = {
+const defaultNode = {
   __active: false,
   gravityChance: 1,
   forceMultiplier: -0.5,
@@ -319,8 +321,8 @@ let defaultNode = {
   initX: 0,
   initY: 0,
   useEquations: false,
-  xEquation: "sin(t) * 100",
-  yEquation: "cos(t) * 100",
+  xEquation: "Math.sin(t) * 100",
+  yEquation: "Math.cos(t) * 100",
   spawnParticles: true,
   spawnOnlyAtStart: true,
   spawnChance: 1,
@@ -333,6 +335,7 @@ let defaultNode = {
   deleteChance: 0.5,
   deleteRadius: 2
 };
+let capturer;
 let settings = {
   Share: share,
   "Shift + Click to Add Particle | Ctrl + Click to Add Node": {},
@@ -383,7 +386,7 @@ let settings = {
   },
   seed: 0,
   useCustomSeed: false,
-  timeScale: 1,
+  timeScale: 0.01,
   _timeScale: { step: 0.00001, name: "(timeScale) t = frameCount \u00D7" },
   __showTimeScale: false,
   particleLifetime: 0,
@@ -1446,17 +1449,8 @@ function updateSettingsFromURL() {
 //nodes stuff
 function createNode(x, y) {
   let newNode = Object.assign({}, defaultNode);
-  newNode.removeNode = () => {
-    nodes.splice(nodes.length, 1);
-    refreshNodesGUI();
-  };
-  newNode.duplicateNode = () => {
-    nodes.splice(nodes.length, 0, Object.assign({}, newNode));
-    refreshNodesGUI();
-  };
   newNode.initX = x / settings.canvas.resolutionScale;
   newNode.initY = y / settings.canvas.resolutionScale;
-
   nodes.push(newNode);
   refreshNodesGUI();
 }
@@ -1492,6 +1486,15 @@ function refreshNodesGUI() {
     );
   }
   for (let node of nodes) {
+    node.removeNode = () => {
+      nodes.splice(nodes.indexOf(node), 1);
+      refreshNodesGUI();
+    };
+    node.duplicateNode = () => {
+      nodes.splice(nodes.indexOf(node), 0, Object.assign({}, node));
+      refreshNodesGUI();
+    };
+    
     let nodeFolder = gui.controllers["settings.nodeSettings.nodes"].addFolder(
       Object.keys(gui.controllers["settings.nodeSettings.nodes"].__folders)
         .length
@@ -1755,7 +1758,7 @@ window.onload = () => {
         refreshNodesGUI();
       }
     }
-    loop();
+    mainCanvas.loop();
     resetSketch();
     let fragment = getEncodedSettingsString();
     if (
