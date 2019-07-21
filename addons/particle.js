@@ -42,10 +42,10 @@ class Particle {
     }
 
     bounceCanvasEdge() {
-        if(this.pos.x > this.s.width) this.vel.mult(-1)
-        if(this.pos.x < 0) this.vel.mult(-1)
-        if(this.pos.y > this.s.height) this.vel.mult(-1)
-        if(this.pos.y < 0) this.vel.mult(-1)
+        if(this.pos.x > this.s.width / 2) this.vel.x *= -1
+        if(this.pos.x < -this.s.width / 2) this.vel.x *= -1
+        if(this.pos.y > this.s.height / 2) this.vel.y *= -1
+        if(this.pos.y < -this.s.height / 2) this.vel.y *= -1
     }
 
     capVel(cap, restrictX, restrictY) {
@@ -58,7 +58,6 @@ class Particle {
         if(restrictY){
             this.vel.y = 0
         }
-
     }
 
     mouseAttract(trackDist = this.s.width * 0.1) {
