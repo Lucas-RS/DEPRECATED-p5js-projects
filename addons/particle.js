@@ -70,15 +70,27 @@ class Particle {
     }
   }
 
-  mouseAttract(trackDist = this.s.width * 0.1) {
+  mouseAttract(trackDist) {
     if (
-      this.s.dist(this.pos.x, this.pos.y, this.s.mouseX, this.s.mouseY) <
-      trackDist
+      this.s.dist(
+        this.pos.x,
+        this.pos.y,
+        this.s.mouseX - this.s.width * 0.5,
+        this.s.mouseY - this.s.height * 0.5
+      ) < trackDist
     ) {
-      let f = this.s.createVector(this.s.mouseX, this.s.mouseY);
+      let f = this.s.createVector(
+        this.s.mouseX - this.s.width * 0.5,
+        this.s.mouseY - this.s.height * 0.5
+      );
       f.sub(this.pos);
       f.setMag(
-        this.s.dist(this.pos.x, this.pos.y, this.s.mouseX, this.s.mouseY) /
+        this.s.dist(
+          this.pos.x,
+          this.pos.y,
+          this.s.mouseX - this.s.width * 0.5,
+          this.s.mouseY - this.s.height * 0.5
+        ) /
           (this.s.width * 0.1)
       );
       this.applyForce(f);
