@@ -464,7 +464,7 @@ let settings = {
   nodeSettings: {
     __show: false,
     resetNodes,
-    showNodes: false,
+    showNodes: true,
     overallChance: 1,
     _overallChance: { min: 0, max: 1, step: 0.001 },
     nodes: {},
@@ -943,16 +943,14 @@ let uiSketch = function(s) {
             s.ellipse(nodes[a].x, nodes[a].y, nodes[a].deleteRadius);
           }
           s.stroke(0, 255, 255);
-        } else {
-          s.stroke(0);
+          s.noFill();
+          s.strokeWeight(nodes[a].gravityChance * 0.5 * size);
+          s.ellipse(
+            nodes[a].x,
+            nodes[a].y,
+            size * 5 * Math.abs(nodes[a].forceMultiplier)
+          );
         }
-        s.noFill();
-        s.strokeWeight(nodes[a].gravityChance * 0.5 * size);
-        s.ellipse(
-          nodes[a].x,
-          nodes[a].y,
-          size * 5 * Math.abs(nodes[a].forceMultiplier)
-        );
         if (nodes[a].forceMultiplier > 0) {
           s.fill(0, 255, 0);
         } else if (nodes[a].forceMultiplier < 0) {
@@ -1591,7 +1589,14 @@ window.onload = () => {
   document.onmousedown = function(e) {
     e = e || window.event;
     if (listenForMouse) {
-      if (e.ctrlKey && e.button === 0) {
+      if (e.shiftKey && e.ctrlKey && e.button === 0) {
+        newNode = Object.assign({}, nodes[nodes.length - 1])
+        newNode.initX = mainCanvas.mouseX - mainCanvas.width / 2;
+        newNode.initY = mainCanvas.mouseY - mainCanvas.height / 2;
+        console.log(newNode)
+        nodes.push(newNode)
+        refreshNodesGUI();
+      } else if (e.ctrlKey && e.button === 0) {
         createNode(
           parseInt(
             mainCanvas.mouseX -
