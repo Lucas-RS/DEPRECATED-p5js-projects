@@ -112,38 +112,29 @@ const defaultPresets = {
     "settings.lines.maxLineDist": 20
   },
   Points: {
-    "settings.originRadius.ignoreRadius": true,
-    "settings.originRadius.max": 400,
-    "settings.particleCount": 200,
+    _other: {
+      nodes: [{ constantForceChance: 0, spawnCount: 250, spawnRadiusMax: 520 }]
+    },
     "settings.mouseAttractsParticles": true,
     "settings.mouseAttractionRange": 150,
     "settings.bounceEdges": true,
     "settings.drawTrails": false,
-    "settings.velocitySettings.startingVelocity.minX": -2,
-    "settings.velocitySettings.startingVelocity.minY": -2,
-    "settings.velocitySettings.startingVelocity.maxX": 2,
-    "settings.velocitySettings.startingVelocity.maxY": 2,
     "settings.velocitySettings.maxVelocity": 10,
-    "settings.colors.showParticles": true,
+    "settings.velocitySettings.startingVelocity.minX": -2,
+    "settings.velocitySettings.startingVelocity.maxX": 2,
+    "settings.velocitySettings.startingVelocity.minY": -2,
+    "settings.velocitySettings.startingVelocity.maxY": 2,
+    "settings.velocitySettings.changeVelocityChance": 0,
+    "settings.velocitySettings.randomForceChance": 0,
     "settings.colors.particleSettings.particleWidth": 10,
     "settings.colors.particleSettings.particleHeight": 10,
-    "settings.colors.particleSettings.drawOutline": false,
     "settings.colors.particleSettings.particleOutlineColor": "#000000",
-    "settings.colors.backgroundColor": "#ffffff",
     "settings.colors.particleColorType": "gradient",
     "settings.colors.gradient.firstColor": "#000000",
     "settings.colors.gradient.alphaMin": 37,
     "settings.colors.gradient.alphaMax": 236,
     "settings.lines.changeSpeedConnected": false,
-    "settings.lines.changeSpeedBy": 1,
-    "settings.centerAttractionForce.attractParticlesToCenter": false,
-    "settings.centerAttractionForce.chance": 0.1,
-    "settings.centerAttractionForce.radius": 210,
-    "settings.centerAttractionForce.outside.min": 0,
-    "settings.centerAttractionForce.outside.max": 0,
-    "settings.centerAttractionForce.extra.chance": 0.1,
-    "settings.centerAttractionForce.extra.min": -10,
-    "settings.centerAttractionForce.extra.max": 0
+    "settings.lines.changeSpeedBy": 1
   },
   Neon: {
     "settings.originRadius.max": 480,
@@ -628,8 +619,9 @@ let mainSketch = function(s) {
           node.y = node.initY * settings.canvas.resolutionScale;
         }
         if (
-          (node.spawnParticles && !node.spawnOnlyAtStart) ||
-          (node.spawnOnlyAtStart && s.frameCount === 1)
+          node.spawnParticles &&
+          ((node.spawnParticles && !node.spawnOnlyAtStart) ||
+            (node.spawnOnlyAtStart && s.frameCount === 1))
         ) {
           if (s.random() < node.spawnChance) {
             for (let j = 0; j < 1; j++) {
@@ -931,7 +923,7 @@ let uiSketch = function(s) {
               nodes[a].y,
               2 * nodes[a].constantForceRadius * settings.canvas.resolutionScale
             );
-            s.push()
+            s.push();
             try {
               s.rotate(-eval(settings.canvas.rotateCanvas));
             } catch (e) {
@@ -979,7 +971,7 @@ let uiSketch = function(s) {
               nodes[a].outsideMax * settings.canvas.resolutionScale * 10,
               s.height / 2 - size * 1
             );
-            s.pop()
+            s.pop();
           }
           if (nodes[a].spawnParticles) {
             s.noFill();
@@ -1007,6 +999,8 @@ let uiSketch = function(s) {
           s.fill(0, 255, 0);
         } else if (nodes[a].forceMultiplier < 0) {
           s.fill(255, 0, 0);
+        } else {
+          s.fill(0);
         }
         s.noStroke();
         s.ellipse(nodes[a].x, nodes[a].y, size);
@@ -1070,6 +1064,8 @@ function resetSketch() {
       console.error(e.message);
     }
   }
+
+  gui.updateAllDisplays();
 }
 
 //toggles looping of the main canvas.
@@ -1240,6 +1236,7 @@ function createParticle(origin, color, lifetime, deathSpeed) {
 function getEncodedSettingsString() {
   let changedSettings = {};
   let sameAsPreset = true;
+  let exportedNodes = exportNodes();
 
   if (
     defaultPresets.hasOwnProperty(gui.controllers.presetSelector.getValue())
@@ -1255,12 +1252,19 @@ function getEncodedSettingsString() {
       ) {
         sameAsPreset = false;
       } else {
-        if (nodes.length === preset._other.nodes.length) {
-          for (let i of preset._other.nodes) {
-            for (let k in preset._other.nodes[i]) {
-              if (nodes[i][k] !== preset._other.nodes[i][k]) {
-                sameAsPreset = false;
-                break;
+        if (exportedNodes.length === preset._other.nodes.length) {
+          for (let i in exportedNodes) {
+            for (let k in exportedNodes[i]) {
+              if (preset._other.nodes[i].hasOwnProperty(k)) {
+                if (exportedNodes[i][k] !== preset._other.nodes[i][k]) {
+                  sameAsPreset = false;
+                  break;
+                }
+              } else {
+                if (exportedNodes[i][k] !== defaultNode[k]) {
+                  sameAsPreset = false;
+                  break;
+                }
               }
             }
           }
@@ -1451,6 +1455,7 @@ function exportNodes() {
   }
   for (let node of nodesExport) {
     delete node.removeNode;
+    delete node.duplicateNode;
     delete node.__active;
     delete node.x;
     delete node.y;
