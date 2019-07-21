@@ -77,36 +77,39 @@ const defaultPresets = {
     "settings.colors.gradient.alphaMax": 45
   },
   Monochrome: {
-    "settings.originRadius.max": 400,
-    "settings.bounceEdges": true,
-    "settings.velocitySettings.startingVelocity.minX": -2,
-    "settings.velocitySettings.startingVelocity.minY": -2,
-    "settings.velocitySettings.startingVelocity.maxX": 2,
-    "settings.velocitySettings.startingVelocity.maxY": 2,
+    _other: {
+      nodes: [
+        {
+          forceMultiplier: 0,
+          constantForceRadius: 0,
+          outsideMin: -4,
+          outsideMax: 5,
+          spawnOnlyAtStart: false,
+          spawnCount: 1,
+          spawnRadiusMax: 400,
+          particleLifetime: 120
+        }
+      ]
+    },
+    "settings.canvas.rotateCanvas": "Math.abs(sin(t)*10)",
+    "settings.velocitySettings.lockAxis.yAxis": true,
     "settings.velocitySettings.maxVelocity": 3,
-    "settings.colors.showParticles": true,
+    "settings.velocitySettings.startingVelocity.minX": -2,
+    "settings.velocitySettings.startingVelocity.maxX": 2,
+    "settings.velocitySettings.startingVelocity.minY": -2,
+    "settings.velocitySettings.startingVelocity.maxY": 2,
+    "settings.velocitySettings.changeVelocityChance": 0,
+    "settings.velocitySettings.randomForceChance": 0,
     "settings.colors.particleSettings.particleWidth": 2,
     "settings.colors.particleSettings.particleHeight": 2,
-    "settings.colors.particleSettings.drawOutline": false,
     "settings.colors.particleSettings.particleOutlineColor": "#000000",
     "settings.colors.backgroundColor": "#3557a8",
     "settings.colors.particleColorType": "gradient",
-    "settings.colors.gradient.alphaMin": 5,
-    "settings.colors.gradient.alphaMax": 45,
-    "settings.lines.slowWhenConnected": false,
-    "settings.centerAttractionForce.radius": 1,
-    "settings.centerAttractionForce.outside.max": 5,
-    "settings.centerAttractionForce.inside.min": -1,
-    "settings.centerAttractionForce.inside.max": 1,
-    "settings.centerAttractionForce.extra.chance": 0.1,
-    "settings.centerAttractionForce.extra.max": 1,
-    "settings.particleCount": 200,
-    "settings.velocitySettings.lockAxis.yAxis": true,
     "settings.colors.gradient.firstColor": "#bbf3ff",
     "settings.colors.gradient.secondColor": "#98b6ff",
-    "settings.lines.maxLineDist": 20,
-    "settings.centerAttractionForce.outside.min": -4,
-    "settings.centerAttractionForce.extra.min": -1
+    "settings.colors.gradient.alphaMin": 5,
+    "settings.colors.gradient.alphaMax": 45,
+    "settings.lines.maxLineDist": 20
   },
   Points: {
     "settings.originRadius.ignoreRadius": true,
@@ -273,7 +276,7 @@ const defaultPresets = {
 };
 const defaultNode = {
   __active: false,
-  gravityChance: 1,
+  gravityChance: 0,
   forceMultiplier: -0.5,
   constantForceChance: 0.1,
   constantForceRadius: 128,
@@ -702,6 +705,8 @@ let mainSketch = function(s) {
                     node.outsideMax * settings.canvas.resolutionScale
                   )
                 );
+              } else {
+                f.mult(0);
               }
             }
             particles[i].applyForce(f);
@@ -859,25 +864,21 @@ let uiSketch = function(s) {
   };
 
   s.draw = function() {
+    s.clear();
     s.translate(
       s.width / 2 + settings.canvas.translateCenterX,
       s.height / 2 + settings.canvas.translateCenterY
     );
-    try {
-      s.rotate(eval(settings.canvas.rotateCanvas));
-    } catch (e) {
-      console.error(e.message);
-    }
     size = Math.ceil(
       Math.pow(Math.pow(s.width, 2) + Math.pow(s.height, 2), 0.5) * 0.005
     );
-    s.clear();
     if (
       showAllGUIs ||
       settings.__showTimeScale ||
       settings.captureFrames.__doCapture
     ) {
       s.push();
+      s.fill(0);
       s.strokeWeight(1);
       s.stroke(0);
       s.textSize(size * 3);
@@ -909,12 +910,16 @@ let uiSketch = function(s) {
       );
       s.pop();
     }
+    try {
+      s.rotate(eval(settings.canvas.rotateCanvas));
+    } catch (e) {
+      console.error(e.message);
+    }
     if (
       showAllGUIs ||
       settings.nodeSettings.showNodes ||
       settings.nodeSettings.__show
     ) {
-      s.push();
       for (let a = 0; a < nodes.length; a++) {
         if (nodes[a].__active) {
           if (nodes[a].constantForceChance > 0) {
@@ -926,6 +931,12 @@ let uiSketch = function(s) {
               nodes[a].y,
               2 * nodes[a].constantForceRadius * settings.canvas.resolutionScale
             );
+            s.push()
+            try {
+              s.rotate(-eval(settings.canvas.rotateCanvas));
+            } catch (e) {
+              console.error(e.message);
+            }
             s.fill(0);
             s.textSize(size * 2);
             s.textAlign(s.CENTER);
@@ -968,6 +979,7 @@ let uiSketch = function(s) {
               nodes[a].outsideMax * settings.canvas.resolutionScale * 10,
               s.height / 2 - size * 1
             );
+            s.pop()
           }
           if (nodes[a].spawnParticles) {
             s.noFill();
@@ -980,32 +992,25 @@ let uiSketch = function(s) {
             s.stroke(255, 0, 0);
             s.ellipse(nodes[a].x, nodes[a].y, nodes[a].deleteRadius);
           }
-        }
-        if (settings.nodeSettings.__show) {
-          s.noFill();
-          if (nodes[a].__active) {
-            s.stroke(0, 255, 255);
-          } else {
-            s.stroke(0);
-          }
-          s.strokeWeight(nodes[a].gravityChance * 0.5 * size);
-          s.ellipse(
-            nodes[a].x,
-            nodes[a].y,
-            size * 5 * Math.abs(nodes[a].forceMultiplier)
-          );
-          if (nodes[a].forceMultiplier > 0) {
-            s.fill(0, 255, 0);
-          } else if (nodes[a].forceMultiplier < 0) {
-            s.fill(255, 0, 0);
-          }
+          s.stroke(0, 255, 255);
         } else {
-          s.fill(0);
+          s.stroke(0);
+        }
+        s.noFill();
+        s.strokeWeight(nodes[a].gravityChance * 0.5 * size);
+        s.ellipse(
+          nodes[a].x,
+          nodes[a].y,
+          size * 5 * Math.abs(nodes[a].forceMultiplier)
+        );
+        if (nodes[a].forceMultiplier > 0) {
+          s.fill(0, 255, 0);
+        } else if (nodes[a].forceMultiplier < 0) {
+          s.fill(255, 0, 0);
         }
         s.noStroke();
         s.ellipse(nodes[a].x, nodes[a].y, size);
       }
-      s.pop();
     }
   };
 };
@@ -1696,6 +1701,7 @@ window.onload = () => {
     document.getElementById("draw-code-area").value = "";
     document.getElementById("setup-code-area").value = "";
     resetNodes();
+
     if (
       value !== "Default" &&
       gui.presets[gui.controllers.presetSelector.getValue()]._other !==
@@ -1731,9 +1737,11 @@ window.onload = () => {
             nodes[i][k] = other.nodes[i][k];
           }
         }
-        refreshNodesGUI();
       }
+    } else {
+      createNode(0, 0);
     }
+    refreshNodesGUI();
     mainCanvas.loop();
     resetSketch();
     let fragment = getEncodedSettingsString();
