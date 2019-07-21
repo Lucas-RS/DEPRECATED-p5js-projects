@@ -328,15 +328,13 @@ let settings = {
   drawTrails: true,
   canvas: {
     "Reset Canvas (r)": resetSketch,
-    resolutionScale: 1,
-    _resolutionScale: { min: 0 },
-    trueResolution: "1024 x 1024",
     width: 1024,
     _width: { min: 1, max: 8192, step: 1 },
     height: 1024,
     _height: { min: 1, max: 8192, step: 1 },
-    translateCenterX: 0,
-    translateCenterY: 0,
+    translateCanvasX: "0",
+    translateCanvasY: "0",
+    scaleCanvas: "1",
     rotateCanvas: "0"
   },
   velocitySettings: {
@@ -503,11 +501,13 @@ let mainSketch = function(s) {
   };
 
   s.draw = function() {
-    s.translate(
-      s.width / 2 + settings.canvas.translateCenterX,
-      s.height / 2 + settings.canvas.translateCenterY
-    );
+    s.translate(s.width / 2, s.height / 2);
     try {
+      s.translate(
+        eval(settings.canvas.translateCanvasX),
+        eval(settings.canvas.translateCanvasY)
+      );
+      s.scale(eval(settings.canvas.scaleCanvas));
       s.rotate(eval(settings.canvas.rotateCanvas));
     } catch (e) {
       console.error(e.message);
@@ -563,18 +563,14 @@ let mainSketch = function(s) {
           try {
             let x = node.x;
             let y = node.y;
-            node.x =
-              (eval(node.xEquation) + node.initX) *
-              settings.canvas.resolutionScale;
-            node.y =
-              (-eval(node.yEquation) + node.initY) *
-              settings.canvas.resolutionScale;
+            node.x = eval(node.xEquation) + node.initX;
+            node.y = -eval(node.yEquation) + node.initY;
           } catch (e) {
             console.error(e.message);
           }
         } else {
-          node.x = node.initX * settings.canvas.resolutionScale;
-          node.y = node.initY * settings.canvas.resolutionScale;
+          node.x = node.initX;
+          node.y = node.initY;
         }
         if (
           node.spawnParticles &&
@@ -615,10 +611,7 @@ let mainSketch = function(s) {
           if (node.gravityChance > 0 && s.random() < node.gravityChance) {
             let f = s.createVector(node.x, node.y);
             f.sub(particles[i].pos);
-            f.setMag(
-              (node.forceMultiplier * settings.canvas.resolutionScale) /
-                (1 + r / settings.canvas.resolutionScale)
-            );
+            f.setMag(node.forceMultiplier / (1 + r));
             particles[i].applyForce(f);
           }
 
@@ -629,32 +622,17 @@ let mainSketch = function(s) {
             let f = s.createVector(node.x, node.y);
             f.sub(particles[i].pos);
             if (
-              r <= node.constantForceRadius * settings.canvas.resolutionScale &&
+              r <= node.constantForceRadius &&
               s.random() < node.insideChance
             ) {
               if (s.random() < node.extraChance) {
-                f.setMag(
-                  s.random(
-                    node.extraMin * settings.canvas.resolutionScale,
-                    node.extraMax * settings.canvas.resolutionScale
-                  )
-                );
+                f.setMag(s.random(node.extraMin, node.extraMax));
               } else {
-                f.setMag(
-                  s.random(
-                    node.insideMin * settings.canvas.resolutionScale,
-                    node.insideMax * settings.canvas.resolutionScale
-                  )
-                );
+                f.setMag(s.random(node.insideMin, node.insideMax));
               }
             } else {
               if (s.random() < node.outsideChance) {
-                f.setMag(
-                  s.random(
-                    node.outsideMin * settings.canvas.resolutionScale,
-                    node.outsideMax * settings.canvas.resolutionScale
-                  )
-                );
+                f.setMag(s.random(node.outsideMin, node.outsideMax));
               } else {
                 f.mult(0);
               }
@@ -664,7 +642,7 @@ let mainSketch = function(s) {
 
           if (
             node.deleteParticles &&
-            r <= node.deleteRadius * settings.canvas.resolutionScale &&
+            r <= node.deleteRadius &&
             s.random() < node.deleteChance
           ) {
             particles.splice(i, 1);
@@ -679,15 +657,10 @@ let mainSketch = function(s) {
       }
 
       if (settings.colors.showParticles) {
-        s.strokeWeight(
-          settings.colors.particleSettings.strokeWeight *
-            settings.canvas.resolutionScale
-        );
+        s.strokeWeight(settings.colors.particleSettings.strokeWeight);
         particles[i].show(
-          settings.colors.particleSettings.particleWidth *
-            settings.canvas.resolutionScale,
-          settings.colors.particleSettings.particleHeight *
-            settings.canvas.resolutionScale,
+          settings.colors.particleSettings.particleWidth,
+          settings.colors.particleSettings.particleHeight,
           settings.colors.particleSettings.drawOutline,
           settings.colors.particleSettings.particleOutlineColor,
           settings.colors.particleSettings.particleOutlineAlpha
@@ -699,9 +672,7 @@ let mainSketch = function(s) {
       }
 
       if (settings.mouseAttractsParticles) {
-        particles[i].mouseAttract(
-          settings.mouseAttractionRange * settings.canvas.resolutionScale
-        );
+        particles[i].mouseAttract(settings.mouseAttractionRange);
       }
 
       if (s.random() < settings.velocitySettings.changeVelocityChance) {
@@ -717,10 +688,8 @@ let mainSketch = function(s) {
           particles[i].vel.setMag(
             particles[i].vel.mag() *
               s.random(
-                settings.velocitySettings.magnitudeBoundaries.min *
-                  settings.canvas.resolutionScale,
-                settings.velocitySettings.magnitudeBoundaries.max *
-                  settings.canvas.resolutionScale
+                settings.velocitySettings.magnitudeBoundaries.min,
+                settings.velocitySettings.magnitudeBoundaries.max
               )
           );
         }
@@ -728,16 +697,12 @@ let mainSketch = function(s) {
           particles[i].applyForce(
             s.createVector(
               s.random(
-                settings.velocitySettings.randomForce.minX *
-                  settings.canvas.resolutionScale,
-                settings.velocitySettings.randomForce.maxX *
-                  settings.canvas.resolutionScale
+                settings.velocitySettings.randomForce.minX,
+                settings.velocitySettings.randomForce.maxX
               ),
               s.random(
-                settings.velocitySettings.randomForce.minY *
-                  settings.canvas.resolutionScale,
-                settings.velocitySettings.randomForce.maxY *
-                  settings.canvas.resolutionScale
+                settings.velocitySettings.randomForce.minY,
+                settings.velocitySettings.randomForce.maxY
               )
             )
           );
@@ -749,7 +714,7 @@ let mainSketch = function(s) {
           new Circle(
             particles[i].pos.x,
             particles[i].pos.y,
-            settings.lines.maxLineDist * settings.canvas.resolutionScale
+            settings.lines.maxLineDist
           )
         );
         for (let point of points) {
@@ -761,9 +726,7 @@ let mainSketch = function(s) {
                 settings.lines.lerpValue
               )
             );
-            s.strokeWeight(
-              settings.lines.strokeWeight * settings.canvas.resolutionScale
-            );
+            s.strokeWeight(settings.lines.strokeWeight);
             s.line(
               particles[i].pos.x,
               particles[i].pos.y,
@@ -783,7 +746,7 @@ let mainSketch = function(s) {
       }
 
       particles[i].capVel(
-        settings.velocitySettings.maxVelocity * settings.canvas.resolutionScale,
+        settings.velocitySettings.maxVelocity,
         settings.velocitySettings.lockAxis.xAxis,
         settings.velocitySettings.lockAxis.yAxis
       );
@@ -815,10 +778,16 @@ let uiSketch = function(s) {
 
   s.draw = function() {
     s.clear();
-    s.translate(
-      s.width / 2 + settings.canvas.translateCenterX,
-      s.height / 2 + settings.canvas.translateCenterY
-    );
+    s.translate(s.width / 2, s.height / 2);
+    try {
+      s.translate(
+        eval(settings.canvas.translateCanvasX),
+        eval(settings.canvas.translateCanvasY)
+      );
+    } catch (e) {
+      console.error(e.message);
+    }
+
     size = Math.ceil(
       Math.pow(Math.pow(s.width, 2) + Math.pow(s.height, 2), 0.5) * 0.005
     );
@@ -861,6 +830,7 @@ let uiSketch = function(s) {
       s.pop();
     }
     try {
+      s.scale(eval(settings.canvas.scaleCanvas));
       s.rotate(eval(settings.canvas.rotateCanvas));
     } catch (e) {
       console.error(e.message);
@@ -876,11 +846,7 @@ let uiSketch = function(s) {
             s.noFill();
             s.stroke(0, 255, 255);
             s.strokeWeight(nodes[a].constantForceChance * size);
-            s.ellipse(
-              nodes[a].x,
-              nodes[a].y,
-              2 * nodes[a].constantForceRadius * settings.canvas.resolutionScale
-            );
+            s.ellipse(nodes[a].x, nodes[a].y, 2 * nodes[a].constantForceRadius);
             s.push();
             try {
               s.rotate(-eval(settings.canvas.rotateCanvas));
@@ -910,23 +876,23 @@ let uiSketch = function(s) {
             s.strokeWeight(size);
             s.stroke(0, 255, 0);
             s.line(
-              nodes[a].insideMin * settings.canvas.resolutionScale * 10,
+              nodes[a].insideMin * 10,
               s.height / 2 - size * 11,
-              nodes[a].insideMax * settings.canvas.resolutionScale * 10,
+              nodes[a].insideMax * 10,
               s.height / 2 - size * 11
             );
             s.stroke(255, 128, 0);
             s.line(
-              nodes[a].extraMin * settings.canvas.resolutionScale * 10,
+              nodes[a].extraMin * 10,
               s.height / 2 - size * 6,
-              nodes[a].extraMax * settings.canvas.resolutionScale * 10,
+              nodes[a].extraMax * 10,
               s.height / 2 - size * 6
             );
             s.stroke(255, 0, 0);
             s.line(
-              nodes[a].outsideMin * settings.canvas.resolutionScale * 10,
+              nodes[a].outsideMin * 10,
               s.height / 2 - size * 1,
-              nodes[a].outsideMax * settings.canvas.resolutionScale * 10,
+              nodes[a].outsideMax * 10,
               s.height / 2 - size * 1
             );
             s.pop();
@@ -979,15 +945,9 @@ function resetSketch() {
   mainCanvas.frameCount = -1;
   particles = [];
 
-  mainCanvas.resizeCanvas(
-    settings.canvas.width * settings.canvas.resolutionScale,
-    settings.canvas.height * settings.canvas.resolutionScale
-  );
+  mainCanvas.resizeCanvas(settings.canvas.width, settings.canvas.height);
 
-  uiCanvas.resizeCanvas(
-    settings.canvas.width * settings.canvas.resolutionScale,
-    settings.canvas.height * settings.canvas.resolutionScale
-  );
+  uiCanvas.resizeCanvas(settings.canvas.width, settings.canvas.height);
 
   let canvasElems = document.getElementsByClassName("p5Canvas");
   for (let elem of canvasElems) {
@@ -1067,7 +1027,6 @@ function handleFile(file) {
   setTimeout(function() {
     settings.canvas.height = sampledImg.height;
     settings.canvas.width = sampledImg.width;
-    settings.canvas.resolutionScale = 1;
     resetSketch();
   }, 500);
 }
@@ -1166,16 +1125,12 @@ function createParticle(origin, color, lifetime, deathSpeed) {
   particle.applyForce(
     mainCanvas.createVector(
       mainCanvas.random(
-        settings.velocitySettings.startingVelocity.minX *
-          settings.canvas.resolutionScale,
-        settings.velocitySettings.startingVelocity.maxX *
-          settings.canvas.resolutionScale
+        settings.velocitySettings.startingVelocity.minX,
+        settings.velocitySettings.startingVelocity.maxX
       ),
       mainCanvas.random(
-        settings.velocitySettings.startingVelocity.minY *
-          settings.canvas.resolutionScale,
-        settings.velocitySettings.startingVelocity.maxY *
-          settings.canvas.resolutionScale
+        settings.velocitySettings.startingVelocity.minY,
+        settings.velocitySettings.startingVelocity.maxY
       )
     )
   );
@@ -1233,12 +1188,7 @@ function getEncodedSettingsString() {
     if (sameAsPreset) {
       for (let i in gui.controllers) {
         if (
-          ![
-            "presetSave",
-            "presetSelector",
-            "settings.seed",
-            "settings.canvas.trueResolution"
-          ].includes(i) &&
+          !["presetSave", "presetSelector", "settings.seed"].includes(i) &&
           gui.controllers[i].hasOwnProperty("__li")
         ) {
           let c = gui.controllers[i];
@@ -1303,12 +1253,7 @@ function getEncodedSettingsString() {
     for (let i in gui.controllers) {
       let controller = gui.controllers[i];
       if (
-        ![
-          "presetSelector",
-          "presetSave",
-          "settings.seed",
-          "settings.canvas.trueResolution"
-        ].includes(i) &&
+        !["presetSelector", "presetSave", "settings.seed"].includes(i) &&
         controller.hasOwnProperty("__li") &&
         controller.getValue() !== controller.initialValue
       ) {
@@ -1393,8 +1338,8 @@ function updateSettingsFromURL() {
 //nodes stuff
 function createNode(x, y) {
   let newNode = Object.assign({}, defaultNode);
-  newNode.initX = x / settings.canvas.resolutionScale;
-  newNode.initY = y / settings.canvas.resolutionScale;
+  newNode.initX = x;
+  newNode.initY = y;
   nodes.push(newNode);
   refreshNodesGUI();
 }
@@ -1590,41 +1535,49 @@ window.onload = () => {
     e = e || window.event;
     if (listenForMouse) {
       if (e.shiftKey && e.ctrlKey && e.button === 0) {
-        newNode = Object.assign({}, nodes[nodes.length - 1])
+        newNode = Object.assign({}, nodes[nodes.length - 1]);
         newNode.initX = mainCanvas.mouseX - mainCanvas.width / 2;
         newNode.initY = mainCanvas.mouseY - mainCanvas.height / 2;
-        console.log(newNode)
-        nodes.push(newNode)
+        console.log(newNode);
+        nodes.push(newNode);
         refreshNodesGUI();
       } else if (e.ctrlKey && e.button === 0) {
-        createNode(
-          parseInt(
-            mainCanvas.mouseX -
-              mainCanvas.width / 2 -
-              settings.canvas.translateCenterX
-          ),
-          parseInt(
-            mainCanvas.mouseY -
-              mainCanvas.height / 2 -
-              settings.canvas.translateCenterY
-          )
-        );
-      } else if (e.shiftKey && e.button === 0) {
-        particles.push(
-          createParticle(
-            mainCanvas.createVector(
+        try {
+          createNode(
+            parseInt(
               mainCanvas.mouseX -
                 mainCanvas.width / 2 -
-                settings.canvas.translateCenterX,
+                eval(settings.canvas.translateCanvasX)
+            ),
+            parseInt(
               mainCanvas.mouseY -
                 mainCanvas.height / 2 -
-                settings.canvas.translateCenterY
-            ),
-            generateColor(),
-            settings.particleLifetime,
-            settings.particleDeathSpeed
-          )
-        );
+                eval(settings.canvas.translateCanvasY)
+            )
+          );
+        } catch (e) {
+          console.error(e);
+        }
+      } else if (e.shiftKey && e.button === 0) {
+        try {
+          particles.push(
+            createParticle(
+              mainCanvas.createVector(
+                mainCanvas.mouseX -
+                  mainCanvas.width / 2 -
+                  eval(settings.canvas.translateCanvasX),
+                mainCanvas.mouseY -
+                  mainCanvas.height / 2 -
+                  eval(settings.canvas.translateCanvasY)
+              ),
+              generateColor(),
+              settings.particleLifetime,
+              settings.particleDeathSpeed
+            )
+          );
+        } catch (e) {
+          console.error(e);
+        }
       }
     }
   };
@@ -1777,40 +1730,6 @@ window.onload = () => {
 
   gui.controllers["settings.particleLifetime"].onFinishChange(value => {
     defaultNode.particleLifetime = value;
-  });
-
-  gui.controllers["settings.canvas.trueResolution"].onFinishChange(value => {
-    valueArray = split(value, " ");
-    if (
-      gui.controllers["settings.canvas.width"].getValue() !==
-      valueArray[0] / settings.canvas.resolutionScale
-    ) {
-      gui.controllers["settings.canvas.width"].setValue(
-        valueArray[0] / settings.canvas.resolutionScale
-      );
-    }
-    if (
-      gui.controllers["settings.canvas.height"].getValue() !==
-      valueArray[2] / settings.canvas.resolutionScale
-    ) {
-      gui.controllers["settings.canvas.height"].setValue(
-        valueArray[2] / settings.canvas.resolutionScale
-      );
-    }
-  });
-
-  let updateTrueRes = () => {
-    gui.controllers["settings.canvas.trueResolution"].setValue(
-      parseInt(settings.canvas.width * settings.canvas.resolutionScale) +
-        " x " +
-        parseInt(settings.canvas.height * settings.canvas.resolutionScale)
-    );
-  };
-  gui.controllers["settings.canvas.width"].onFinishChange(updateTrueRes);
-  gui.controllers["settings.canvas.height"].onFinishChange(updateTrueRes);
-  gui.controllers["settings.canvas.resolutionScale"].onFinishChange(() => {
-    updateTrueRes();
-    resetSketch();
   });
 
   document.getElementById("use-custom-code-checkbox").onchange = e => {
