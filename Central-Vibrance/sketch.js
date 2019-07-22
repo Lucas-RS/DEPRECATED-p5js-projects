@@ -249,6 +249,8 @@ const defaultNode = {
   spawnCount: 140,
   spawnRadiusMin: 0,
   spawnRadiusMax: 192,
+  radiusAngleMin: -Math.PI,
+  radiusAngleMax: Math.PI,
   particleLifetime: 0,
   particleDeathSpeed: 0.5,
   deleteParticles: false,
@@ -583,7 +585,7 @@ let mainSketch = function(s) {
                   Math.pow(s.random(), 0.5) *
                     (node.spawnRadiusMax - node.spawnRadiusMin) +
                   node.spawnRadiusMin;
-                let a = s.random(360);
+                let a = s.random(node.radiusAngleMin, node.radiusAngleMax);
                 let x = r * Math.sin(a) + node.x;
                 let y = r * Math.cos(a) + node.y;
                 particles.push(
@@ -1442,6 +1444,8 @@ function refreshNodesGUI() {
     spawning.add(node, "spawnCount", 0, undefined, 1);
     spawning.add(node, "spawnRadiusMin", 0, undefined, 1);
     spawning.add(node, "spawnRadiusMax", 0, undefined, 1);
+    spawning.add(node, "radiusAngleMin", -Math.PI, Math.PI, 0.001);
+    spawning.add(node, "radiusAngleMax", -Math.PI, Math.PI, 0.001);
     spawning
       .add(node, "particleLifetime", 0, undefined, 1)
       .name("particleLifetime (frames, 0 = \u221E)");
