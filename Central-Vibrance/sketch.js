@@ -75,7 +75,7 @@ const defaultPresets = {
           constantForceRadius: 0,
           outsideMin: -4,
           outsideMax: 5,
-          spawnOnlyAtStart: false,
+          spawnOnlyOnce: false,
           spawnCount: 1,
           spawnRadiusMax: 400,
           particleLifetime: 120
@@ -244,7 +244,8 @@ const defaultNode = {
   xEquation: "Math.sin(t) * 100",
   yEquation: "Math.cos(t) * 100",
   spawnParticles: true,
-  spawnOnlyAtStart: true,
+  spawnOnlyOnce: true,
+  spawnFrame: 0,
   spawnChance: 1,
   spawnCount: 140,
   spawnRadiusMin: 0,
@@ -575,8 +576,8 @@ let mainSketch = function(s) {
         }
         if (
           node.spawnParticles &&
-          ((node.spawnParticles && !node.spawnOnlyAtStart) ||
-            (node.spawnOnlyAtStart && s.frameCount === 1))
+          ((!node.spawnOnlyOnce && s.frameCount >= node.spawnFrame) ||
+            (node.spawnOnlyOnce && s.frameCount === node.spawnFrame))
         ) {
           if (s.random() < node.spawnChance) {
             for (let j = 0; j < 1; j++) {
@@ -1439,7 +1440,8 @@ function refreshNodesGUI() {
 
     let spawning = nodeFolder.addFolder("spawning");
     spawning.add(node, "spawnParticles");
-    spawning.add(node, "spawnOnlyAtStart");
+    spawning.add(node, "spawnOnlyOnce");
+    spawning.add(node, "spawnFrame");
     spawning.add(node, "spawnChance", 0, 1, 0.001);
     spawning.add(node, "spawnCount", 0, undefined, 1);
     spawning.add(node, "spawnRadiusMin", 0, undefined, 1);
