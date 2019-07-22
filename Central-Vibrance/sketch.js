@@ -1538,7 +1538,29 @@ window.onload = () => {
         newNode = Object.assign({}, nodes[nodes.length - 1]);
         newNode.initX = mainCanvas.mouseX - mainCanvas.width / 2;
         newNode.initY = mainCanvas.mouseY - mainCanvas.height / 2;
-        console.log(newNode);
+
+        try {
+          newNode.initX =
+            (newNode.initX - eval(settings.canvas.translateCanvasX)) /
+            eval(settings.canvas.scaleCanvas);
+          newNode.initY =
+            (newNode.initY - eval(settings.canvas.translateCanvasY)) /
+            eval(settings.canvas.scaleCanvas);
+          // newNode.initX =
+          //   newNode.initX *
+          //     Math.cos(eval(settings.canvas.rotateCanvas)) -
+          //   newNode.initY *
+          //     Math.sin(eval(settings.canvas.rotateCanvas));
+          // newNode.initY =
+          //   newNode.initX *
+          //     Math.sin(eval(settings.canvas.rotateCanvas)) +
+          //   newNode.initY *
+          //     Math.cos(eval(settings.canvas.rotateCanvas));
+          // // s.rotate(eval(settings.canvas.rotateCanvas));
+        } catch (e) {
+          console.error(e.message);
+        }
+
         nodes.push(newNode);
         refreshNodesGUI();
       } else if (e.ctrlKey && e.button === 0) {
