@@ -33,7 +33,7 @@ class Particle {
     if (showStroke) {
       this.s.colorMode(this.s.RGB, 255);
       this.s.stroke(
-        red(strokeColor),
+        this.s.red(strokeColor),
         this.s.green(strokeColor),
         this.s.blue(strokeColor),
         strokeAlpha
