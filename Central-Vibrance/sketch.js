@@ -363,11 +363,11 @@ let settings = {
     changeDirectionChance: 1,
     _changeDirectionChance: { min: 0, max: 1, step: 0.0001 },
     rotationBoundaries: {
-      min: -360,
-      max: 360,
-      _all: { min: -360, max: 360, step: 0.01 }
+      min: -Math.PI,
+      max: Math.PI,
+      _all: { min: -Math.PI, max: Math.PI, step: 0.001 }
     },
-    _rotationBoundaries: { name: "rotationBoundaries (in degrees)" },
+    _rotationBoundaries: { name: "rotationBoundaries" },
     randomForceChance: 0.001,
     _randomForceChance: { min: 0, max: 1, step: 0.0001 },
     randomForce: {
@@ -492,7 +492,6 @@ let mainSketch = function(s) {
       new Rectangle(0, 0, screen.width / 2, screen.height / 2),
       1
     );
-    s.angleMode(s.DEGREES);
     settings.canvas.width = screen.width;
     settings.canvas.height = screen.height;
     canvas = s
@@ -770,7 +769,6 @@ let uiSketch = function(s) {
   let size;
 
   s.setup = function() {
-    s.angleMode(s.DEGREES);
     s.createCanvas(settings.canvas.width, settings.canvas.height).parent(
       "canvas-container"
     );
