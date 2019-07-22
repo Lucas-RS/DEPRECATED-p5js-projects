@@ -848,6 +848,7 @@ let uiSketch = function(s) {
             s.push();
             try {
               s.rotate(-eval(settings.canvas.rotateCanvas));
+              s.rotate(1 / eval(settings.canvas.rotateCanvas));
             } catch (e) {
               console.error(e.message);
             }
@@ -1490,6 +1491,27 @@ function addControllerKeyListenToggle(controller) {
   }
 }
 
+function getCanvasMousePosition(canvas) {
+  let canvasX = canvas.mouseX - canvas.width / 2;
+  let canvasY = canvas.mouseY - canvas.height / 2;
+  try {
+    canvasX =
+      (canvasX - eval(settings.canvas.translateCanvasX)) /
+      eval(settings.canvas.scaleCanvas);
+    canvasY =
+      (canvasY - eval(settings.canvas.translateCanvasY)) /
+      eval(settings.canvas.scaleCanvas);
+    let angle = -eval(settings.canvas.rotateCanvas);
+    let oldX = canvasX;
+    let oldY = canvasY;
+    canvasX = oldX * Math.cos(angle) - oldY * Math.sin(angle);
+    canvasY = oldX * Math.sin(angle) + oldY * Math.cos(angle);
+  } catch (e) {
+    console.error(e.message);
+  }
+  return [parseInt(canvasX), parseInt(canvasY)];
+}
+
 window.onload = () => {
   mainCanvas = new p5(mainSketch);
   uiCanvas = new p5(uiSketch);
@@ -1532,49 +1554,16 @@ window.onload = () => {
   document.onmousedown = function(e) {
     e = e || window.event;
     if (listenForMouse) {
+      let canvasMouseCoords = getCanvasMousePosition(mainCanvas);
       if (e.shiftKey && e.ctrlKey && e.button === 0) {
-        newNode = Object.assign({}, nodes[nodes.length - 1]);
-        newNode.initX = mainCanvas.mouseX - mainCanvas.width / 2;
-        newNode.initY = mainCanvas.mouseY - mainCanvas.height / 2;
-
-        try {
-          newNode.initX =
-            (newNode.initX - eval(settings.canvas.translateCanvasX)) /
-            eval(settings.canvas.scaleCanvas);
-          newNode.initY =
-            (newNode.initY - eval(settings.canvas.translateCanvasY)) /
-            eval(settings.canvas.scaleCanvas);
-          // newNode.initX =
-          //   newNode.initX *
-          //     Math.cos(eval(settings.canvas.rotateCanvas)) -
-          //   newNode.initY *
-          //     Math.sin(eval(settings.canvas.rotateCanvas));
-          // newNode.initY =
-          //   newNode.initX *
-          //     Math.sin(eval(settings.canvas.rotateCanvas)) +
-          //   newNode.initY *
-          //     Math.cos(eval(settings.canvas.rotateCanvas));
-          // // s.rotate(eval(settings.canvas.rotateCanvas));
-        } catch (e) {
-          console.error(e.message);
-        }
-
+        let newNode = Object.assign({}, nodes[nodes.length - 1]);
+        newNode.initX = canvasMouseCoords[0];
+        newNode.initY = canvasMouseCoords[1];
         nodes.push(newNode);
         refreshNodesGUI();
       } else if (e.ctrlKey && e.button === 0) {
         try {
-          createNode(
-            parseInt(
-              mainCanvas.mouseX -
-                mainCanvas.width / 2 -
-                eval(settings.canvas.translateCanvasX)
-            ),
-            parseInt(
-              mainCanvas.mouseY -
-                mainCanvas.height / 2 -
-                eval(settings.canvas.translateCanvasY)
-            )
-          );
+          createNode(canvasMouseCoords[0], canvasMouseCoords[1]);
         } catch (e) {
           console.error(e);
         }
@@ -1583,12 +1572,8 @@ window.onload = () => {
           particles.push(
             createParticle(
               mainCanvas.createVector(
-                mainCanvas.mouseX -
-                  mainCanvas.width / 2 -
-                  eval(settings.canvas.translateCanvasX),
-                mainCanvas.mouseY -
-                  mainCanvas.height / 2 -
-                  eval(settings.canvas.translateCanvasY)
+                canvasMouseCoords[0],
+                canvasMouseCoords[1]
               ),
               generateColor(),
               settings.particleLifetime,
