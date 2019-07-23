@@ -139,11 +139,11 @@ class QuadTree {
         this.divided = false
     }
 
-    p5show() {
-        noFill()
-        stroke(255)
-        rectMode(CENTER)
-        rect(this.boundary.x, this.boundary.y, this.boundary.w * 2, this.boundary.h * 2)
+    p5show(canvas) {
+        canvas.noFill()
+        canvas.stroke(0)
+        canvas.rectMode(canvas.CENTER)
+        canvas.rect(this.boundary.x, this.boundary.y, this.boundary.w * 2, this.boundary.h * 2)
         if(this.divided) {
             this.topleft.p5show()
             this.topright.p5show()
