@@ -225,6 +225,7 @@ const defaultPresets = {
 };
 const defaultNode = {
   __active: false,
+  maxAffectRadius: 0,
   gravityChance: 0,
   forceMultiplier: -0.5,
   constantForceChance: 0.1,
@@ -294,7 +295,7 @@ let settings = {
     end = true;
   },
   "Save As PNG (s)": () => {
-    saveCanvas(canvas, "central-vibrance", "png");
+    mainCanvas.save("central-vibrance");
   },
   "Show Code Area (c)": toggleCodeArea,
   "Show uiCanvas (g)": () => {
@@ -601,20 +602,31 @@ let mainSketch = function(s) {
             }
           }
         }
-
-        for (let i = 0; i < particles.length; i++) {
+        let particlesInRange
+        if (node.maxAffectRadius > 0) {
+          particlesInRange = qtree.query(
+            new Circle(
+              node.x,
+              node.y,
+              node.maxAffectRadius
+            )
+          );
+        } else {
+          particlesInRange = particles
+        }
+        for (let i = 0; i < particlesInRange.length; i++) {
           let r = s.dist(
-            particles[i].pos.x,
-            particles[i].pos.y,
+            particlesInRange[i].pos.x,
+            particlesInRange[i].pos.y,
             node.x,
             node.y
           );
 
           if (node.gravityChance > 0 && s.random() < node.gravityChance) {
             let f = s.createVector(node.x, node.y);
-            f.sub(particles[i].pos);
+            f.sub(particlesInRange[i].pos);
             f.setMag(node.forceMultiplier / (1 + r));
-            particles[i].applyForce(f);
+            particlesInRange[i].applyForce(f);
           }
 
           if (
@@ -622,15 +634,16 @@ let mainSketch = function(s) {
             s.random() < node.constantForceChance
           ) {
             let f = s.createVector(node.x, node.y);
-            f.sub(particles[i].pos);
+            f.sub(particlesInRange[i].pos);
             if (
-              r <= node.constantForceRadius &&
-              s.random() < node.insideChance
+              r <= node.constantForceRadius
             ) {
-              if (s.random() < node.extraChance) {
-                f.setMag(s.random(node.extraMin, node.extraMax));
-              } else {
-                f.setMag(s.random(node.insideMin, node.insideMax));
+              if (s.random() < node.insideChance) {
+                if (s.random() < node.extraChance) {
+                  f.setMag(s.random(node.extraMin, node.extraMax));
+                } else {
+                  f.setMag(s.random(node.insideMin, node.insideMax));
+                }
               }
             } else {
               if (s.random() < node.outsideChance) {
@@ -639,15 +652,15 @@ let mainSketch = function(s) {
                 f.mult(0);
               }
             }
-            particles[i].applyForce(f);
+            particlesInRange[i].applyForce(f);
           }
-
+      
           if (
             node.deleteParticles &&
             r <= node.deleteRadius &&
             s.random() < node.deleteChance
           ) {
-            particles.splice(i, 1);
+            particles.splice(particles.indexOf(particlesInRange[i]), 1);
           }
         }
       }
@@ -908,7 +921,7 @@ let uiSketch = function(s) {
           }
           if (nodes[a].deleteParticles) {
             s.stroke(255, 0, 0);
-            s.ellipse(nodes[a].x, nodes[a].y, nodes[a].deleteRadius);
+            s.ellipse(nodes[a].x, nodes[a].y, 2 * nodes[a].deleteRadius);
           }
           s.stroke(0, 255, 255);
           s.noFill();
@@ -1396,7 +1409,8 @@ function refreshNodesGUI() {
 
     nodeFolder.add(node, "removeNode");
     nodeFolder.add(node, "duplicateNode");
-
+    nodeFolder.add(node, "maxAffectRadius");
+    
     let gravityForceFolder = nodeFolder.addFolder("force / distance");
     gravityForceFolder.open();
     gravityForceFolder.add(node, "gravityChance", 0, 1, 0.0001);
@@ -1528,7 +1542,7 @@ window.onload = () => {
       if (e.key === "r") {
         resetSketch();
       } else if (e.key === "s") {
-        saveCanvas(canvas, "central-vibrance", "png");
+        mainCanvas.save("central-vibrance");
       } else if (e.key === "e") {
         end = true;
       } else if (e.key === "c") {
