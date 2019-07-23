@@ -826,7 +826,7 @@ let uiSketch = function(s) {
         s.height / 2 - size * 6
       );
       s.text(
-        "t = " + t.toFixed(1),
+        "t = " + t.toFixed(5),
         size * 2 - s.width / 2,
         s.height / 2 - size * 2
       );
