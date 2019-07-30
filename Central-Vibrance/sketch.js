@@ -1412,7 +1412,6 @@ function refreshNodesGUI() {
     nodeFolder.add(node, "maxAffectRadius");
     
     let gravityForceFolder = nodeFolder.addFolder("force / distance");
-    gravityForceFolder.open();
     gravityForceFolder.add(node, "gravityChance", 0, 1, 0.0001);
     gravityForceFolder.add(node, "forceMultiplier", undefined, undefined, 0.01);
 
@@ -1437,7 +1436,6 @@ function refreshNodesGUI() {
     outside.add(node, "outsideMax", undefined, undefined, 0.001);
 
     let positioning = nodeFolder.addFolder("positioning");
-    positioning.open();
     positioning.add(node, "initX").step(1);
     positioning.add(node, "initY").step(1);
     positioning.add(node, "useEquations");
