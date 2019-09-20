@@ -488,9 +488,9 @@ let userDrawCode, userSetupCode;
 let useCustomCode = false;
 let doLoop = true;
 let end = false;
+let t = 0;
 
 let mainSketch = function(s) {
-  let t = 0;
   s.setup = function() {
     qtree = new QuadTree(
       new Rectangle(0, 0, screen.width / 2, screen.height / 2),
@@ -602,13 +602,17 @@ let mainSketch = function(s) {
             }
           }
         }
-        let particlesInRange;
+        let particlesInRange
         if (node.maxAffectRadius > 0) {
           particlesInRange = qtree.query(
-            new Circle(node.x, node.y, node.maxAffectRadius)
+            new Circle(
+              node.x,
+              node.y,
+              node.maxAffectRadius
+            )
           );
         } else {
-          particlesInRange = particles;
+          particlesInRange = particles
         }
         for (let i = 0; i < particlesInRange.length; i++) {
           let r = s.dist(
@@ -631,7 +635,9 @@ let mainSketch = function(s) {
           ) {
             let f = s.createVector(node.x, node.y);
             f.sub(particlesInRange[i].pos);
-            if (r <= node.constantForceRadius) {
+            if (
+              r <= node.constantForceRadius
+            ) {
               if (s.random() < node.insideChance) {
                 if (s.random() < node.extraChance) {
                   f.setMag(s.random(node.extraMin, node.extraMax));
@@ -648,7 +654,7 @@ let mainSketch = function(s) {
             }
             particlesInRange[i].applyForce(f);
           }
-
+      
           if (
             node.deleteParticles &&
             r <= node.deleteRadius &&
@@ -820,7 +826,7 @@ let uiSketch = function(s) {
         s.height / 2 - size * 6
       );
       s.text(
-        "t = " + (mainCanvas.frameCount * settings.timeScale).toFixed(5),
+        "t = " + t.toFixed(5),
         size * 2 - s.width / 2,
         s.height / 2 - size * 2
       );
@@ -850,31 +856,6 @@ let uiSketch = function(s) {
     ) {
       for (let a = 0; a < nodes.length; a++) {
         if (nodes[a].__active) {
-          if (
-            nodes[a].hasOwnProperty("useEquations") &&
-            nodes[a].useEquations
-          ) {
-            s.noFill();
-            s.stroke(255, 0, 0);
-            s.strokeWeight(size * 0.2);
-            for (
-              let i = settings.timeScale * 60;
-              i < settings.timeScale * 1000;
-              i += settings.timeScale * 60
-            ) {
-              let t = i;
-              try {
-                let x = eval(nodes[a].xEquation) + nodes[a].initX;
-                let y = -eval(nodes[a].yEquation) + nodes[a].initY;
-                t -= settings.timeScale * 60;
-                let xPrev = eval(nodes[a].xEquation) + nodes[a].initX;
-                let yPrev = -eval(nodes[a].yEquation) + nodes[a].initY;
-                s.line(xPrev, yPrev, x, y);
-              } catch (e) {
-                console.error(e)
-              }
-            }
-          }
           if (nodes[a].constantForceChance > 0) {
             s.noFill();
             s.stroke(0, 255, 255);
@@ -1429,7 +1410,7 @@ function refreshNodesGUI() {
     nodeFolder.add(node, "removeNode");
     nodeFolder.add(node, "duplicateNode");
     nodeFolder.add(node, "maxAffectRadius");
-
+    
     let gravityForceFolder = nodeFolder.addFolder("force / distance");
     gravityForceFolder.add(node, "gravityChance", 0, 1, 0.0001);
     gravityForceFolder.add(node, "forceMultiplier", undefined, undefined, 0.01);
