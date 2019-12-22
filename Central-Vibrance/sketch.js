@@ -1,8 +1,3 @@
-const e = Math.E;
-const sin = Math.sin;
-const cos = Math.cos;
-const tan = Math.tan;
-const pow = Math.pow;
 const defaultPresets = {
   Butterfly: {
     _other: {
