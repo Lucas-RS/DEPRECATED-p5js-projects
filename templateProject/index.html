@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Temp</title>
+    <script src="../addons/gui.js"></script>
+    <script src="../addons/p5.min.js"></script>
+    <script src="sketch.js"></script>
+    <style>
+      :root {
+        font-family: sans-serif;
+      }
+
+      body {
+        margin: 0;
+        display: grid;
+        grid-template-columns: [left-margin] 50pt [sketch] calc(100vh - 100pt) [middle-margin] 50pt [config] auto [right-margin] 50pt;
+        grid-template-rows: [top-margin] 50pt [sketch] calc(100vh - 100pt) [bottom-margin] 50pt;
+      }
+
+      #canvas-container {
+        grid-column: sketch / middle-margin;
+        grid-row: sketch / bottom-margin;
+        width: 100%;
+        height: 100%;
+      }
+
+      #defaultCanvas0 {
+        max-width: 100%;
+        max-height: 100%;
+      }
+
+      .div-shadow {
+        border: 1px solid #00000011;
+        box-shadow: 0 2px 30px #00000011;
+        box-sizing: border-box;
+      }
+
+      .back-button {
+        grid-column: left-margin / sketch;
+        grid-row: top-margin / sketch;
+        text-align: center;
+        padding: calc((100% - 2.5rem) / 2);
+        color: white;
+        font-size: 2.5rem;
+        font-weight: bold;
+        text-shadow: 0 0 3px #00000011;
+        text-decoration: none;
+      }
+
+      .config {
+        grid-column: config / right-margin;
+        grid-row: sketch / bottom-margin;
+        background-color: white;
+        padding: 15pt;
+      }
+    </style>
+  </head>
+  <body>
+    <a href="../" title="Back" class="back-button">&lt</a>
+    <div id="canvas-container" class="div-shadow"></div>
+    <div class="config div-shadow"><div>
+  </body>
+</html>
